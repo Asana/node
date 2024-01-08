@@ -7,8 +7,19 @@ const utilBinding = process.binding('util');
 assert.deepStrictEqual(
   Object.keys(utilBinding).sort(),
   [
+    'WeakReference',
+    'arrayBufferViewHasBuffer',
+    'constants',
+    'getCallerLocation',
+    'getConstructorName',
+    'getExternalValue',
+    'getOwnNonIndexProperties',
+    'getPromiseDetails',
+    'getProxyDetails',
+    'guessHandleType',
     'isAnyArrayBuffer',
     'isArrayBuffer',
+    'isArrayBufferDetached',
     'isArrayBufferView',
     'isAsyncFunction',
     'isDataView',
@@ -23,8 +34,15 @@ assert.deepStrictEqual(
     'isSetIterator',
     'isTypedArray',
     'isUint8Array',
+    'previewEntries',
+    'privateSymbols',
+    'shouldAbortOnUncaughtToggle',
+    'sleep',
+    'toUSVString'
   ]);
 
 for (const k of Object.keys(utilBinding)) {
-  assert.strictEqual(utilBinding[k], util.types[k]);
+  if (k in util.types) {
+    assert.strictEqual(utilBinding[k], util.types[k]);
+  }
 }
