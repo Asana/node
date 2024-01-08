@@ -38,7 +38,7 @@ assert.deepStrictEqual(
     'privateSymbols',
     'shouldAbortOnUncaughtToggle',
     'sleep',
-    'toUSVString'
+    'toUSVString',
   ]);
 
 for (const k of Object.keys(utilBinding)) {
