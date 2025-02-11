@@ -5,6 +5,7 @@
 #include "src/execution/thread-id.h"
 #include "src/base/lazy-instance.h"
 #include "src/base/platform/platform.h"
+#include <iostream>
 
 namespace v8 {
 namespace internal {
@@ -21,6 +22,7 @@ std::atomic<int> next_thread_id{1};
 // static
 ThreadId ThreadId::TryGetCurrent() {
   int thread_id = base::Thread::GetThreadLocalInt(*GetThreadIdKey());
+  //std::cout << "ThreadId::TryGetCurrent threadId=" << thread_id << " GetThreadIdKey=" << *GetThreadIdKey() << "\n";
   return thread_id == 0 ? Invalid() : ThreadId(thread_id);
 }
 
@@ -33,6 +35,7 @@ int ThreadId::GetCurrentThreadId() {
     CHECK_LE(1, thread_id);
     base::Thread::SetThreadLocalInt(key, thread_id);
   }
+  //std::cout << "ThreadId::GetCurrentThreadId threadId=" << thread_id << " GetThreadIdKey=" << key << "\n";
   return thread_id;
 }
 

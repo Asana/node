@@ -489,9 +489,12 @@ size_t Isolate::HashIsolateForEmbeddedBlob() {
 
 Isolate* Isolate::process_wide_shared_space_isolate_{nullptr};
 
-thread_local Isolate::PerIsolateThreadData* g_current_per_isolate_thread_data_
-    V8_CONSTINIT = nullptr;
-thread_local Isolate* g_current_isolate_ V8_CONSTINIT = nullptr;
+base::Thread::LocalStorageKey Isolate::isolate_key_;
+base::Thread::LocalStorageKey Isolate::per_isolate_thread_data_key_;
+std::atomic<bool> Isolate::isolate_key_created_{false};
+//thread_local Isolate::PerIsolateThreadData* g_current_per_isolate_thread_data_
+//    V8_CONSTINIT = nullptr;
+//thread_local Isolate* g_current_isolate_ V8_CONSTINIT = nullptr;
 
 namespace {
 // A global counter for all generated Isolates, might overflow.
@@ -516,6 +519,25 @@ Isolate::FindOrAllocatePerThreadDataForThisThread() {
   }
   return per_thread;
 }
+
+void Isolate::InitializeOncePerProcess() {
+  isolate_key_ = base::Thread::CreateThreadLocalKey();
+  bool expected = false;
+  CHECK(isolate_key_created_.compare_exchange_strong(
+      expected, true, std::memory_order_relaxed));
+  per_isolate_thread_data_key_ = base::Thread::CreateThreadLocalKey();
+
+  Heap::InitializeOncePerProcess();
+}
+
+void Isolate::DisposeOncePerProcess() {
+  base::Thread::DeleteThreadLocalKey(isolate_key_);
+  bool expected = true;
+  CHECK(isolate_key_created_.compare_exchange_strong(
+      expected, false, std::memory_order_relaxed));
+  base::Thread::DeleteThreadLocalKey(per_isolate_thread_data_key_);
+}
+
 
 void Isolate::DiscardPerThreadDataForThisThread() {
   ThreadId thread_id = ThreadId::TryGetCurrent();
@@ -546,7 +568,7 @@ Isolate::PerIsolateThreadData* Isolate::FindPerThreadDataForThread(
   return per_thread;
 }
 
-void Isolate::InitializeOncePerProcess() { Heap::InitializeOncePerProcess(); }
+//void Isolate::InitializeOncePerProcess() { Heap::InitializeOncePerProcess(); }
 
 Address Isolate::get_address_from_id(IsolateAddressId id) {
   return isolate_addresses_[id];
@@ -3325,10 +3347,13 @@ void Isolate::Delete(Isolate* isolate) {
   // direct pointer. We don't use Enter/Exit here to avoid
   // initializing the thread data.
   PerIsolateThreadData* saved_data = isolate->CurrentPerIsolateThreadData();
-  Isolate* saved_isolate = isolate->TryGetCurrent();
+  DCHECK_EQ(true, isolate_key_created_.load(std::memory_order_relaxed));
+  Isolate* saved_isolate = reinterpret_cast<Isolate*>(
+      base::Thread::GetThreadLocal(isolate->isolate_key_));
+  //Isolate* saved_isolate = isolate->TryGetCurrent();
   SetIsolateThreadLocals(isolate, nullptr);
   isolate->set_thread_id(ThreadId::Current());
-  isolate->heap()->SetStackStart(base::Stack::GetStackStart());
+  //isolate->heap()->SetStackStart(base::Stack::GetStackStart());
 
   isolate->Deinit();
 
@@ -3668,8 +3693,10 @@ void Isolate::Deinit() {
 
 void Isolate::SetIsolateThreadLocals(Isolate* isolate,
                                      PerIsolateThreadData* data) {
-  g_current_isolate_ = isolate;
-  g_current_per_isolate_thread_data_ = data;
+  //g_current_isolate_ = isolate;
+  //g_current_per_isolate_thread_data_ = data;
+  base::Thread::SetThreadLocal(isolate_key_, isolate);
+  base::Thread::SetThreadLocal(per_isolate_thread_data_key_, data);
 
   if (isolate && isolate->main_thread_local_isolate()) {
     WriteBarrier::SetForThread(
@@ -4031,10 +4058,16 @@ void Isolate::AddCrashKeysForIsolateAndHeapPointers() {
   add_crash_key_callback_(v8::CrashKeyId::kReadonlySpaceFirstPageAddress,
                           ToHexString(ro_space_firstpage_address));
 
-  const uintptr_t old_space_firstpage_address =
-      heap()->old_space()->FirstPageAddress();
-  add_crash_key_callback_(v8::CrashKeyId::kOldSpaceFirstPageAddress,
-                          ToHexString(old_space_firstpage_address));
+  //const uintptr_t old_space_firstpage_address =
+      //heap()->old_space()->FirstPageAddress();
+  //add_crash_key_callback_(v8::CrashKeyId::kOldSpaceFirstPageAddress,
+                          //ToHexString(old_space_firstpage_address));
+  if (heap()->new_space()) {
+    const uintptr_t map_space_firstpage_address =
+        heap()->new_space()->FirstPageAddress();
+    add_crash_key_callback_(v8::CrashKeyId::kMapSpaceFirstPageAddress,
+                            ToHexString(map_space_firstpage_address));
+  }
 
   if (heap()->code_range_base()) {
     const uintptr_t code_range_base_address = heap()->code_range_base();
