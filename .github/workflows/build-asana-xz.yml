@@ -34,7 +34,7 @@ jobs:
       - name: Checkout Node fork
         uses: actions/checkout@v3
         with:
-          repository: your-user/node
+          repository: Asana/node
           path: node
 
       - name: Set build metadata
