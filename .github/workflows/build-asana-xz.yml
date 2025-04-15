@@ -54,8 +54,7 @@ jobs:
         working-directory: node
         run: |
           ./configure --experimental-enable-pointer-compression
-          make -j4
-          make install DESTDIR=$GITHUB_WORKSPACE/node-install
+          make -j4 install DESTDIR=$GITHUB_WORKSPACE/node-install
 
       - name: Archive Node
         run: |
