@@ -1,9 +1,9 @@
 name: Build Node and node-fibers
 
-on:
-  push:
-    branches:
-      - v20.18.3
+#on:
+  #push:
+    #branches:
+      #- v20.18.3
 
 jobs:
   build-node-fibers:
