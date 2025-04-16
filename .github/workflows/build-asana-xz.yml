@@ -6,7 +6,46 @@ on:
       - v20.18.3
 
 jobs:
-  build:
+  build-node-fibers:
+    name: Build node-fibers with custom Node
+    runs-on: ubuntu-latest
+    needs: build-node  # ensures this runs after Node is built
+    strategy:
+      matrix:
+        include:
+          - platform: linux
+            arch: x64
+          - platform: linux
+            arch: arm64
+
+    steps:
+      - name: Download Node archive
+        uses: actions/download-artifact@v4
+        with:
+          name: node-${{ env.NODE_VERSION }}-${{ matrix.platform }}-${{ matrix.arch }}-${{ needs.build.outputs.BUILD_ID }}
+
+      - name: Extract Node archive
+        run: |
+          mkdir -p node-install
+          tar -C node-install -xJf node-*.tar.xz
+          echo "$GITHUB_WORKSPACE/node-install/usr/local/bin" >> $GITHUB_PATH
+
+      - name: Checkout node-fibers fork
+        uses: actions/checkout@v3
+        with:
+          repository: asana/node-fibers
+          ref: jackstrohm_node20_fibers
+          path: node-fibers
+
+      - name: Build node-fibers
+        working-directory: node-fibers
+        run: |
+          which node
+          node -v
+          npm install --nodedir="$GITHUB_WORKSPACE/node-install/usr/local"
+          npm test
+          
+  build-node:
     name: Build ${{ matrix.platform }}-${{ matrix.arch }}
     runs-on: ${{ matrix.runner }}
     strategy:
@@ -62,3 +101,9 @@ jobs:
           FILENAME=node-${NODE_VERSION}-${{ matrix.platform }}-${{ matrix.arch }}-${BUILD_ID}.tar.xz
           tar -C node-install -cJf artifacts/$FILENAME .
           echo "NODE_ARCHIVE=$FILENAME" >> $GITHUB_ENV
+
+      - name: Upload Node archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.NODE_ARCHIVE }}
+          path: artifacts/${{ env.NODE_ARCHIVE }}
