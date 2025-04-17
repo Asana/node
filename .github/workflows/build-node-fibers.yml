@@ -2,7 +2,7 @@ name: Build node-fibers with prebuilt Node
 
 on:
   workflow_run:
-    workflows: ["Build Node"]
+    workflows: [Build Node]
     types:
       - completed
 
@@ -48,4 +48,3 @@ jobs:
           node -v
           npm install --nodedir="$GITHUB_WORKSPACE/node-install/usr/local"
           npm test
-

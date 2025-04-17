@@ -64,4 +64,3 @@ jobs:
         with:
           name: node-${{ env.NODE_VERSION }}-${{ matrix.platform }}-${{ matrix.arch }}-${{ steps.meta.outputs.build_id }}
           path: artifacts/${{ env.NODE_ARCHIVE }}
-
