@@ -90,7 +90,7 @@ jobs:
       - name: Upload Node archive to release
         uses: softprops/action-gh-release@v1
         with:
-          name: node-${{ env.NODE_VERSION }}-${{ matrix.platform }}-${{ matrix.arch }}-LATEST
+          name: node-${{ env.NODE_VERSION }}-LATEST
           tag_name: node-${{ env.NODE_VERSION }}-release
           files: ./artifacts/${{ env.NODE_ARCHIVE_LATEST }}
         env:

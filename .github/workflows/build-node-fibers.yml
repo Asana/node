@@ -86,7 +86,8 @@ jobs:
       - name: Upload archive to release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: node-fibers-${{ env.NODE_VERSION }}-release
+          name: node-${{ env.NODE_VERSION }}-LATEST
+          tag_name: node-${{ env.NODE_VERSION }}-release
           files: ${{ env.ARCHIVE_NAME }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
