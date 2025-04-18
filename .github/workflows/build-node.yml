@@ -23,9 +23,9 @@ jobs:
           - platform: darwin
             arch: x64
             runs_on: macos-13
-          - platform: darwin
-            arch: arm64
-            runs_on: macos-14
+          #- platform: darwin
+            #arch: arm64
+            #runs_on: macos-14
     runs-on: ${{ matrix.runs_on }}
 
     env:
