@@ -42,7 +42,7 @@ jobs:
            NODE_PATCH_VERSION=$(grep '#define NODE_PATCH_VERSION' node/src/node_version.h | awk '{print $3}')
            NODE_VERSION="v${NODE_MAJOR_VERSION}.${NODE_MINOR_VERSION}.${NODE_PATCH_VERSION}"
            echo "NODE_VERSION=${NODE_VERSION}" >> $GITHUB_ENV
-           
+
       - name: Set build metadata
         id: meta
         working-directory: node
