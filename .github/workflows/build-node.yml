@@ -14,18 +14,18 @@ jobs:
     strategy:
       matrix:
         include:
-          - platform: linux
-            arch: x64
-            runs_on: ubuntu-latest
-          - platform: linux
-            arch: arm64
-            runs_on: ubuntu-24.04-arm
-          - platform: darwin
-            arch: x64
-            runs_on: macos-13
-          #- platform: darwin
+          #- platform: linux
+            #arch: x64
+            #runs_on: ubuntu-latest
+          #- platform: linux
             #arch: arm64
-            #runs_on: macos-14
+            #runs_on: ubuntu-24.04-arm
+          #- platform: darwin
+            #arch: x64
+            #runs_on: macos-13
+          - platform: darwin
+            arch: arm64
+            runs_on: macos-14
     runs-on: ${{ matrix.runs_on }}
 
     env:
@@ -69,7 +69,7 @@ jobs:
         working-directory: node
         run: |
           ./configure --experimental-enable-pointer-compression
-          make -j4 install DESTDIR=$GITHUB_WORKSPACE/node-install
+          make -j2 install DESTDIR=$GITHUB_WORKSPACE/node-install
 
       - name: Archive Node
         run: |
