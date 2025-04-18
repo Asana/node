@@ -74,19 +74,19 @@ jobs:
           rm bin/repl
           find .
 
+      - name: Find and archive fibers.node
+        run: |
+          # Find the directory under bin/ that contains fibers.node
+          FIBERS_PATH=$(find ./node-fibers/bin -type f -name fibers.node | head -n1)
+          FIBERS_DIR=$(dirname "$FIBERS_PATH")
+          ARCHIVE_NAME=$(basename "$FIBERS_DIR").tar.gz
+          echo "ARCHIVE_NAME=$ARCHIVE_NAME" >> $GITHUB_ENV
+          tar -czf "$ARCHIVE_NAME" -C "$(dirname "$FIBERS_DIR")" "$(basename "$FIBERS_DIR")"
 
-      - name: Upload fibers.node archive latest
-        uses: actions/upload-artifact@v4
-        with:
-          name: node-fibers-${{ env.NODE_VERSION }}-${{ matrix.platform }}-${{ matrix.arch }}-LATEST
-          path: node-fibers/bin/*
-
-      - name: Upload fibers.node archive to release
+      - name: Upload archive to release
         uses: softprops/action-gh-release@v1
         with:
-          name: node-fibers-${{ env.NODE_VERSION }}-${{ matrix.platform }}-${{ matrix.arch }}-LATEST
           tag_name: node-fibers-${{ env.NODE_VERSION }}-release
-          files: ./node-fibers/bin/*
+          files: ${{ env.ARCHIVE_NAME }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
