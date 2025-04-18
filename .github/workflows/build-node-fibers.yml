@@ -86,7 +86,7 @@ jobs:
         with:
           name: node-fibers-${{ env.NODE_VERSION }}-${{ matrix.platform }}-${{ matrix.arch }}-LATEST
           tag_name: node-fibers-${{ env.NODE_VERSION }}-release
-          files: node-fibers/bin/*
+          files: ./node-fibers/bin/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
