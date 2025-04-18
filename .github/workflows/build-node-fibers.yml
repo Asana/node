@@ -7,7 +7,7 @@ on:
       - completed
   pull_request:
     paths: .github/workflows/build-node-fibers.yml
-    
+
 jobs:
   build-fibers:
     name: Build node-fibers with custom Node
