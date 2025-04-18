@@ -56,8 +56,11 @@ jobs:
         run: |
           mkdir -p artifacts
           FILENAME=node-${NODE_VERSION}-${{ matrix.platform }}-${{ matrix.arch }}-${{ steps.meta.outputs.build_id }}.tar.xz
+          FILENAME_LATEST=node-${NODE_VERSION}-${{ matrix.platform }}-${{ matrix.arch }}-LATEST.tar.xz
           tar -C node-install -cJf artifacts/$FILENAME .
+          cp artifacts/$FILENAME artifacts/$FILENAME_LATEST
           echo "NODE_ARCHIVE=$FILENAME" >> $GITHUB_ENV
+          echo "NODE_ARCHIVE_LATEST=$FILENAME_LATEST" >> $GITHUB_ENV
 
       - name: Upload Node archive
         uses: actions/upload-artifact@v4
@@ -65,3 +68,8 @@ jobs:
           name: node-${{ env.NODE_VERSION }}-${{ matrix.platform }}-${{ matrix.arch }}-${{ steps.meta.outputs.build_id }}
           path: artifacts/${{ env.NODE_ARCHIVE }}
 
+      - name: Upload Node archive latest
+        uses: actions/upload-artifact@v4
+        with:
+          name: node-${{ env.NODE_VERSION }}-${{ matrix.platform }}-${{ matrix.arch }}-LATEST
+          path: artifacts/${{ env.NODE_ARCHIVE_LATEST }}          
