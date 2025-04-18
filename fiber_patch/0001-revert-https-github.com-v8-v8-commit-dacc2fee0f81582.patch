@@ -1,0 +1,65 @@
+From 787f44c3e4cb934bab327ba03e3cb6f2b5896b15 Mon Sep 17 00:00:00 2001
+From: Sean Wentzel <sean@asana.com>
+Date: Fri, 5 Jan 2024 11:53:12 -0800
+Subject: [PATCH 1/6] revert
+ https://github.com/v8/v8/commit/dacc2fee0f815823782a7e432c79c2a7767a4765
+
+---
+ deps/v8/src/base/platform/platform.h | 6 ++++++
+ deps/v8/src/execution/thread-id.cc   | 7 ++++++-
+ 2 files changed, 12 insertions(+), 1 deletion(-)
+
+diff --git a/deps/v8/src/base/platform/platform.h b/deps/v8/src/base/platform/platform.h
+index e801ec78c2..b3d2aedf9c 100644
+--- a/deps/v8/src/base/platform/platform.h
++++ b/deps/v8/src/base/platform/platform.h
+@@ -554,7 +554,13 @@ class V8_BASE_EXPORT Thread {
+   static LocalStorageKey CreateThreadLocalKey();
+   static void DeleteThreadLocalKey(LocalStorageKey key);
+   static void* GetThreadLocal(LocalStorageKey key);
++  static int GetThreadLocalInt(LocalStorageKey key) {
++    return static_cast<int>(reinterpret_cast<intptr_t>(GetThreadLocal(key)));
++  }
+   static void SetThreadLocal(LocalStorageKey key, void* value);
++  static void SetThreadLocalInt(LocalStorageKey key, int value) {
++    SetThreadLocal(key, reinterpret_cast<void*>(static_cast<intptr_t>(value)));
++  }
+   static bool HasThreadLocal(LocalStorageKey key) {
+     return GetThreadLocal(key) != nullptr;
+   }
+diff --git a/deps/v8/src/execution/thread-id.cc b/deps/v8/src/execution/thread-id.cc
+index ec4e95ad5d..a32d15e22f 100644
+--- a/deps/v8/src/execution/thread-id.cc
++++ b/deps/v8/src/execution/thread-id.cc
+@@ -11,7 +11,8 @@ namespace internal {
+ 
+ namespace {
+ 
+-thread_local int thread_id = 0;
++DEFINE_LAZY_LEAKY_OBJECT_GETTER(base::Thread::LocalStorageKey, GetThreadIdKey,
++                                base::Thread::CreateThreadLocalKey())
+ 
+ std::atomic<int> next_thread_id{1};
+ 
+@@ -19,14 +20,18 @@ std::atomic<int> next_thread_id{1};
+ 
+ // static
+ ThreadId ThreadId::TryGetCurrent() {
++  int thread_id = base::Thread::GetThreadLocalInt(*GetThreadIdKey());
+   return thread_id == 0 ? Invalid() : ThreadId(thread_id);
+ }
+ 
+ // static
+ int ThreadId::GetCurrentThreadId() {
++  auto key = *GetThreadIdKey();
++  int thread_id = base::Thread::GetThreadLocalInt(key);
+   if (thread_id == 0) {
+     thread_id = next_thread_id.fetch_add(1);
+     CHECK_LE(1, thread_id);
++    base::Thread::SetThreadLocalInt(key, thread_id);
+   }
+   return thread_id;
+ }
+-- 
+2.48.0
+

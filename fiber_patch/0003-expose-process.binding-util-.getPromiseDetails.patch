@@ -1,0 +1,34 @@
+From 14e013dabbad90de9622eeb70cfc6b4e484349e3 Mon Sep 17 00:00:00 2001
+From: Sean Wentzel <sean@asana.com>
+Date: Fri, 5 Jan 2024 14:23:46 -0800
+Subject: [PATCH 3/6] expose process.binding('util').getPromiseDetails
+
+---
+ lib/internal/bootstrap/realm.js | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/lib/internal/bootstrap/realm.js b/lib/internal/bootstrap/realm.js
+index 81144c280a..85c6bb2d5a 100644
+--- a/lib/internal/bootstrap/realm.js
++++ b/lib/internal/bootstrap/realm.js
+@@ -155,7 +155,16 @@ const experimentalModuleList = new SafeSet();
+           'DEP0111');
+       }
+       if (legacyWrapperList.has(module)) {
+-        return requireBuiltin('internal/legacy/processbinding')[module]();
++        const legacy = requireBuiltin('internal/legacy/processbinding')[module]();
++        if (module === 'util') {
++          // We need getPromiseDetails and constants.kFulfilled from `internalBinding('util')`
++          return {
++            ...legacy,
++            ...internalBinding('util'),
++          };
++        } else {
++          return legacy;
++        }
+       }
+       return internalBinding(module);
+     }
+-- 
+2.48.0
+

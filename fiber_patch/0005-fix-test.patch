@@ -1,0 +1,53 @@
+From 636aca9193c3dd119d17c52a6a5d5afdbad9ea69 Mon Sep 17 00:00:00 2001
+From: Sean Wentzel <sean@asana.com>
+Date: Mon, 8 Jan 2024 11:59:51 -0800
+Subject: [PATCH 5/6] fix test
+
+---
+ test/parallel/test-process-binding-util.js | 20 +++++++++++++++++++-
+ 1 file changed, 19 insertions(+), 1 deletion(-)
+
+diff --git a/test/parallel/test-process-binding-util.js b/test/parallel/test-process-binding-util.js
+index d1e602de68..a430ff0131 100644
+--- a/test/parallel/test-process-binding-util.js
++++ b/test/parallel/test-process-binding-util.js
+@@ -7,8 +7,19 @@ const utilBinding = process.binding('util');
+ assert.deepStrictEqual(
+   Object.keys(utilBinding).sort(),
+   [
++    'WeakReference',
++    'arrayBufferViewHasBuffer',
++    'constants',
++    'getCallerLocation',
++    'getConstructorName',
++    'getExternalValue',
++    'getOwnNonIndexProperties',
++    'getPromiseDetails',
++    'getProxyDetails',
++    'guessHandleType',
+     'isAnyArrayBuffer',
+     'isArrayBuffer',
++    'isArrayBufferDetached',
+     'isArrayBufferView',
+     'isAsyncFunction',
+     'isDataView',
+@@ -23,8 +34,15 @@ assert.deepStrictEqual(
+     'isSetIterator',
+     'isTypedArray',
+     'isUint8Array',
++    'previewEntries',
++    'privateSymbols',
++    'shouldAbortOnUncaughtToggle',
++    'sleep',
++    'toUSVString'
+   ]);
+ 
+ for (const k of Object.keys(utilBinding)) {
+-  assert.strictEqual(utilBinding[k], util.types[k]);
++  if (k in util.types) {
++    assert.strictEqual(utilBinding[k], util.types[k]);
++  }
+ }
+-- 
+2.48.0
+

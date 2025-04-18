@@ -1,0 +1,25 @@
+From e2961a4b79778e8172d1ca2bf99357a99e264157 Mon Sep 17 00:00:00 2001
+From: Sean Wentzel <sean@asana.com>
+Date: Mon, 8 Jan 2024 13:59:17 -0800
+Subject: [PATCH 6/6] lint
+
+---
+ test/parallel/test-process-binding-util.js | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/test/parallel/test-process-binding-util.js b/test/parallel/test-process-binding-util.js
+index a430ff0131..b01fdcedcb 100644
+--- a/test/parallel/test-process-binding-util.js
++++ b/test/parallel/test-process-binding-util.js
+@@ -38,7 +38,7 @@ assert.deepStrictEqual(
+     'privateSymbols',
+     'shouldAbortOnUncaughtToggle',
+     'sleep',
+-    'toUSVString'
++    'toUSVString',
+   ]);
+ 
+ for (const k of Object.keys(utilBinding)) {
+-- 
+2.48.0
+

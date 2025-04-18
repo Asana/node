@@ -1,0 +1,27 @@
+From 00d8d99f6126d5fff7bc27eb4b21acd4ba55bb58 Mon Sep 17 00:00:00 2001
+From: Sean Wentzel <sean@asana.com>
+Date: Fri, 5 Jan 2024 15:22:16 -0800
+Subject: [PATCH 4/6] satisfy linter
+
+---
+ lib/internal/bootstrap/realm.js | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/lib/internal/bootstrap/realm.js b/lib/internal/bootstrap/realm.js
+index 85c6bb2d5a..03be24bb42 100644
+--- a/lib/internal/bootstrap/realm.js
++++ b/lib/internal/bootstrap/realm.js
+@@ -162,9 +162,8 @@ const experimentalModuleList = new SafeSet();
+             ...legacy,
+             ...internalBinding('util'),
+           };
+-        } else {
+-          return legacy;
+         }
++        return legacy;
+       }
+       return internalBinding(module);
+     }
+-- 
+2.48.0
+

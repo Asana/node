@@ -1,0 +1,3 @@
+# This file contains build-config values set by tools for 'mac-and-sand.'# The file is machine-edited, and the full contents of the file will be overwritten each
+# time the file is modified. Comments and other such human niceties will not be retained.
+sandbox_region: us-west-2
