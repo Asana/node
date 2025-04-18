@@ -22,7 +22,6 @@ jobs:
             runner: ubuntu-latest
 
     env:
-      NODE_VERSION: v20.12.0
       S3_BUCKET: your-bucket-name
       AWS_REGION: us-east-1
 
@@ -35,6 +34,15 @@ jobs:
           ref: ${{ github.ref_name }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Extract Node Version
+        id: extract-node-version
+        run: |
+           NODE_MAJOR_VERSION=$(grep '#define NODE_MAJOR_VERSION' node/src/node_version.h | awk '{print $3}')
+           NODE_MINOR_VERSION=$(grep '#define NODE_MINOR_VERSION' node/src/node_version.h | awk '{print $3}')
+           NODE_PATCH_VERSION=$(grep '#define NODE_PATCH_VERSION' node/src/node_version.h | awk '{print $3}')
+           NODE_VERSION="v${NODE_MAJOR_VERSION}.${NODE_MINOR_VERSION}.${NODE_PATCH_VERSION}"
+           echo "NODE_VERSION=${NODE_VERSION}" >> $GITHUB_ENV
+           
       - name: Set build metadata
         id: meta
         working-directory: node
