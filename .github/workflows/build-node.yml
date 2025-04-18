@@ -84,4 +84,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: node-${{ env.NODE_VERSION }}-${{ matrix.platform }}-${{ matrix.arch }}-LATEST
-          path: artifacts/${{ env.NODE_ARCHIVE_LATEST }}          
+          path: artifacts/${{ env.NODE_ARCHIVE_LATEST }}
