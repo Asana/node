@@ -31,7 +31,7 @@ jobs:
         with:
           repository: Asana/node
           path: node
-          ref: ${{ github.ref_name }}
+          ref: ${{ github.event_name == 'pull_request' && format('refs/pull/{0}/merge', github.event.pull_request.number) || github.ref_name }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract Node Version
