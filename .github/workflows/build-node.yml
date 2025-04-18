@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - v20.18.3
+  pull_request:
+    paths: .github/workflows/build-node.yml
 
 jobs:
   build-node:
