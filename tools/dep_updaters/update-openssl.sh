@@ -151,6 +151,7 @@ help() {
     exit "${1:-0}"
 }
 
+# shellcheck disable=SC2317
 main() {
   if [ ${#} -eq 0 ]; then
     help 0
