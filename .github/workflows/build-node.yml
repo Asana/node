@@ -30,6 +30,8 @@ jobs:
         with:
           repository: Asana/node
           path: node
+          ref: ${{ github.ref_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set build metadata
         id: meta
