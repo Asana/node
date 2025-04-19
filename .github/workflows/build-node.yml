@@ -65,10 +65,18 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y python3 g++ make curl tar xz-utils
 
-      - name: Build Node
+      - name: Build Node (linux)
         working-directory: node
+        if: matrix.platform == 'linux'
         run: |
           ./configure --experimental-enable-pointer-compression
+          make -j4 install DESTDIR=$GITHUB_WORKSPACE/node-install
+
+      - name: Build Node (darwin)
+        working-directory: node
+        if: matrix.platform == 'darwin'
+        run: |
+          ./configure --experimental-enable-pointer-compression --without-snapshot
           make -j2 install DESTDIR=$GITHUB_WORKSPACE/node-install
 
       - name: Archive Node
