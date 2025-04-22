@@ -14,18 +14,12 @@ jobs:
     strategy:
       matrix:
         include:
-          #- platform: linux
-            #arch: x64
-            #runs_on: ubuntu-latest
-          #- platform: linux
-            #arch: arm64
-            #runs_on: ubuntu-24.04-arm
-          #- platform: darwin
-            #arch: x64
-            #runs_on: macos-13
-          - platform: darwin
+          - platform: linux
+            arch: x64
+            runs_on: ubuntu-22.04
+          - platform: linux
             arch: arm64
-            runs_on: macos-14
+            runs_on: ubuntu-22.04-arm
     runs-on: ${{ matrix.runs_on }}
 
     env:
