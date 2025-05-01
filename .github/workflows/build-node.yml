@@ -1,10 +1,7 @@
 name: Build Node
 
 on:
-  push:
-    branches:
-      - v20.18.3
-      - workflows-for-v20.18.3
+  workflow_dispatch:
   pull_request:
     paths: .github/workflows/build-node.yml
 
