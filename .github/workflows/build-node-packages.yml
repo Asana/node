@@ -1,4 +1,4 @@
-name: Build node-fibers with prebuilt Node
+name: Build node-packages with prebuilt Node
 
 on:
   workflow_dispatch:
@@ -7,10 +7,10 @@ on:
     types:
       - completed
   pull_request:
-    paths: .github/workflows/build-node-fibers.yml
+    paths: .github/workflows/build-node-packages.yml
 
 jobs:
-  build-fibers:
+  build-packages:
     strategy:
       matrix:
         include:
@@ -51,39 +51,41 @@ jobs:
           file $GITHUB_WORKSPACE/node-install/usr/local/bin/node
           echo "Runner architecture:"
           uname -m
-
-      - name: Checkout node-fibers fork
-        uses: actions/checkout@v3
-        with:
-          repository: asana/node-fibers
-          ref: jackstrohm_node20_fibers
-          path: node-fibers
-
-      - name: Build node-fibers
-        working-directory: node-fibers
-        run: |
           which node
           node -v
           node -p "process.arch"
-          npm install --nodedir="$GITHUB_WORKSPACE/node-install/usr/local"
-          npm test || true
-          rm bin/repl
-          find .
+          ls
 
-      - name: Find and archive fibers.node
+      - name: Build node-packages bcrypt
         run: |
-          # Find the directory under bin/ that contains fibers.node
-          FIBERS_PATH=$(find ./node-fibers/bin -type f -name fibers.node | head -n1)
-          FIBERS_DIR=$(dirname "$FIBERS_PATH")
-          ARCHIVE_NAME=$(basename "$FIBERS_DIR").tar.gz
-          echo "ARCHIVE_NAME=$ARCHIVE_NAME" >> $GITHUB_ENV
-          tar -czf "$ARCHIVE_NAME" -C "$(dirname "$FIBERS_DIR")" "$(basename "$FIBERS_DIR")"
+          npm i --nodedir="$GITHUB_WORKSPACE/node-install/usr/local" bcrypt@5.1.0
+          mkdir bcrypt@5.1.0
+          mkdir bcrypt@5.1.0/node_modules
+
+      - name: Build node-packages cld
+        run: |
+          npm i --nodedir="$GITHUB_WORKSPACE/node-install/usr/local" cld@2.9.1
+          mkdir cld@2.9.1
+          mkdir cld@2.9.1/node_modules
+
+      - name: Build node-packages unix-dgram
+        run: |
+          npm i --nodedir="$GITHUB_WORKSPACE/node-install/usr/local" unix-dgram@2.0.6
+          mkdir unix-dgram@2.0.6
+          mkdir unix-dgram@2.0.6/node_modules
+
+      - name: Tar node-packages
+        run: |
+          mv node_modules/bcrypt ./bcrypt@5.1.0/node_modules/bcrypt
+          mv node_modules/cld ./cld@2.9.1/node_modules/cld
+          mv node_modules/unix-dgram ./unix-dgram@2.0.6/node_modules/unix-dgram
+          tar --hard-dereference  -cvzf packages_${{matrix.arch}}.tar.gz bcrypt@5.1.0 cld@2.9.1 unix-dgram@2.0.6
 
       - name: Upload archive to release
         uses: softprops/action-gh-release@v1
         with:
           name: node-${{ env.NODE_VERSION }}-LATEST
           tag_name: node-${{ env.NODE_VERSION }}-release
-          files: ${{ env.ARCHIVE_NAME }}
+          files: packages_${{matrix.arch}}.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
