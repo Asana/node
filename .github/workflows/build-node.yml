@@ -5,6 +5,7 @@ on:
     branches:
       - v20.18.3
       - workflows-for-v20.18.3
+      - node20.18.3_dockerfile
   pull_request:
     paths: .github/workflows/build-node.yml
 
