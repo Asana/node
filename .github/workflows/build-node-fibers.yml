@@ -57,6 +57,7 @@ jobs:
       - name: Download Dockerfile from Asana/node
         run: | 
           curl -o $GITHUB_WORKSPACE/node-install/Dockerfile.Fibers https://raw.githubusercontent.com/Asana/node/node20.18.3_dockerfile/Dockerfile.Fibers
+          cat $GITHUB_WORKSPACE/node-install/Dockerfile.Fibers
 
       #- name: Build node-fibers
         #working-directory: node-fibers
