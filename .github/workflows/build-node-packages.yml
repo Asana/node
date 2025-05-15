@@ -54,7 +54,7 @@ jobs:
       - name: Extract resources
         run: |
           docker create --name temp_node_packages_extract node20_packages_build
-          docker cp temp_node_packages_extract:/usr/src/node/node-modules $GITHUB_WORKSPACE/node-modules
+          docker cp temp_node_packages_extract:/usr/src/node/node_modules $GITHUB_WORKSPACE/node_modules
           docker rm temp_node_packages_extract
 
       - name: Tar node-packages
