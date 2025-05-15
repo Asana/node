@@ -34,6 +34,7 @@ jobs:
             --repo asana/node \
             --pattern "node-${{ env.NODE_VERSION }}-${{ matrix.platform }}-${{ matrix.arch }}-LATEST.tar.xz"
           mv node-${{ env.NODE_VERSION }}-${{ matrix.platform }}-${{ matrix.arch }}-LATEST.tar.xz node.tar.xz
+          pwd
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -64,6 +65,7 @@ jobs:
         run: | 
           curl -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github.v3.raw" -o Dockerfile.Fibers https://api.github.com/repos/Asana/node/contents/Dockerfile.Fibers?ref=node20.18.3_dockerfile
           cat Dockerfile.Fibers
+          pwd
 
       #- name: Build node-fibers
         #working-directory: node-fibers
@@ -78,6 +80,7 @@ jobs:
           
       - name: Execute the Dockerfile
         run: |
+          pwd
           docker build -t node20_fibers_build -f Dockerfile.Fibers .
 
       - name: Extract resources
