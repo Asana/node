@@ -59,6 +59,8 @@ jobs:
 
       - name: Tar node-packages
         run: |
+          ls
+          ls node_modules
           mv node_modules/bcrypt ./bcrypt@5.1.0/node_modules/bcrypt
           mv node_modules/cld ./cld@2.9.1/node_modules/cld
           mv node_modules/unix-dgram ./unix-dgram@2.0.6/node_modules/unix-dgram
