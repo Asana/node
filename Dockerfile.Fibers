@@ -23,7 +23,8 @@ RUN mkdir -p node-install && tar -C node-install -xJf node.tar.xz
 
 ENV PATH="/node-install/usr/local/bin:$PATH"
 
-RUN find .
+RUN pwd
+RUN ls /node-install/usr/local/bin
 RUN which node
 RUN node -v
 RUN node -p "process.arch"
