@@ -2,10 +2,6 @@ name: Build node-fibers with prebuilt Node
 
 on:
   workflow_dispatch:
-  workflow_run:
-    workflows: [Build Node]
-    types:
-      - completed
 
 jobs:
   build-fibers:
