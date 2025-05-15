@@ -16,7 +16,7 @@ RUN update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-10 100
 
 # Copy local Node.js source into the image
 WORKDIR /usr/src/node
-COPY node/ .
+COPY . .
 
 RUN ./configure --experimental-enable-pointer-compression
 RUN make -j4 install DESTDIR=./node-install
