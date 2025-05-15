@@ -13,7 +13,7 @@ gh release download -p "*.xz"
 curl "https://asana-oss-cache.s3.us-east-1.amazonaws.com/node-fibers/fibers-5.0.4.pc.tgz"  --output fibers-5.0.4.tar.gz
 tar -xzf fibers-5.0.4.tar.gz
 
-find . -name "*.gz" | while read -r a
+find . -name "linux-*.gz" | while read -r a
 do
 	tar -xzf "$a" -C package/bin
 	rm "$a"
@@ -44,7 +44,7 @@ for file in *.tar.xz; do
       echo "Target Dir: $target_dir"
       mkdir "$target_dir"
       tar -xzf "$new_name" -C "$target_dir"
-      mv "$target_dir/usr/local/*" "$target_dir"
+      mv $target_dir/usr/local/* "$target_dir"
       rm -fr "$target_dir/usr/local"
 
       tar -cJf "$new_name" "$target_dir"

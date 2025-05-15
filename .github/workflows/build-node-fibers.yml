@@ -38,27 +38,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      #- name: Extract Node archive
-        #run: |
-          #mkdir -p node-install
-          #tar -C node-install -xJf node-${{ env.NODE_VERSION }}-${{ matrix.platform }}-${{ matrix.arch }}-LATEST.tar.xz
-          #echo "Node Location: $GITHUB_WORKSPACE/node-install/usr/local/bin" 
-          #echo "$GITHUB_WORKSPACE/node-install/usr/local/bin" >> $GITHUB_PATH
-
-      #- name: Verify Node Binary Architecture
-        #run: |
-          #echo "Node File:"
-          #file $GITHUB_WORKSPACE/node-install/usr/local/bin/node
-          #echo "Runner architecture:"
-          #uname -m
-
-      #- name: Checkout node-fibers fork
-        #uses: actions/checkout@v3
-        #with:
-          #repository: asana/node-fibers
-          #ref: jackstrohm_node20_fibers
-          #path: node-fibers
-
       - name: Download Dockerfile from GitHub API
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -67,17 +46,6 @@ jobs:
           cat Dockerfile.Fibers
           pwd
 
-      #- name: Build node-fibers
-        #working-directory: node-fibers
-        #run: |
-          #which node
-          #node -v
-          #node -p "process.arch"
-          #npm install --nodedir="$GITHUB_WORKSPACE/node-install/usr/local"
-          #npm test || true
-          #rm bin/repl
-          #find .
-          
       - name: Execute the Dockerfile
         run: |
           pwd
