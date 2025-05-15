@@ -74,9 +74,8 @@ jobs:
           #find .
           
       - name: Execute the Dockerfile
-        working-directory: node-fibers
         run: |
-          docker build -t node20_fibers_build -f $GITHUB_WORKSPACE/Dockerfile.Fibers .
+          docker build -t node20_fibers_build -f Dockerfile.Fibers .
 
       - name: Extract resources
         working-directory: node-fibers
