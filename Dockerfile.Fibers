@@ -16,7 +16,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # Copy local Node.js source into the image
 WORKDIR /usr/src/node
-COPY . .
+COPY node.tar.xz .
 
 RUN tar -C node-install -xJf node.tar.xz
 
