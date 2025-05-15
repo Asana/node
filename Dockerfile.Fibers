@@ -18,6 +18,10 @@ ENV DEBIAN_FRONTEND=noninteractive
 WORKDIR /usr/src/node
 COPY . .
 
+RUN tar -C node-install -xJf node.tar.xz
+
+ENV PATH="/node-install/usr/local/bin:$PATH"
+
 RUN find .
 RUN which node
 RUN node -v

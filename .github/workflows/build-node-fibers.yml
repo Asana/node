@@ -30,29 +30,30 @@ jobs:
           gh release download node-${{ env.NODE_VERSION }}-release \
             --repo asana/node \
             --pattern "node-${{ env.NODE_VERSION }}-${{ matrix.platform }}-${{ matrix.arch }}-LATEST.tar.xz"
+          mv node-${{ env.NODE_VERSION }}-${{ matrix.platform }}-${{ matrix.arch }}-LATEST.tar.xz node.tar.xz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract Node archive
-        run: |
-          mkdir -p node-install
-          tar -C node-install -xJf node-${{ env.NODE_VERSION }}-${{ matrix.platform }}-${{ matrix.arch }}-LATEST.tar.xz
-          echo "Node Location: $GITHUB_WORKSPACE/node-install/usr/local/bin" 
-          echo "$GITHUB_WORKSPACE/node-install/usr/local/bin" >> $GITHUB_PATH
+      #- name: Extract Node archive
+        #run: |
+          #mkdir -p node-install
+          #tar -C node-install -xJf node-${{ env.NODE_VERSION }}-${{ matrix.platform }}-${{ matrix.arch }}-LATEST.tar.xz
+          #echo "Node Location: $GITHUB_WORKSPACE/node-install/usr/local/bin" 
+          #echo "$GITHUB_WORKSPACE/node-install/usr/local/bin" >> $GITHUB_PATH
 
-      - name: Verify Node Binary Architecture
-        run: |
-          echo "Node File:"
-          file $GITHUB_WORKSPACE/node-install/usr/local/bin/node
-          echo "Runner architecture:"
-          uname -m
+      #- name: Verify Node Binary Architecture
+        #run: |
+          #echo "Node File:"
+          #file $GITHUB_WORKSPACE/node-install/usr/local/bin/node
+          #echo "Runner architecture:"
+          #uname -m
 
-      - name: Checkout node-fibers fork
-        uses: actions/checkout@v3
-        with:
-          repository: asana/node-fibers
-          ref: jackstrohm_node20_fibers
-          path: node-fibers
+      #- name: Checkout node-fibers fork
+        #uses: actions/checkout@v3
+        #with:
+          #repository: asana/node-fibers
+          #ref: jackstrohm_node20_fibers
+          #path: node-fibers
 
       - name: Download Dockerfile from GitHub API
         env:
