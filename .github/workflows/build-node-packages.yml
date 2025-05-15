@@ -53,9 +53,9 @@ jobs:
 
       - name: Extract resources
         run: |
-          docker create --name temp_node_fibers_extract node20_fibers_build
-          docker cp temp_node_fibers_extract:/usr/src/node/node-modules $GITHUB_WORKSPACE/node-modules
-          docker rm temp_node_fibers_extract
+          docker create --name temp_node_packages_extract node20_packages_build
+          docker cp temp_node_packages_extract:/usr/src/node/node-modules $GITHUB_WORKSPACE/node-modules
+          docker rm temp_node_packages_extract
 
       - name: Tar node-packages
         run: |
