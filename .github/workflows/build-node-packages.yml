@@ -1,0 +1,92 @@
+name: Build node-packages with prebuilt Node
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - node20.18.3_dockerfile
+
+jobs:
+  build-packages:
+    strategy:
+      matrix:
+        include:
+          - platform: linux
+            arch: x64
+            runs_on: ubuntu-22.04
+          - platform: linux
+            arch: arm64
+            runs_on: ubuntu-22.04-arm
+    runs-on: ${{ matrix.runs_on }}
+
+    env:
+      NODE_VERSION: v20.18.3
+
+    steps:
+      - name: Debug Matrix Values
+        run: |
+          echo "Matrix platform: ${{ matrix.platform }}"
+          echo "Matrix arch: ${{ matrix.arch }}"
+
+      - name: Download Node archive
+        run: |
+          gh release download node-${{ env.NODE_VERSION }}-release \
+            --repo asana/node \
+            --pattern "node-${{ env.NODE_VERSION }}-${{ matrix.platform }}-${{ matrix.arch }}-LATEST.tar.xz"
+          mv node-${{ env.NODE_VERSION }}-${{ matrix.platform }}-${{ matrix.arch }}-LATEST.tar.xz node.tar.xz
+          pwd
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download Dockerfile from GitHub API
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: | 
+          curl -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github.v3.raw" -o Dockerfile.Packages https://api.github.com/repos/Asana/node/contents/Dockerfile.Packages?ref=node20.18.3_dockerfile
+          cat Dockerfile.Packages
+          pwd
+
+      - name: Execute the Dockerfile
+        run: |
+          pwd
+          docker build -t node20_packages_build -f Dockerfile.Packages .
+
+      - name: Extract resources
+        run: |
+          docker create --name temp_node_fibers_extract node20_fibers_build
+          docker cp temp_node_fibers_extract:/usr/src/node/node-fibers $GITHUB_WORKSPACE/node-fibers
+          docker rm temp_node_fibers_extract
+
+      #- name: Build node-packages bcrypt
+        #run: |
+          #npm i --nodedir="$GITHUB_WORKSPACE/node-install/usr/local" bcrypt@5.1.0
+          #mkdir bcrypt@5.1.0
+          #mkdir bcrypt@5.1.0/node_modules
+
+      #- name: Build node-packages cld
+        #run: |
+          #npm i --nodedir="$GITHUB_WORKSPACE/node-install/usr/local" cld@2.9.1
+          #mkdir cld@2.9.1
+          #mkdir cld@2.9.1/node_modules
+
+      #- name: Build node-packages unix-dgram
+        #run: |
+          #npm i --nodedir="$GITHUB_WORKSPACE/node-install/usr/local" unix-dgram@2.0.6
+          #mkdir unix-dgram@2.0.6
+          #mkdir unix-dgram@2.0.6/node_modules
+
+      - name: Tar node-packages
+        run: |
+          mv node_modules/bcrypt ./bcrypt@5.1.0/node_modules/bcrypt
+          mv node_modules/cld ./cld@2.9.1/node_modules/cld
+          mv node_modules/unix-dgram ./unix-dgram@2.0.6/node_modules/unix-dgram
+          tar --hard-dereference  -cvzf packages_${{matrix.arch}}.tar.gz bcrypt@5.1.0 cld@2.9.1 unix-dgram@2.0.6
+
+      - name: Upload archive to release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: node-${{ env.NODE_VERSION }}-LATEST
+          tag_name: node-${{ env.NODE_VERSION }}-release
+          files: packages_${{matrix.arch}}.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
