@@ -84,7 +84,6 @@ jobs:
           docker build -t node20_fibers_build -f Dockerfile.Fibers .
 
       - name: Extract resources
-        working-directory: node-fibers
         run: |
           docker create --name temp_node_fibers_extract node20_fibers_build
           docker cp temp_node_fibers_extract:/usr/src/node/node-fibers $GITHUB_WORKSPACE/node-fibers
