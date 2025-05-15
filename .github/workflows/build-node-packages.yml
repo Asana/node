@@ -59,9 +59,12 @@ jobs:
 
       - name: Tar node-packages
         run: |
-          mv -p node_modules/bcrypt ./bcrypt@5.1.0/node_modules/bcrypt
-          mv -p node_modules/cld ./cld@2.9.1/node_modules/cld
-          mv -p node_modules/unix-dgram ./unix-dgram@2.0.6/node_modules/unix-dgram
+          mkdir -p ./bcrypt@5.1.0/node_modules/bcrypt
+          mkdir -p ./cld@2.9.1/node_modules/cld
+          mkdir -p ./unix-dgram@2.0.6/node_modules/unix-dgram
+          mv node_modules/bcrypt ./bcrypt@5.1.0/node_modules/bcrypt
+          mv node_modules/cld ./cld@2.9.1/node_modules/cld
+          mv node_modules/unix-dgram ./unix-dgram@2.0.6/node_modules/unix-dgram
           tar --hard-dereference  -cvzf packages_${{matrix.arch}}.tar.gz bcrypt@5.1.0 cld@2.9.1 unix-dgram@2.0.6
 
       - name: Upload archive to release
