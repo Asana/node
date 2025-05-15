@@ -6,11 +6,11 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # Install necessary dependencies
 RUN apt-get update 
-#RUN apt-get install -y software-properties-common 
-#RUN add-apt-repository -y ppa:ubuntu-toolchain-r/test 
-#RUN apt-get update && apt-get install -y build-essential python3 python3-distutils g++-10 make curl git pkg-config libssl-dev libffi-dev libgmp-dev libtool autoconf automake cmake wget xz-utils unzip vim 
+RUN apt-get install -y software-properties-common 
+RUN add-apt-repository -y ppa:ubuntu-toolchain-r/test 
+RUN apt-get update 
+RUN apt-get install -y build-essential python3 python3-distutils g++-10 make curl git pkg-config libssl-dev libffi-dev libgmp-dev libtool autoconf automake cmake wget xz-utils unzip vim 
 #RUN rm -rf /var/lib/apt/lists/*
-RUN apt-get install -y xz-utils
 
 # Set g++ 10 as the default
 #RUN update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-10 100
@@ -21,14 +21,16 @@ COPY node.tar.xz .
 
 RUN mkdir -p node-install && tar -C node-install -xJf node.tar.xz
 
-ENV PATH="/node-install/usr/local/bin:$PATH"
+ENV PATH="/usr/src/node/node-install/usr/local/bin:$PATH"
 
-RUN pwd
-RUN ls /node-install/usr/local/bin
 RUN which node
 RUN node -v
 RUN node -p "process.arch"
-RUN npm install --nodedir="$GITHUB_WORKSPACE/node-install/usr/local"
+RUN echo -------------------
+RUN git clone --branch jackstrohm_node20_fibers --depth 1 https://github.com/asana/node-fibers.git node-fibers
+
+WORKDIR /usr/src/node/node-fibers
+RUN npm install --nodedir="/usr/src/node/node-install/usr/local"
 RUN npm test || true
 RUN rm bin/repl
 RUN find .
