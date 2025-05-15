@@ -54,26 +54,8 @@ jobs:
       - name: Extract resources
         run: |
           docker create --name temp_node_fibers_extract node20_fibers_build
-          docker cp temp_node_fibers_extract:/usr/src/node/node-fibers $GITHUB_WORKSPACE/node-fibers
+          docker cp temp_node_fibers_extract:/usr/src/node/node-modules $GITHUB_WORKSPACE/node-modules
           docker rm temp_node_fibers_extract
-
-      #- name: Build node-packages bcrypt
-        #run: |
-          #npm i --nodedir="$GITHUB_WORKSPACE/node-install/usr/local" bcrypt@5.1.0
-          #mkdir bcrypt@5.1.0
-          #mkdir bcrypt@5.1.0/node_modules
-
-      #- name: Build node-packages cld
-        #run: |
-          #npm i --nodedir="$GITHUB_WORKSPACE/node-install/usr/local" cld@2.9.1
-          #mkdir cld@2.9.1
-          #mkdir cld@2.9.1/node_modules
-
-      #- name: Build node-packages unix-dgram
-        #run: |
-          #npm i --nodedir="$GITHUB_WORKSPACE/node-install/usr/local" unix-dgram@2.0.6
-          #mkdir unix-dgram@2.0.6
-          #mkdir unix-dgram@2.0.6/node_modules
 
       - name: Tar node-packages
         run: |
