@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - jackstrohm_node20_fibers
+      - node20.18.3_dockerfile
 
 jobs:
   build-fibers:
