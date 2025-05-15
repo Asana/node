@@ -41,6 +41,7 @@ jobs:
         run: |
           mkdir -p node-install
           tar -C node-install -xJf node-${{ env.NODE_VERSION }}-${{ matrix.platform }}-${{ matrix.arch }}-LATEST.tar.xz
+          echo "Node Location: $GITHUB_WORKSPACE/node-install/usr/local/bin" 
           echo "$GITHUB_WORKSPACE/node-install/usr/local/bin" >> $GITHUB_PATH
 
       - name: Verify Node Binary Architecture
@@ -71,7 +72,7 @@ jobs:
       - name: Execute the Dockerfile
         working-directory: node-fibers
         run: |
-          docker build -t node20_fibers_build -f ./Dockerfile.Fibers .
+          docker build -t node20_fibers_build -f $GITHUB_WORKSPACE/node-install/Dockerfile.Fibers .
 
       - name: Extract resources
         working-directory: node-fibers
