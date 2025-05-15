@@ -59,8 +59,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: | 
-          curl -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github.v3.raw" -o $GITHUB_WORKSPACE/node-install/Dockerfile.Fibers https://api.github.com/repos/Asana/node/contents/Dockerfile.Fibers?ref=node20.18.3_dockerfile
-          cat $GITHUB_WORKSPACE/node-install/Dockerfile.Fibers
+          curl -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github.v3.raw" -o Dockerfile.Fibers https://api.github.com/repos/Asana/node/contents/Dockerfile.Fibers?ref=node20.18.3_dockerfile
+          cat Dockerfile.Fibers
 
       #- name: Build node-fibers
         #working-directory: node-fibers
@@ -76,7 +76,7 @@ jobs:
       - name: Execute the Dockerfile
         working-directory: node-fibers
         run: |
-          docker build -t node20_fibers_build -f $GITHUB_WORKSPACE/node-install/Dockerfile.Fibers .
+          docker build -t node20_fibers_build -f $GITHUB_WORKSPACE/Dockerfile.Fibers .
 
       - name: Extract resources
         working-directory: node-fibers
