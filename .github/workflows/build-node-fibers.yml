@@ -54,9 +54,11 @@ jobs:
           ref: jackstrohm_node20_fibers
           path: node-fibers
 
-      - name: Download Dockerfile from Asana/node
+      - name: Download Dockerfile from GitHub API
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: | 
-          curl -o $GITHUB_WORKSPACE/node-install/Dockerfile.Fibers https://raw.githubusercontent.com/Asana/node/node20.18.3_dockerfile/Dockerfile.Fibers
+          curl -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github.v3.raw" -o $GITHUB_WORKSPACE/node-install/Dockerfile.Fibers https://api.github.com/repos/Asana/node/contents/Dockerfile.Fibers?ref=node20.18.3_dockerfile
           cat $GITHUB_WORKSPACE/node-install/Dockerfile.Fibers
 
       #- name: Build node-fibers
