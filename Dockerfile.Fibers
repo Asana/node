@@ -19,7 +19,7 @@ RUN apt-get install -y xz-utils
 WORKDIR /usr/src/node
 COPY node.tar.xz .
 
-RUN tar -C node-install -xJf node.tar.xz
+RUN mkdir -p node-install && tar -C node-install -xJf node.tar.xz
 
 ENV PATH="/node-install/usr/local/bin:$PATH"
 
