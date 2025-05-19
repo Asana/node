@@ -14,7 +14,7 @@ curl "https://asana-oss-cache.s3.us-east-1.amazonaws.com/node-fibers/fibers-5.0.
 tar -xzf fibers-5.0.4.tar.gz
 rm fibers-5.0.4.tar.gz
 
-find . -name "*.gz" | while read -r a
+find . -name "linux-*.gz" | while read -r a
 do
 	tar -xzf "$a" -C package/bin
 	rm "$a"

@@ -1,0 +1,76 @@
+name: Build node-fibers with prebuilt Node
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - node20.18.3_dockerfile
+
+jobs:
+  build-fibers:
+    strategy:
+      matrix:
+        include:
+          - platform: linux
+            arch: x64
+            runs_on: ubuntu-22.04
+          - platform: linux
+            arch: arm64
+            runs_on: ubuntu-22.04-arm
+    runs-on: ${{ matrix.runs_on }}
+
+    env:
+      NODE_VERSION: v20.18.3
+
+    steps:
+      - name: Debug Matrix Values
+        run: |
+          echo "Matrix platform: ${{ matrix.platform }}"
+          echo "Matrix arch: ${{ matrix.arch }}"
+
+      - name: Download Node archive
+        run: |
+          gh release download node-${{ env.NODE_VERSION }}-release \
+            --repo asana/node \
+            --pattern "node-${{ env.NODE_VERSION }}-${{ matrix.platform }}-${{ matrix.arch }}-LATEST.tar.xz"
+          mv node-${{ env.NODE_VERSION }}-${{ matrix.platform }}-${{ matrix.arch }}-LATEST.tar.xz node.tar.xz
+          pwd
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download Dockerfile from GitHub API
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: | 
+          curl -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github.v3.raw" -o Dockerfile.Fibers https://api.github.com/repos/Asana/node/contents/Dockerfile.Fibers?ref=node20.18.3_dockerfile
+          cat Dockerfile.Fibers
+          pwd
+
+      - name: Execute the Dockerfile
+        run: |
+          pwd
+          docker build -t node20_fibers_build -f Dockerfile.Fibers .
+
+      - name: Extract resources
+        run: |
+          docker create --name temp_node_fibers_extract node20_fibers_build
+          docker cp temp_node_fibers_extract:/usr/src/node/node-fibers $GITHUB_WORKSPACE/node-fibers
+          docker rm temp_node_fibers_extract
+
+      - name: Find and archive fibers.node
+        run: |
+          # Find the directory under bin/ that contains fibers.node
+          FIBERS_PATH=$(find ./node-fibers/bin -type f -name fibers.node | head -n1)
+          FIBERS_DIR=$(dirname "$FIBERS_PATH")
+          ARCHIVE_NAME=$(basename "$FIBERS_DIR").tar.gz
+          echo "ARCHIVE_NAME=$ARCHIVE_NAME" >> $GITHUB_ENV
+          tar -czf "$ARCHIVE_NAME" -C "$(dirname "$FIBERS_DIR")" "$(basename "$FIBERS_DIR")"
+
+      - name: Upload archive to release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: node-${{ env.NODE_VERSION }}-LATEST
+          tag_name: node-${{ env.NODE_VERSION }}-release
+          files: ${{ env.ARCHIVE_NAME }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
