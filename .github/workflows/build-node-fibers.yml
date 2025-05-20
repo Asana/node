@@ -2,9 +2,6 @@ name: Build node-fibers with prebuilt Node
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - node20.18.3_dockerfile
 
 jobs:
   build-fibers:
