@@ -7,6 +7,11 @@ TIMESTAMP=$(date '+%Y%m%d.%H%M')
 
 echo "Current timestamp is $TIMESTAMP"
 
+gh release download -p "packages_*.gz"
+echo "Moving packages to $CODEZ/node/gyp"
+mv packages_arm64.tar.gz $CODEZ/node/gyp/packages_arm64_node20.tar.gz
+mv packages_x64.tar.gz $CODEZ/node/gyp/packages_amd64_node20.tar.gz
+
 gh release download -p "linux-*.gz"
 gh release download -p "*.xz"
 
@@ -60,7 +65,6 @@ for file in *.tar.xz; do
     fi
   fi
 done
-
 
 cd ..
 mv stage "node-${UNIQUE}"
