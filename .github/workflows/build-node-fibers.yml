@@ -2,6 +2,9 @@ name: Build node-fibers with prebuilt Node
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - v20.18.3
 
 jobs:
   build-fibers:
