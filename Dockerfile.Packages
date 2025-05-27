@@ -24,9 +24,7 @@ RUN node -v
 RUN node -p "process.arch"
 RUN echo -------------------
 
-RUN npm i --nodedir="/usr/src/node/node-install/usr/local" bcrypt@5.1.0
-RUN npm i --nodedir="/usr/src/node/node-install/usr/local" cld@2.9.1
-RUN npm i --nodedir="/usr/src/node/node-install/usr/local" unix-dgram@2.0.6
+RUN npm i --nodedir="/usr/src/node/node-install/usr/local" bcrypt@5.1.0 cld@2.9.1 unix-dgram@2.0.6
 
 RUN ls
 RUN ls node_modules
