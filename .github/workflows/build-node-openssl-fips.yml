@@ -53,7 +53,7 @@ jobs:
         with:
           repository: Asana/node
           path: node
-          ref: ${{ BUILD_REF }}
+          ref: ${{ inputs.BUILD_REF }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract Node Version
