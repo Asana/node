@@ -1,4 +1,4 @@
-name: Build Node with statically-linked FIPS OpenSSL
+name: Build Node with options around OpenSSL dynamic linking and FIPS
 
 on:
   workflow_dispatch:
@@ -123,8 +123,8 @@ jobs:
       - name: Archive Node
         run: |
           mkdir -p artifacts
-          FILENAME=node-${NODE_VERSION}-fips-static-${{ matrix.platform }}-${{ matrix.arch }}-${{ steps.meta.outputs.build_id }}.tar.xz
-          FILENAME_LATEST=node-${NODE_VERSION}-fips-static-${{ matrix.platform }}-${{ matrix.arch }}-LATEST.tar.xz
+          FILENAME=node-${NODE_VERSION}-fips-${{ matrix.platform }}-${{ matrix.arch }}-${{ steps.meta.outputs.build_id }}.tar.xz
+          FILENAME_LATEST=node-${NODE_VERSION}-fips-${{ matrix.platform }}-${{ matrix.arch }}-LATEST.tar.xz
           tar -C node-install -cJf artifacts/$FILENAME .
           cp artifacts/$FILENAME artifacts/$FILENAME_LATEST
           echo "NODE_ARCHIVE=$FILENAME" >> $GITHUB_ENV
@@ -133,13 +133,13 @@ jobs:
       - name: Upload Node archive
         uses: actions/upload-artifact@v4
         with:
-          name: node-${{ env.NODE_VERSION }}-fips-static-${{ matrix.platform }}-${{ matrix.arch }}-${{ steps.meta.outputs.build_id }}
+          name: node-${{ env.NODE_VERSION }}-fips-${{ matrix.platform }}-${{ matrix.arch }}-${{ steps.meta.outputs.build_id }}
           path: artifacts/${{ env.NODE_ARCHIVE }}
 
       - name: Upload Node archive latest
         uses: actions/upload-artifact@v4
         with:
-          name: node-${{ env.NODE_VERSION }}-fips-static-${{ matrix.platform }}-${{ matrix.arch }}-LATEST
+          name: node-${{ env.NODE_VERSION }}-fips-${{ matrix.platform }}-${{ matrix.arch }}-LATEST
           path: artifacts/${{ env.NODE_ARCHIVE_LATEST }}
 
       - name: Upload Node archive to release
