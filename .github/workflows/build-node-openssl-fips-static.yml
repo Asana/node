@@ -1,13 +1,28 @@
 name: Build Node with statically-linked FIPS OpenSSL
 
 on:
-  push:
-    branches:
-      - v20.18.3
-      - workflows-for-v20.18.3
-  pull_request:
-    paths: .github/workflows/build-node.yml
   workflow_dispatch:
+    inputs:
+      enableFips:
+        description: 'Whether OpenSSL should be FIPS-enabled'
+        default: true
+        type: boolean
+      dynamicLink:
+        description: 'If OpenSSL should be dynamically linked with node (rather than statically linked)'
+        default: false
+        type: boolean
+      sharedOpenSSLIncludes:
+        description: 'dir containing header files for OpenSSL'
+        default: ''
+        type: string
+      sharedOpenSSLLibname:
+        description: 'libname for dynamically linking to OpenSSL'
+        default: ''
+        type: string
+      sharedOpenSSLLibpath:
+        description: 'dir for searching for shared OpenSSL dlls'
+        default: ''
+        type: string
 
 jobs:
   build-node:
@@ -60,9 +75,35 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y python3 g++ make curl tar xz-utils
           
-      - name: Configure OpenSSL
+      - name: Configure OpenSSL for fips
+        id: openssl-is-fips
+        if: inputs.enableFips
         run: |
           ./configure --openssl-is-fips
+
+      - name: Dynamically link OpenSSL in Node.js
+        id: openssl-dynamic-link
+        if: inputs.dynamicLink
+        run: |
+          ./configure --shared-openssl
+
+      - name: Define headers for OpenSSL
+        id: openssl-dynamic-link-headers
+        if: ${{ !empty(inputs.sharedOpenSSLIncludes) }}
+        run: |
+          ./configure --shared-openssl-includes ${{inputs.sharedOpenSSLIncludes}}
+
+      - name: alternative libname for openssl
+        id: openssl-dynamic-link-libname
+        if: ${{ !empty(inputs.sharedOpenSSLLibname) }}
+        run: |
+          ./configure --shared-openssl-libname ${{inputs.sharedOpenSSLLibname}}
+
+      - name: Define headers for OpenSSL
+        id: openssl-dynamic-link-libpath
+        if: ${{ !empty(inputs.sharedOpenSSLLibpath) }}
+        run: |
+          ./configure --shared-openssl-includes ${{inputs.sharedOpenSSLLibpath}}
 
 
       - name: Build Node (linux)
