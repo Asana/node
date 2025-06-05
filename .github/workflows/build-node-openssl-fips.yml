@@ -23,6 +23,11 @@ on:
         description: 'dir for searching for shared OpenSSL dlls'
         default: ''
         type: string
+      BUILD_REF:
+        description: 'ref to build'
+        required: true
+        default: 'main'
+        type: string
 
 jobs:
   build-node:
@@ -48,7 +53,7 @@ jobs:
         with:
           repository: Asana/node
           path: node
-          ref: ${{ github.event_name == 'pull_request' && format('refs/pull/{0}/merge', github.event.pull_request.number) || github.ref_name }}
+          ref: ${{ BUILD_REF }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract Node Version
