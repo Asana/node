@@ -7,6 +7,7 @@ on:
       - workflows-for-v20.18.3
   pull_request:
     paths: .github/workflows/build-node.yml
+  workflow_dispatch:
 
 jobs:
   build-node:
