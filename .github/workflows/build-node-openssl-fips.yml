@@ -133,7 +133,7 @@ jobs:
       - name: Execute the Dockerfile
         working-directory: node
         run: |
-          docker build -t node20_build -f ./Dockerfile.Node20fips . \
+          docker build -t node20_build -f ./Dockerfile.node20fips . \
           {{ if inputs.enableFips }} \
           --build-arg ENABLE_FIPS=true \
           {{ else }} \
