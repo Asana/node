@@ -31,7 +31,7 @@ on:
       DOCKER_FILE:
         description: 'Dockerfile to use for building Node.js'
         required: true
-        default: 'Dockerfile.Node20'
+        default: 'Dockerfile.Node20fips'
         type: string
 
 jobs:
@@ -133,7 +133,7 @@ jobs:
       - name: Execute the Dockerfile
         working-directory: node
         run: |
-          docker build -t node20_build -f ./Dockerfile.node20fips .
+          docker build -t node20_build -f ./${{inputs.DOCKER_FILE}} .
           {{ if inputs.enableFips }}
           --build-arg ENABLE_FIPS=true
           {{ else }}
