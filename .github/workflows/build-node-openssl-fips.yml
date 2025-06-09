@@ -133,20 +133,7 @@ jobs:
       - name: Execute the Dockerfile
         working-directory: node
         run: |
-          docker build -t node20_build -f ./${{inputs.DOCKER_FILE}} .
-          {{ if inputs.enableFips }}
-          --build-arg ENABLE_FIPS=true
-          {{ else }}
-          --build-arg ENABLE_FIPS=false
-          {{ end }}
-          {{ if inputs.dynamicLink }}
-          --build-arg DYNAMIC_LINK=true
-          {{ else }}
-          --build-arg DYNAMIC_LINK=false
-          {{ end }}
-          --build-arg SHARED_OPENSSL_INCLUDES=${{ inputs.sharedOpenSSLIncludes }}
-          --build-arg SHARED_OPENSSL_LIBNAME=${{ inputs.sharedOpenSSLLibname }}
-          --build-arg SHARED_OPENSSL_LIBPATH=${{ inputs.sharedOpenSSLLibpath }}
+          docker build -t node20_build -f ./${{inputs.DOCKER_FILE}} . --build-arg ENABLE_FIPS=true --build-arg DYNAMIC_LINK=true
 
       - name: Extract resources
         run: |
