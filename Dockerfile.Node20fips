@@ -23,7 +23,7 @@ RUN update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-10 100
 WORKDIR /usr/src/node
 COPY . .
 
-RUN ./configure --openssl-is-fips --shared-openssl --experimental-enable-pointer-compression
+RUN ./configure --shared-openssl --experimental-enable-pointer-compression
 RUN make -j4 install DESTDIR=./node-install
 
 CMD ["bash"]
