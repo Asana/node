@@ -1,5 +1,5 @@
 # Stage 1
-FROM ubuntu:20.04 AS base
+FROM ubuntu:22.04 AS base # OpenSSL3 is only available >=22
 ARG ENABLE_FIPS
 ARG DYNAMIC_LINK
 ARG SHARED_OPENSSL_INCLUDES
