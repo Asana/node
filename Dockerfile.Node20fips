@@ -1,10 +1,5 @@
 # Stage 1
 FROM ubuntu:22.04 AS base
-ARG ENABLE_FIPS
-ARG DYNAMIC_LINK
-ARG SHARED_OPENSSL_INCLUDES
-ARG SHARED_OPENSSL_LIBNAME
-ARG SHARED_OPENSSL_LIBPATH
 
 # Set non-interactive mode to avoid prompts during installation
 ENV DEBIAN_FRONTEND=noninteractive
@@ -23,6 +18,7 @@ RUN update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-10 100
 WORKDIR /usr/src/node
 COPY . .
 
+# Enable dynamic linking for OpenSSL, pointer compression,  and using `openssl_conf` as the default OpenSSL configuration for Node.js
 RUN ./configure --shared-openssl --experimental-enable-pointer-compression --openssl-conf-name 'openssl_conf'
 RUN make -j4 install DESTDIR=./node-install
 
