@@ -586,6 +586,9 @@ IsolateData::IsolateData(Isolate* isolate,
     // safe guard against this.
     DCHECK_NE(descriptor.wrappable_type_index, BaseObject::kSlot);
   } else {
+    // Commented out for fibers support - CppHeap can cause issues
+    // with fiber context switching
+    /*
     cpp_heap_ = CppHeap::Create(
         platform,
         CppHeapCreateParams{
@@ -593,6 +596,7 @@ IsolateData::IsolateData(Isolate* isolate,
             WrapperDescriptor(
                 BaseObject::kEmbedderType, BaseObject::kSlot, cppgc_id)});
     isolate->AttachCppHeap(cpp_heap_.get());
+    */
   }
   // We do not care about overflow since we just want this to be different
   // from the cppgc id.

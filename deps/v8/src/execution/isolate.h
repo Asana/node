@@ -625,6 +625,7 @@ class V8_EXPORT_PRIVATE Isolate final : private HiddenFactory {
   };
 
   static void InitializeOncePerProcess();
+  static void DisposeOncePerProcess();
 
   // Creates Isolate object. Must be used instead of constructing Isolate with
   // new operator.
@@ -645,15 +646,30 @@ class V8_EXPORT_PRIVATE Isolate final : private HiddenFactory {
 
   // Returns the PerIsolateThreadData for the current thread (or nullptr if one
   // is not currently set).
-  V8_INLINE static PerIsolateThreadData* CurrentPerIsolateThreadData();
+  // Changed from V8_INLINE with thread_local to use LocalStorageKey for fibers support
+  static PerIsolateThreadData* CurrentPerIsolateThreadData() {
+    return reinterpret_cast<PerIsolateThreadData*>(
+        base::Thread::GetThreadLocal(per_isolate_thread_data_key_));
+  }
 
   // Returns the isolate inside which the current thread is running or nullptr.
-  V8_INLINE static Isolate* TryGetCurrent();
+  // Changed from V8_INLINE with thread_local to use LocalStorageKey for fibers support
+  V8_INLINE static Isolate* TryGetCurrent() {
+    DCHECK_EQ(true, isolate_key_created_.load(std::memory_order_relaxed));
+    return reinterpret_cast<Isolate*>(
+        base::Thread::GetExistingThreadLocal(isolate_key_));
+  }
 
   // Returns the isolate inside which the current thread is running.
-  V8_INLINE static Isolate* Current();
+  // Changed from V8_INLINE with thread_local to use LocalStorageKey for fibers support
+  V8_INLINE static Isolate* Current() {
+    Isolate* isolate = TryGetCurrent();
+    DCHECK_NOT_NULL(isolate);
+    return isolate;
+  }
 
-  inline bool IsCurrent() const;
+  // Changed from inline to use TryGetCurrent() with LocalStorageKey for fibers support
+  bool IsCurrent() const { return this == TryGetCurrent(); }
 
   // Usually called by Init(), but can be called early e.g. to allow
   // testing components that require logging but not the whole
@@ -2285,6 +2301,12 @@ class V8_EXPORT_PRIVATE Isolate final : private HiddenFactory {
 
   static Isolate* process_wide_shared_space_isolate_;
 
+  // LocalStorageKey-based thread locals for fibers support
+  // (replaces thread_local variables)
+  static base::Thread::LocalStorageKey per_isolate_thread_data_key_;
+  static base::Thread::LocalStorageKey isolate_key_;
+  static std::atomic<bool> isolate_key_created_;
+
   void Deinit();
 
   static void SetIsolateThreadLocals(Isolate* isolate,
@@ -2719,9 +2741,11 @@ class V8_EXPORT_PRIVATE Isolate final : private HiddenFactory {
 // These are outside the Isolate class with extern storage because in clang-cl,
 // thread_local is incompatible with dllexport linkage caused by
 // V8_EXPORT_PRIVATE being applied to Isolate.
-extern thread_local Isolate::PerIsolateThreadData*
-    g_current_per_isolate_thread_data_ V8_CONSTINIT;
-extern thread_local Isolate* g_current_isolate_ V8_CONSTINIT;
+//
+// Commented out for fibers support - replaced with LocalStorageKey in Isolate class
+//extern thread_local Isolate::PerIsolateThreadData*
+//    g_current_per_isolate_thread_data_ V8_CONSTINIT;
+//extern thread_local Isolate* g_current_isolate_ V8_CONSTINIT;
 
 #undef FIELD_ACCESSOR
 #undef THREAD_LOCAL_TOP_ACCESSOR

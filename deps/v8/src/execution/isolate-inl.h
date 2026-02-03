@@ -24,22 +24,24 @@ namespace v8 {
 namespace internal {
 
 // static
-V8_INLINE Isolate::PerIsolateThreadData*
-Isolate::CurrentPerIsolateThreadData() {
-  return g_current_per_isolate_thread_data_;
-}
+// Commented out for fibers support - these are now non-inline in isolate.h
+// using LocalStorageKey instead of thread_local
+//V8_INLINE Isolate::PerIsolateThreadData*
+//Isolate::CurrentPerIsolateThreadData() {
+//  return g_current_per_isolate_thread_data_;
+//}
 
 // static
-V8_INLINE Isolate* Isolate::TryGetCurrent() { return g_current_isolate_; }
+//V8_INLINE Isolate* Isolate::TryGetCurrent() { return g_current_isolate_; }
 
 // static
-V8_INLINE Isolate* Isolate::Current() {
-  Isolate* isolate = TryGetCurrent();
-  DCHECK_NOT_NULL(isolate);
-  return isolate;
-}
+//V8_INLINE Isolate* Isolate::Current() {
+//  Isolate* isolate = TryGetCurrent();
+//  DCHECK_NOT_NULL(isolate);
+//  return isolate;
+//}
 
-bool Isolate::IsCurrent() const { return this == TryGetCurrent(); }
+//bool Isolate::IsCurrent() const { return this == TryGetCurrent(); }
 
 void Isolate::set_context(Tagged<Context> context) {
   DCHECK(context.is_null() || IsContext(context));
