@@ -9,14 +9,38 @@ TIMESTAMP=$(date '+%Y%m%d.%H%M')
 
 echo "Current timestamp is $TIMESTAMP"
 
-# Download node tarballs from the latest release
+# Download packages and move to codez
+gh release download -R Asana/node -p "packages_*.gz"
+echo "Moving packages to $CODEZ/node/gyp"
+mv packages_arm64.tar.gz $CODEZ/node/gyp/packages_arm64_node22.tar.gz
+mv packages_x64.tar.gz $CODEZ/node/gyp/packages_amd64_node22.tar.gz
+
+# Download fibers binaries and node tarballs
+gh release download -R Asana/node -p "linux-*.gz"
 gh release download -R Asana/node -p "*.xz"
 
-# Generate unique identifier from timestamp and hash of downloaded files
-SHORT_HASH=$(cat *.xz | sha1sum | cut -c1-4)
+# Download fibers base package via CloudFront (public S3 access was disabled)
+curl "https://asana-oss-cache.asana.biz/node-fibers/fibers-5.0.4.pc.tgz" --output fibers-5.0.4.tar.gz
+tar -xzf fibers-5.0.4.tar.gz
+rm fibers-5.0.4.tar.gz
+
+# Extract linux fibers binaries into the package
+find . -name "linux-*.gz" | while read -r a
+do
+	tar -xzf "$a" -C package/bin
+	rm "$a"
+done
+
+# Repackage fibers with combined binaries
+tar -czf temp.tgz package/
+rm -rf package
+SHORT_HASH=$(cat temp.tgz | sha1sum | cut -c1-4)
 echo "HASH: $SHORT_HASH"
 UNIQUE="pc-${TIMESTAMP}-${SHORT_HASH}"
 
+mv temp.tgz "fibers-5.0.4-${UNIQUE}.tgz"
+
+# Process node tarballs
 for file in *.tar.xz; do
   if [[ "$file" == *-LATEST.tar.xz ]]; then
     base="${file%-LATEST.tar.xz}"
