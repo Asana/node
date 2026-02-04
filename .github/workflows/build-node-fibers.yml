@@ -23,6 +23,9 @@ jobs:
       NODE_VERSION: v22.21.1
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
       - name: Debug Matrix Values
         run: |
           echo "Matrix platform: ${{ matrix.platform }}"
@@ -34,17 +37,8 @@ jobs:
             --repo asana/node \
             --pattern "node-${{ env.NODE_VERSION }}-${{ matrix.platform }}-${{ matrix.arch }}-LATEST.tar.xz"
           mv node-${{ env.NODE_VERSION }}-${{ matrix.platform }}-${{ matrix.arch }}-LATEST.tar.xz node.tar.xz
-          pwd
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Download Dockerfile from GitHub API
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          curl -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github.v3.raw" -o Dockerfile.Fibers https://api.github.com/repos/Asana/node/contents/Dockerfile.Fibers?ref=node22.21.1_dockerfile
-          cat Dockerfile.Fibers
-          pwd
 
       - name: Execute the Dockerfile
         run: |
