@@ -23,7 +23,7 @@ RUN which node
 RUN node -v
 RUN node -p "process.arch"
 RUN echo -------------------
-RUN git clone --branch jackstrohm_node22_fibers --depth 1 https://github.com/asana/node-fibers.git node-fibers
+RUN git clone --branch jackstrohm_node20_fibers --depth 1 https://github.com/asana/node-fibers.git node-fibers
 
 WORKDIR /usr/src/node/node-fibers
 RUN npm install --nodedir="/usr/src/node/node-install/usr/local"
