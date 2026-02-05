@@ -9,7 +9,7 @@
 
 namespace ada::checkers {
 
-ada_really_inline ADA_CONSTEXPR bool is_ipv4(std::string_view view) noexcept {
+ada_really_inline constexpr bool is_ipv4(std::string_view view) noexcept {
   // The string is not empty and does not contain upper case ASCII characters.
   //
   // Optimization. To be considered as a possible ipv4, the string must end
@@ -62,7 +62,7 @@ ada_really_inline ADA_CONSTEXPR bool is_ipv4(std::string_view view) noexcept {
 
 // for use with path_signature, we include all characters that need percent
 // encoding.
-static ADA_CONSTEXPR std::array<uint8_t, 256> path_signature_table =
+static constexpr std::array<uint8_t, 256> path_signature_table =
     []() consteval {
       std::array<uint8_t, 256> result{};
       for (size_t i = 0; i < 256; i++) {
@@ -83,7 +83,7 @@ static ADA_CONSTEXPR std::array<uint8_t, 256> path_signature_table =
       return result;
     }();
 
-ada_really_inline ADA_CONSTEXPR uint8_t path_signature(
+ada_really_inline constexpr uint8_t path_signature(
     std::string_view input) noexcept {
   // The path percent-encode set is the query percent-encode set and U+003F (?),
   // U+0060 (`), U+007B ({), and U+007D (}). The query percent-encode set is the
@@ -108,7 +108,7 @@ ada_really_inline ADA_CONSTEXPR uint8_t path_signature(
   return accumulator;
 }
 
-ada_really_inline ADA_CONSTEXPR bool verify_dns_length(
+ada_really_inline constexpr bool verify_dns_length(
     std::string_view input) noexcept {
   if (input.back() == '.') {
     if (input.size() > 254) return false;
@@ -7772,15 +7772,15 @@ namespace ada::idna {
 
 // See
 // https://github.com/uni-algo/uni-algo/blob/c612968c5ed3ace39bde4c894c24286c5f2c7fe2/include/uni_algo/impl/impl_norm.h#L467
-ADA_CONSTEXPR char32_t hangul_sbase = 0xAC00;
-ADA_CONSTEXPR char32_t hangul_tbase = 0x11A7;
-ADA_CONSTEXPR char32_t hangul_vbase = 0x1161;
-ADA_CONSTEXPR char32_t hangul_lbase = 0x1100;
-ADA_CONSTEXPR char32_t hangul_lcount = 19;
-ADA_CONSTEXPR char32_t hangul_vcount = 21;
-ADA_CONSTEXPR char32_t hangul_tcount = 28;
-ADA_CONSTEXPR char32_t hangul_ncount = hangul_vcount * hangul_tcount;
-ADA_CONSTEXPR char32_t hangul_scount =
+constexpr char32_t hangul_sbase = 0xAC00;
+constexpr char32_t hangul_tbase = 0x11A7;
+constexpr char32_t hangul_vbase = 0x1161;
+constexpr char32_t hangul_lbase = 0x1100;
+constexpr char32_t hangul_lcount = 19;
+constexpr char32_t hangul_vcount = 21;
+constexpr char32_t hangul_tcount = 28;
+constexpr char32_t hangul_ncount = hangul_vcount * hangul_tcount;
+constexpr char32_t hangul_scount =
     hangul_lcount * hangul_vcount * hangul_tcount;
 
 std::pair<bool, size_t> compute_decomposition_length(
@@ -7988,25 +7988,25 @@ void normalize(std::u32string& input) {
 
 namespace ada::idna {
 
-ADA_CONSTEXPR int32_t base = 36;
-ADA_CONSTEXPR int32_t tmin = 1;
-ADA_CONSTEXPR int32_t tmax = 26;
-ADA_CONSTEXPR int32_t skew = 38;
-ADA_CONSTEXPR int32_t damp = 700;
-ADA_CONSTEXPR int32_t initial_bias = 72;
-ADA_CONSTEXPR uint32_t initial_n = 128;
+constexpr int32_t base = 36;
+constexpr int32_t tmin = 1;
+constexpr int32_t tmax = 26;
+constexpr int32_t skew = 38;
+constexpr int32_t damp = 700;
+constexpr int32_t initial_bias = 72;
+constexpr uint32_t initial_n = 128;
 
-static ADA_CONSTEXPR int32_t char_to_digit_value(char value) {
+static constexpr int32_t char_to_digit_value(char value) {
   if (value >= 'a' && value <= 'z') return value - 'a';
   if (value >= '0' && value <= '9') return value - '0' + 26;
   return -1;
 }
 
-static ADA_CONSTEXPR char digit_to_char(int32_t digit) {
+static constexpr char digit_to_char(int32_t digit) {
   return digit < 26 ? char(digit + 97) : char(digit + 22);
 }
 
-static ADA_CONSTEXPR int32_t adapt(int32_t d, int32_t n, bool firsttime) {
+static constexpr int32_t adapt(int32_t d, int32_t n, bool firsttime) {
   if (firsttime) {
     d = d / damp;
   } else {
@@ -9040,7 +9040,7 @@ bool is_label_valid(const std::u32string_view label) {
 
   // The label must not begin with a combining mark, that is:
   // General_Category=Mark.
-  ADA_CONSTEXPR static uint32_t combining[] = {
+  constexpr static uint32_t combining[] = {
       0x300,   0x301,   0x302,   0x303,   0x304,   0x305,   0x306,   0x307,
       0x308,   0x309,   0x30a,   0x30b,   0x30c,   0x30d,   0x30e,   0x30f,
       0x310,   0x311,   0x312,   0x313,   0x314,   0x315,   0x316,   0x317,
@@ -9343,7 +9343,7 @@ bool is_label_valid(const std::u32string_view label) {
   // If CheckJoiners, the label must satisfy the ContextJ rules from Appendix
   // A, in The Unicode Code Points and Internationalized Domain Names for
   // Applications (IDNA) [IDNA2008].
-  ADA_CONSTEXPR static uint32_t virama[] = {
+  constexpr static uint32_t virama[] = {
       0x094D,  0x09CD,  0x0A4D,  0x0ACD,  0x0B4D,  0x0BCD,  0x0C4D,  0x0CCD,
       0x0D3B,  0x0D3C,  0x0D4D,  0x0DCA,  0x0E3A,  0x0EBA,  0x0F84,  0x1039,
       0x103A,  0x1714,  0x1734,  0x17D2,  0x1A60,  0x1B44,  0x1BAA,  0x1BAB,
@@ -9352,7 +9352,7 @@ bool is_label_valid(const std::u32string_view label) {
       0x111C0, 0x11235, 0x112EA, 0x1134D, 0x11442, 0x114C2, 0x115BF, 0x1163F,
       0x116B6, 0x1172B, 0x11839, 0x1193D, 0x1193E, 0x119E0, 0x11A34, 0x11A47,
       0x11A99, 0x11C3F, 0x11D44, 0x11D45, 0x11D97};
-  ADA_CONSTEXPR static uint32_t R[] = {
+  constexpr static uint32_t R[] = {
       0x622, 0x623, 0x624, 0x625, 0x627, 0x629, 0x62f, 0x630, 0x631,
       0x632, 0x648, 0x671, 0x672, 0x673, 0x675, 0x676, 0x677, 0x688,
       0x689, 0x68a, 0x68b, 0x68c, 0x68d, 0x68e, 0x68f, 0x690, 0x691,
@@ -9361,8 +9361,8 @@ bool is_label_valid(const std::u32string_view label) {
       0x6cd, 0x6cf, 0x6d2, 0x6d3, 0x6d5, 0x6ee, 0x6ef, 0x710, 0x715,
       0x716, 0x717, 0x718, 0x719, 0x71e, 0x728, 0x72a, 0x72c, 0x72f,
       0x74d, 0x759, 0x75a, 0x75b, 0x854, 0x8aa, 0x8ab, 0x8ac};
-  ADA_CONSTEXPR static uint32_t L[] = {0xa872};
-  ADA_CONSTEXPR static uint32_t D[] = {
+  constexpr static uint32_t L[] = {0xa872};
+  constexpr static uint32_t D[] = {
       0x620,  0x626,  0x628,  0x62a,  0x62b,  0x62c,  0x62d,  0x62e,  0x633,
       0x634,  0x635,  0x636,  0x637,  0x638,  0x639,  0x63a,  0x63b,  0x63c,
       0x63d,  0x63e,  0x63f,  0x641,  0x642,  0x643,  0x644,  0x645,  0x646,
@@ -9556,7 +9556,7 @@ bool is_label_valid(const std::u32string_view label) {
 
 namespace ada::idna {
 
-bool ADA_CONSTEXPR is_ascii(std::u32string_view view) {
+bool constexpr is_ascii(std::u32string_view view) {
   for (uint32_t c : view) {
     if (c >= 0x80) {
       return false;
@@ -9565,7 +9565,7 @@ bool ADA_CONSTEXPR is_ascii(std::u32string_view view) {
   return true;
 }
 
-bool ADA_CONSTEXPR is_ascii(std::string_view view) {
+bool constexpr is_ascii(std::string_view view) {
   for (uint8_t c : view) {
     if (c >= 0x80) {
       return false;
@@ -9574,7 +9574,7 @@ bool ADA_CONSTEXPR is_ascii(std::string_view view) {
   return true;
 }
 
-ADA_CONSTEXPR static uint8_t is_forbidden_domain_code_point_table[] = {
+constexpr static uint8_t is_forbidden_domain_code_point_table[] = {
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0,
@@ -10400,11 +10400,11 @@ const uint32_t id_start[763][2] =
 /* end file src/id_tables.cpp */
 
 namespace ada::idna {
-ADA_CONSTEXPR bool is_ascii_letter(char32_t c) noexcept {
+constexpr bool is_ascii_letter(char32_t c) noexcept {
   return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
 }
 
-ADA_CONSTEXPR bool is_ascii_letter_or_digit(char32_t c) noexcept {
+constexpr bool is_ascii_letter_or_digit(char32_t c) noexcept {
   return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
          (c >= '0' && c <= '9');
 }
@@ -10455,15 +10455,15 @@ ADA_POP_DISABLE_WARNINGS
 
 namespace ada::unicode {
 
-ADA_CONSTEXPR bool is_tabs_or_newline(char c) noexcept {
+constexpr bool is_tabs_or_newline(char c) noexcept {
   return c == '\r' || c == '\n' || c == '\t';
 }
 
-ADA_CONSTEXPR uint64_t broadcast(uint8_t v) noexcept {
+constexpr uint64_t broadcast(uint8_t v) noexcept {
   return 0x101010101010101ull * v;
 }
 
-ADA_CONSTEXPR bool to_lower_ascii(char* input, size_t length) noexcept {
+constexpr bool to_lower_ascii(char* input, size_t length) noexcept {
   uint64_t broadcast_80 = broadcast(0x80);
   uint64_t broadcast_Ap = broadcast(128 - 'A');
   uint64_t broadcast_Zp = broadcast(128 - 'Z' - 1);
@@ -10624,7 +10624,7 @@ ada_really_inline bool has_tabs_or_newline(
 // U+0020 SPACE, U+0023 (#), U+002F (/), U+003A (:), U+003C (<), U+003E (>),
 // U+003F (?), U+0040 (@), U+005B ([), U+005C (\), U+005D (]), U+005E (^), or
 // U+007C (|).
-ADA_CONSTEXPR static std::array<uint8_t, 256> is_forbidden_host_code_point_table =
+constexpr static std::array<uint8_t, 256> is_forbidden_host_code_point_table =
     []() consteval {
       std::array<uint8_t, 256> result{};
       for (uint8_t c : {'\0', '\x09', '\x0a', '\x0d', ' ', '#', '/', ':', '<',
@@ -10634,12 +10634,12 @@ ADA_CONSTEXPR static std::array<uint8_t, 256> is_forbidden_host_code_point_table
       return result;
     }();
 
-ada_really_inline ADA_CONSTEXPR bool is_forbidden_host_code_point(
+ada_really_inline constexpr bool is_forbidden_host_code_point(
     const char c) noexcept {
   return is_forbidden_host_code_point_table[uint8_t(c)];
 }
 
-ADA_CONSTEXPR static std::array<uint8_t, 256> is_forbidden_domain_code_point_table =
+constexpr static std::array<uint8_t, 256> is_forbidden_domain_code_point_table =
     []() consteval {
       std::array<uint8_t, 256> result{};
       for (uint8_t c : {'\0', '\x09', '\x0a', '\x0d', ' ', '#', '/', ':', '<',
@@ -10657,12 +10657,12 @@ ADA_CONSTEXPR static std::array<uint8_t, 256> is_forbidden_domain_code_point_tab
 
 static_assert(sizeof(is_forbidden_domain_code_point_table) == 256);
 
-ada_really_inline ADA_CONSTEXPR bool is_forbidden_domain_code_point(
+ada_really_inline constexpr bool is_forbidden_domain_code_point(
     const char c) noexcept {
   return is_forbidden_domain_code_point_table[uint8_t(c)];
 }
 
-ada_really_inline ADA_CONSTEXPR bool contains_forbidden_domain_code_point(
+ada_really_inline constexpr bool contains_forbidden_domain_code_point(
     const char* input, size_t length) noexcept {
   size_t i = 0;
   uint8_t accumulator{};
@@ -10678,7 +10678,7 @@ ada_really_inline ADA_CONSTEXPR bool contains_forbidden_domain_code_point(
   return accumulator;
 }
 
-ADA_CONSTEXPR static std::array<uint8_t, 256>
+constexpr static std::array<uint8_t, 256>
     is_forbidden_domain_code_point_table_or_upper = []() consteval {
       std::array<uint8_t, 256> result{};
       for (uint8_t c : {'\0', '\x09', '\x0a', '\x0d', ' ', '#', '/', ':', '<',
@@ -10697,7 +10697,7 @@ ADA_CONSTEXPR static std::array<uint8_t, 256>
       return result;
     }();
 
-ada_really_inline ADA_CONSTEXPR uint8_t
+ada_really_inline constexpr uint8_t
 contains_forbidden_domain_code_point_or_upper(const char* input,
                                               size_t length) noexcept {
   size_t i = 0;
@@ -10720,7 +10720,7 @@ contains_forbidden_domain_code_point_or_upper(const char* input,
 }
 
 // std::isalnum(c) || c == '+' || c == '-' || c == '.') is true for
-ADA_CONSTEXPR static std::array<bool, 256> is_alnum_plus_table = []() consteval {
+constexpr static std::array<bool, 256> is_alnum_plus_table = []() consteval {
   std::array<bool, 256> result{};
   for (size_t c = 0; c < 256; c++) {
     result[c] = (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') ||
@@ -10729,42 +10729,42 @@ ADA_CONSTEXPR static std::array<bool, 256> is_alnum_plus_table = []() consteval 
   return result;
 }();
 
-ada_really_inline ADA_CONSTEXPR bool is_alnum_plus(const char c) noexcept {
+ada_really_inline constexpr bool is_alnum_plus(const char c) noexcept {
   return is_alnum_plus_table[uint8_t(c)];
   // A table is almost surely much faster than the
   // following under most compilers: return
   // return (std::isalnum(c) || c == '+' || c == '-' || c == '.');
 }
 
-ada_really_inline ADA_CONSTEXPR bool is_ascii_hex_digit(const char c) noexcept {
+ada_really_inline constexpr bool is_ascii_hex_digit(const char c) noexcept {
   return (c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') ||
          (c >= 'a' && c <= 'f');
 }
 
-ada_really_inline ADA_CONSTEXPR bool is_ascii_digit(const char c) noexcept {
+ada_really_inline constexpr bool is_ascii_digit(const char c) noexcept {
   // An ASCII digit is a code point in the range U+0030 (0) to U+0039 (9),
   // inclusive.
   return (c >= '0' && c <= '9');
 }
 
-ada_really_inline ADA_CONSTEXPR bool is_ascii(const char32_t c) noexcept {
+ada_really_inline constexpr bool is_ascii(const char32_t c) noexcept {
   // If code point is between U+0000 and U+007F inclusive, then return true.
   return c <= 0x7F;
 }
 
-ada_really_inline ADA_CONSTEXPR bool is_c0_control_or_space(const char c) noexcept {
+ada_really_inline constexpr bool is_c0_control_or_space(const char c) noexcept {
   return (unsigned char)c <= ' ';
 }
 
-ada_really_inline ADA_CONSTEXPR bool is_ascii_tab_or_newline(
+ada_really_inline constexpr bool is_ascii_tab_or_newline(
     const char c) noexcept {
   return c == '\t' || c == '\n' || c == '\r';
 }
 
-ADA_CONSTEXPR std::string_view table_is_double_dot_path_segment[] = {
+constexpr std::string_view table_is_double_dot_path_segment[] = {
     "..", "%2e.", ".%2e", "%2e%2e"};
 
-ada_really_inline ADA_CONSTEXPR bool is_double_dot_path_segment(
+ada_really_inline constexpr bool is_double_dot_path_segment(
     std::string_view input) noexcept {
   // This will catch most cases:
   // The length must be 2,4 or 6.
@@ -10813,20 +10813,20 @@ ada_really_inline ADA_CONSTEXPR bool is_double_dot_path_segment(
   //  "%2e%2E";
 }
 
-ada_really_inline ADA_CONSTEXPR bool is_single_dot_path_segment(
+ada_really_inline constexpr bool is_single_dot_path_segment(
     std::string_view input) noexcept {
   return input == "." || input == "%2e" || input == "%2E";
 }
 
-ada_really_inline ADA_CONSTEXPR bool is_lowercase_hex(const char c) noexcept {
+ada_really_inline constexpr bool is_lowercase_hex(const char c) noexcept {
   return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f');
 }
 
-ADA_CONSTEXPR static char hex_to_binary_table[] = {
+constexpr static char hex_to_binary_table[] = {
     0,  1,  2,  3,  4, 5, 6, 7, 8, 9, 0, 0,  0,  0,  0,  0,  0, 10, 11,
     12, 13, 14, 15, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0,  0,  0,  0, 0,  0,
     0,  0,  0,  0,  0, 0, 0, 0, 0, 0, 0, 10, 11, 12, 13, 14, 15};
-unsigned ADA_CONSTEXPR convert_hex_to_binary(const char c) noexcept {
+unsigned constexpr convert_hex_to_binary(const char c) noexcept {
   return hex_to_binary_table[c - '0'];
 }
 
@@ -10905,7 +10905,7 @@ bool percent_encode(const std::string_view input, const uint8_t character_set[],
     ada_log("percent_encode encoding not needed.");
     return false;
   }
-  if ADA_CONSTEXPR (!append) {
+  if constexpr (!append) {
     out.clear();
   }
   ada_log("percent_encode appending ", std::distance(input.begin(), pointer),
@@ -11269,7 +11269,7 @@ ada_really_inline void remove_ascii_tab_or_newline(
   std::erase_if(input, ada::unicode::is_ascii_tab_or_newline);
 }
 
-ada_really_inline ADA_CONSTEXPR std::string_view substring(std::string_view input,
+ada_really_inline constexpr std::string_view substring(std::string_view input,
                                                        size_t pos) noexcept {
   ADA_ASSERT_TRUE(pos <= input.size());
   // The following is safer but unneeded if we have the above line:
@@ -11478,7 +11478,7 @@ ada_really_inline size_t find_next_host_delimiter_special(
 }
 #else
 // : / [ \\ ?
-static ADA_CONSTEXPR std::array<uint8_t, 256> special_host_delimiters =
+static constexpr std::array<uint8_t, 256> special_host_delimiters =
     []() consteval {
       std::array<uint8_t, 256> result{};
       for (int i : {':', '/', '[', '\\', '?'}) {
@@ -11658,7 +11658,7 @@ ada_really_inline size_t find_next_host_delimiter(std::string_view view,
 }
 #else
 // : / [ ?
-static ADA_CONSTEXPR std::array<uint8_t, 256> host_delimiters = []() consteval {
+static constexpr std::array<uint8_t, 256> host_delimiters = []() consteval {
   std::array<uint8_t, 256> result{};
   for (int i : {':', '/', '?', '['}) {
     result[i] = 1;
@@ -11777,10 +11777,10 @@ ada_really_inline void parse_prepared_path(std::string_view input,
   // If it is special, we check that we have no dot, no %,  no \ and no
   // character needing percent encoding. Otherwise, we check that we have no %,
   // no dot, and no character needing percent encoding.
-  ADA_CONSTEXPR uint8_t need_encoding = 1;
-  ADA_CONSTEXPR uint8_t backslash_char = 2;
-  ADA_CONSTEXPR uint8_t dot_char = 4;
-  ADA_CONSTEXPR uint8_t percent_char = 8;
+  constexpr uint8_t need_encoding = 1;
+  constexpr uint8_t backslash_char = 2;
+  constexpr uint8_t dot_char = 4;
+  constexpr uint8_t percent_char = 8;
   bool special = type != ada::scheme::NOT_SPECIAL;
   bool may_need_slow_file_handling = (type == ada::scheme::type::FILE &&
                                       checkers::is_windows_drive_letter(input));
@@ -11957,7 +11957,7 @@ ada_really_inline void strip_trailing_spaces_from_opaque_path(
 }
 
 // @ / \\ ?
-static ADA_CONSTEXPR std::array<uint8_t, 256> authority_delimiter_special =
+static constexpr std::array<uint8_t, 256> authority_delimiter_special =
     []() consteval {
       std::array<uint8_t, 256> result{};
       for (uint8_t i : {'@', '/', '\\', '?'}) {
@@ -11979,7 +11979,7 @@ find_authority_delimiter_special(std::string_view view) noexcept {
 }
 
 // @ / ?
-static ADA_CONSTEXPR std::array<uint8_t, 256> authority_delimiter = []() consteval {
+static constexpr std::array<uint8_t, 256> authority_delimiter = []() consteval {
   std::array<uint8_t, 256> result{};
   for (uint8_t i : {'@', '/', '?'}) {
     result[i] = 1;
@@ -12346,7 +12346,7 @@ ada_really_inline bool url::parse_scheme(const std::string_view input) {
    *http, https), in which case, we can go really fast.
    **/
   if (is_input_special) {  // fast path!!!
-    if ADA_CONSTEXPR (has_state_override) {
+    if constexpr (has_state_override) {
       // If url's scheme is not a special scheme and buffer is a special scheme,
       // then return.
       if (is_special() != is_input_special) {
@@ -12370,7 +12370,7 @@ ada_really_inline bool url::parse_scheme(const std::string_view input) {
 
     type = parsed_type;
 
-    if ADA_CONSTEXPR (has_state_override) {
+    if constexpr (has_state_override) {
       // This is uncommon.
       uint16_t urls_scheme_port = get_special_port();
 
@@ -12390,7 +12390,7 @@ ada_really_inline bool url::parse_scheme(const std::string_view input) {
     // bool is_ascii =
     unicode::to_lower_ascii(_buffer.data(), _buffer.size());
 
-    if ADA_CONSTEXPR (has_state_override) {
+    if constexpr (has_state_override) {
       // If url's scheme is a special scheme and buffer is not a special scheme,
       // then return. If url's scheme is not a special scheme and buffer is a
       // special scheme, then return.
@@ -12414,7 +12414,7 @@ ada_really_inline bool url::parse_scheme(const std::string_view input) {
 
     set_scheme(std::move(_buffer));
 
-    if ADA_CONSTEXPR (has_state_override) {
+    if constexpr (has_state_override) {
       // This is uncommon.
       uint16_t urls_scheme_port = get_special_port();
 
@@ -12710,7 +12710,7 @@ bool url::set_host_or_hostname(const std::string_view input) {
 
       // If state override is given and state override is hostname state, then
       // return failure.
-      if ADA_CONSTEXPR (override_hostname) {
+      if constexpr (override_hostname) {
         return false;
       }
 
@@ -12943,11 +12943,11 @@ result_type parse_url_impl(std::string_view user_input,
                            const result_type* base_url) {
   // We can specialize the implementation per type.
   // Important: result_type_is_ada_url is evaluated at *compile time*. This
-  // means that doing if ADA_CONSTEXPR(result_type_is_ada_url) { something } else {
+  // means that doing if constexpr(result_type_is_ada_url) { something } else {
   // something else } is free (at runtime). This means that ada::url_aggregator
   // and ada::url **do not have to support the exact same API**.
-  ADA_CONSTEXPR bool result_type_is_ada_url = std::is_same_v<url, result_type>;
-  ADA_CONSTEXPR bool result_type_is_ada_url_aggregator =
+  constexpr bool result_type_is_ada_url = std::is_same_v<url, result_type>;
+  constexpr bool result_type_is_ada_url_aggregator =
       std::is_same_v<url_aggregator, result_type>;
   static_assert(result_type_is_ada_url ||
                 result_type_is_ada_url_aggregator);  // We don't support
@@ -12974,7 +12974,7 @@ result_type parse_url_impl(std::string_view user_input,
   if (!url.is_valid) {
     return url;
   }
-  if ADA_CONSTEXPR (result_type_is_ada_url_aggregator && store_values) {
+  if constexpr (result_type_is_ada_url_aggregator && store_values) {
     // Most of the time, we just need user_input.size().
     // In some instances, we may need a bit more.
     ///////////////////////////
@@ -13056,7 +13056,7 @@ result_type parse_url_impl(std::string_view user_input,
             (url_data[input_position] == ':')) {
           ada_log("SCHEME the scheme should be ",
                   url_data.substr(0, input_position));
-          if ADA_CONSTEXPR (result_type_is_ada_url) {
+          if constexpr (result_type_is_ada_url) {
             if (!url.parse_scheme(url_data.substr(0, input_position))) {
               return url;
             }
@@ -13130,7 +13130,7 @@ result_type parse_url_impl(std::string_view user_input,
           url.copy_scheme(*base_url);
           url.has_opaque_path = base_url->has_opaque_path;
 
-          if ADA_CONSTEXPR (result_type_is_ada_url) {
+          if constexpr (result_type_is_ada_url) {
             url.path = base_url->path;
             url.query = base_url->query;
           } else {
@@ -13190,13 +13190,13 @@ result_type parse_url_impl(std::string_view user_input,
             // If atSignSeen is true, then prepend "%40" to buffer.
             if (at_sign_seen) {
               if (password_token_seen) {
-                if ADA_CONSTEXPR (result_type_is_ada_url) {
+                if constexpr (result_type_is_ada_url) {
                   url.password += "%40";
                 } else {
                   url.append_base_password("%40");
                 }
               } else {
-                if ADA_CONSTEXPR (result_type_is_ada_url) {
+                if constexpr (result_type_is_ada_url) {
                   url.username += "%40";
                 } else {
                   url.append_base_username("%40");
@@ -13211,9 +13211,9 @@ result_type parse_url_impl(std::string_view user_input,
               password_token_seen =
                   password_token_location != std::string_view::npos;
 
-              if ADA_CONSTEXPR (store_values) {
+              if constexpr (store_values) {
                 if (!password_token_seen) {
-                  if ADA_CONSTEXPR (result_type_is_ada_url) {
+                  if constexpr (result_type_is_ada_url) {
                     url.username += unicode::percent_encode(
                         authority_view,
                         character_sets::USERINFO_PERCENT_ENCODE);
@@ -13223,7 +13223,7 @@ result_type parse_url_impl(std::string_view user_input,
                         character_sets::USERINFO_PERCENT_ENCODE));
                   }
                 } else {
-                  if ADA_CONSTEXPR (result_type_is_ada_url) {
+                  if constexpr (result_type_is_ada_url) {
                     url.username += unicode::percent_encode(
                         authority_view.substr(0, password_token_location),
                         character_sets::USERINFO_PERCENT_ENCODE);
@@ -13240,8 +13240,8 @@ result_type parse_url_impl(std::string_view user_input,
                   }
                 }
               }
-            } else if ADA_CONSTEXPR (store_values) {
-              if ADA_CONSTEXPR (result_type_is_ada_url) {
+            } else if constexpr (store_values) {
+              if constexpr (result_type_is_ada_url) {
                 url.password += unicode::percent_encode(
                     authority_view, character_sets::USERINFO_PERCENT_ENCODE);
               } else {
@@ -13267,7 +13267,7 @@ result_type parse_url_impl(std::string_view user_input,
             break;
           }
           if (end_of_authority == input_size) {
-            if ADA_CONSTEXPR (store_values) {
+            if constexpr (store_values) {
               if (fragment.has_value()) {
                 url.update_unencoded_base_hash(*fragment);
               }
@@ -13342,7 +13342,7 @@ result_type parse_url_impl(std::string_view user_input,
           // password, url's host to base's host, url's port to base's port,
           // url's path to a clone of base's path, and url's query to base's
           // query.
-          if ADA_CONSTEXPR (result_type_is_ada_url) {
+          if constexpr (result_type_is_ada_url) {
             url.username = base_url->username;
             url.password = base_url->password;
             url.host = base_url->host;
@@ -13374,7 +13374,7 @@ result_type parse_url_impl(std::string_view user_input,
           else if (input_position != input_size) {
             // Set url's query to null.
             url.clear_search();
-            if ADA_CONSTEXPR (result_type_is_ada_url) {
+            if constexpr (result_type_is_ada_url) {
               // Shorten url's path.
               helpers::shorten_path(url.path, url.type);
             } else {
@@ -13414,7 +13414,7 @@ result_type parse_url_impl(std::string_view user_input,
         // - url's port to base's port,
         // - state to path state, and then, decrease pointer by 1.
         else {
-          if ADA_CONSTEXPR (result_type_is_ada_url) {
+          if constexpr (result_type_is_ada_url) {
             url.username = base_url->username;
             url.password = base_url->password;
             url.host = base_url->host;
@@ -13462,7 +13462,7 @@ result_type parse_url_impl(std::string_view user_input,
       }
       case state::QUERY: {
         ada_log("QUERY ", helpers::substring(url_data, input_position));
-        if ADA_CONSTEXPR (store_values) {
+        if constexpr (store_values) {
           // Let queryPercentEncodeSet be the special-query percent-encode set
           // if url is special; otherwise the query percent-encode set.
           const uint8_t* query_percent_encode_set =
@@ -13584,7 +13584,7 @@ result_type parse_url_impl(std::string_view user_input,
           // Optimization: Avoiding going into PATH state improves the
           // performance of urls ending with /.
           if (input_position == input_size) {
-            if ADA_CONSTEXPR (store_values) {
+            if constexpr (store_values) {
               url.update_base_pathname("/");
               if (fragment.has_value()) {
                 url.update_unencoded_base_hash(*fragment);
@@ -13634,8 +13634,8 @@ result_type parse_url_impl(std::string_view user_input,
         } else {
           input_position = input_size + 1;
         }
-        if ADA_CONSTEXPR (store_values) {
-          if ADA_CONSTEXPR (result_type_is_ada_url) {
+        if constexpr (store_values) {
+          if constexpr (result_type_is_ada_url) {
             helpers::parse_prepared_path(view, url.type, url.path);
           } else {
             url.consume_prepared_path(view);
@@ -13662,7 +13662,7 @@ result_type parse_url_impl(std::string_view user_input,
           // base_url_has_value() is true.
           if (base_url != nullptr && base_url->type == scheme::type::FILE) {
             // Set url's host to base's host.
-            if ADA_CONSTEXPR (result_type_is_ada_url) {
+            if constexpr (result_type_is_ada_url) {
               url.host = base_url->host;
             } else {
               url.update_host_to_base_host(base_url->get_host());
@@ -13682,7 +13682,7 @@ result_type parse_url_impl(std::string_view user_input,
                 }
                 if (checkers::is_normalized_windows_drive_letter(
                         first_base_url_path)) {
-                  if ADA_CONSTEXPR (result_type_is_ada_url) {
+                  if constexpr (result_type_is_ada_url) {
                     url.path += '/';
                     url.path += first_base_url_path;
                   } else {
@@ -13713,7 +13713,7 @@ result_type parse_url_impl(std::string_view user_input,
           state = state::PATH;
         } else if (file_host_buffer.empty()) {
           // Set url's host to the empty string.
-          if ADA_CONSTEXPR (result_type_is_ada_url) {
+          if constexpr (result_type_is_ada_url) {
             url.host = "";
           } else {
             url.update_base_hostname("");
@@ -13729,7 +13729,7 @@ result_type parse_url_impl(std::string_view user_input,
             return url;
           }
 
-          if ADA_CONSTEXPR (result_type_is_ada_url) {
+          if constexpr (result_type_is_ada_url) {
             // If host is "localhost", then set host to the empty string.
             if (url.host.has_value() && url.host.value() == "localhost") {
               url.host = "";
@@ -13751,7 +13751,7 @@ result_type parse_url_impl(std::string_view user_input,
         std::string_view file_view = url_data.substr(input_position);
 
         url.set_protocol_as_file();
-        if ADA_CONSTEXPR (result_type_is_ada_url) {
+        if constexpr (result_type_is_ada_url) {
           // Set url's host to the empty string.
           url.host = "";
         } else {
@@ -13770,7 +13770,7 @@ result_type parse_url_impl(std::string_view user_input,
           // Set url's host to base's host, url's path to a clone of base's
           // path, and url's query to base's query.
           ada_log("FILE base non-null");
-          if ADA_CONSTEXPR (result_type_is_ada_url) {
+          if constexpr (result_type_is_ada_url) {
             url.host = base_url->host;
             url.path = base_url->path;
             url.query = base_url->query;
@@ -13793,7 +13793,7 @@ result_type parse_url_impl(std::string_view user_input,
             // If the code point substring from pointer to the end of input does
             // not start with a Windows drive letter, then shorten url's path.
             if (!checkers::is_windows_drive_letter(file_view)) {
-              if ADA_CONSTEXPR (result_type_is_ada_url) {
+              if constexpr (result_type_is_ada_url) {
                 helpers::shorten_path(url.path, url.type);
               } else {
                 std::string_view path = url.get_pathname();
@@ -13828,7 +13828,7 @@ result_type parse_url_impl(std::string_view user_input,
         unreachable();
     }
   }
-  if ADA_CONSTEXPR (store_values) {
+  if constexpr (store_values) {
     if (fragment.has_value()) {
       url.update_unencoded_base_hash(*fragment);
     }
@@ -13926,7 +13926,7 @@ template <bool has_state_override>
    *http, https), in which case, we can go really fast.
    **/
   if (is_input_special) {  // fast path!!!
-    if ADA_CONSTEXPR (has_state_override) {
+    if constexpr (has_state_override) {
       // If url's scheme is not a special scheme and buffer is a special scheme,
       // then return.
       if (is_special() != is_input_special) {
@@ -13951,7 +13951,7 @@ template <bool has_state_override>
     type = parsed_type;
     set_scheme_from_view_with_colon(input_with_colon);
 
-    if ADA_CONSTEXPR (has_state_override) {
+    if constexpr (has_state_override) {
       // This is uncommon.
       uint16_t urls_scheme_port = get_special_port();
 
@@ -13968,7 +13968,7 @@ template <bool has_state_override>
     // need to check the return value.
     unicode::to_lower_ascii(_buffer.data(), _buffer.size());
 
-    if ADA_CONSTEXPR (has_state_override) {
+    if constexpr (has_state_override) {
       // If url's scheme is a special scheme and buffer is not a special scheme,
       // then return. If url's scheme is not a special scheme and buffer is a
       // special scheme, then return.
@@ -13993,7 +13993,7 @@ template <bool has_state_override>
 
     set_scheme(_buffer);
 
-    if ADA_CONSTEXPR (has_state_override) {
+    if constexpr (has_state_override) {
       // This is uncommon.
       uint16_t urls_scheme_port = get_special_port();
 
@@ -14456,7 +14456,7 @@ bool url_aggregator::set_host_or_hostname(const std::string_view input) {
 
       // If state override is given and state override is hostname state, then
       // return failure.
-      if ADA_CONSTEXPR (override_hostname) {
+      if constexpr (override_hostname) {
         return false;
       }
 
@@ -15333,10 +15333,10 @@ inline void url_aggregator::consume_prepared_path(std::string_view input) {
   // If it is special, we check that we have no dot, no %,  no \ and no
   // character needing percent encoding. Otherwise, we check that we have no %,
   // no dot, and no character needing percent encoding.
-  ADA_CONSTEXPR uint8_t need_encoding = 1;
-  ADA_CONSTEXPR uint8_t backslash_char = 2;
-  ADA_CONSTEXPR uint8_t dot_char = 4;
-  ADA_CONSTEXPR uint8_t percent_char = 8;
+  constexpr uint8_t need_encoding = 1;
+  constexpr uint8_t backslash_char = 2;
+  constexpr uint8_t dot_char = 4;
+  constexpr uint8_t percent_char = 8;
   bool special = type != ada::scheme::NOT_SPECIAL;
   bool may_need_slow_file_handling = (type == ada::scheme::type::FILE &&
                                       checkers::is_windows_drive_letter(input));
@@ -16633,7 +16633,7 @@ std::string escape_pattern_string(std::string_view input) {
   result.reserve(input.size());
 
   // TODO: Optimization opportunity: Use a lookup table
-  ADA_CONSTEXPR auto should_escape = [](const char c) {
+  constexpr auto should_escape = [](const char c) {
     return c == '+' || c == '*' || c == '?' || c == ':' || c == '{' ||
            c == '}' || c == '(' || c == ')' || c == '\\';
   };
@@ -16653,7 +16653,7 @@ std::string escape_pattern_string(std::string_view input) {
 }
 
 namespace {
-ADA_CONSTEXPR std::array<uint8_t, 256> escape_regexp_table = []() consteval {
+constexpr std::array<uint8_t, 256> escape_regexp_table = []() consteval {
   std::array<uint8_t, 256> out{};
   for (auto& c : {'.', '+', '*', '?', '^', '$', '{', '}', '(', ')', '[', ']',
                   '|', '/', '\\'}) {
@@ -16662,7 +16662,7 @@ ADA_CONSTEXPR std::array<uint8_t, 256> escape_regexp_table = []() consteval {
   return out;
 }();
 
-ADA_CONSTEXPR bool should_escape_regexp_char(char c) {
+constexpr bool should_escape_regexp_char(char c) {
   return escape_regexp_table[(uint8_t)c];
 }
 }  // namespace
@@ -16694,7 +16694,7 @@ std::string process_base_url_string(std::string_view input,
   return escape_pattern_string(input);
 }
 
-ADA_CONSTEXPR bool is_absolute_pathname(
+constexpr bool is_absolute_pathname(
     std::string_view input, url_pattern_init::process_type type) noexcept {
   // If input is the empty string, then return false.
   if (input.empty()) [[unlikely]] {
