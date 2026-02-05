@@ -18,6 +18,6 @@ COPY . .
 # Disable maglev for fibers compatibility - maglev uses thread_local and stack manipulation
 # that conflicts with fiber context switching
 RUN ./configure --experimental-enable-pointer-compression --v8-disable-maglev
-RUN make -j4 install DESTDIR=./node-install
+RUN make -j1 install DESTDIR=./node-install
 
 CMD ["bash"]
