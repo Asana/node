@@ -109,6 +109,20 @@ class V8_EXPORT Template : public Data {
       SideEffectType setter_side_effect_type = SideEffectType::kHasSideEffect);
 
   /**
+   * Compatibility shim for node-fibers: SetAccessor() now calls
+   * SetNativeDataProperty() internally.
+   */
+  void SetAccessor(
+      Local<Name> name, AccessorNameGetterCallback getter,
+      AccessorNameSetterCallback setter = nullptr,
+      Local<Value> data = Local<Value>(), PropertyAttribute attribute = None,
+      SideEffectType getter_side_effect_type = SideEffectType::kHasSideEffect,
+      SideEffectType setter_side_effect_type = SideEffectType::kHasSideEffect) {
+    SetNativeDataProperty(name, getter, setter, data, attribute,
+                          getter_side_effect_type, setter_side_effect_type);
+  }
+
+  /**
    * Like SetNativeDataProperty, but V8 will replace the native data property
    * with a real data property on first access.
    */

@@ -126,6 +126,12 @@ class FunctionCallbackInfo {
   V8_INLINE Local<Value> operator[](int i) const;
   /** Returns the receiver. This corresponds to the "this" value. */
   V8_INLINE Local<Object> This() const;
+  /**
+   * Compatibility shim for node-fibers: Holder() now returns This().
+   * In older V8, Holder() returned the object holding the property.
+   * For simple cases (no prototype chain lookups), This() == Holder().
+   */
+  V8_INLINE Local<Object> Holder() const { return This(); }
   /** For construct calls, this returns the "new.target" value. */
   V8_INLINE Local<Value> NewTarget() const;
   /** Indicates whether this is a regular call or a construct call. */

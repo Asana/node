@@ -365,6 +365,22 @@ class V8_EXPORT Object : public Value {
       SideEffectType setter_side_effect_type = SideEffectType::kHasSideEffect);
 
   /**
+   * Compatibility shim for node-fibers: SetAccessor() now calls
+   * SetNativeDataProperty() internally.
+   */
+  V8_WARN_UNUSED_RESULT Maybe<bool> SetAccessor(
+      Local<Context> context, Local<Name> name,
+      AccessorNameGetterCallback getter,
+      AccessorNameSetterCallback setter = nullptr,
+      Local<Value> data = Local<Value>(), PropertyAttribute attributes = None,
+      SideEffectType getter_side_effect_type = SideEffectType::kHasSideEffect,
+      SideEffectType setter_side_effect_type = SideEffectType::kHasSideEffect) {
+    return SetNativeDataProperty(context, name, getter, setter, data,
+                                 attributes, getter_side_effect_type,
+                                 setter_side_effect_type);
+  }
+
+  /**
    * Attempts to create a property with the given name which behaves like a data
    * property, except that the provided getter is invoked (and provided with the
    * data value) to supply its value the first time it is read. After the
