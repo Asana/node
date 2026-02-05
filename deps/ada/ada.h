@@ -7,6 +7,17 @@
 #ifndef ADA_H
 #define ADA_H
 
+/* Compatibility for ADA_CONSTEXPR std::string operations.
+ * Older libstdc++ (GCC < 12) doesn't have ADA_CONSTEXPR std::string.
+ */
+#ifndef ADA_CONSTEXPR
+#if defined(__cpp_lib_ADA_CONSTEXPR_string) && __cpp_lib_ADA_CONSTEXPR_string >= 201907L
+#define ADA_CONSTEXPR ADA_CONSTEXPR
+#else
+#define ADA_CONSTEXPR /* nothing */
+#endif
+#endif
+
 /* begin file include/ada/ada_idna.h */
 /* auto-generated on 2025-03-08 13:17:11 -0500. Do not edit! */
 /* begin file include/idna.h */
@@ -127,8 +138,8 @@ std::string to_ascii(std::string_view ut8_string);
 // https://url.spec.whatwg.org/#forbidden-domain-code-point
 bool contains_forbidden_domain_code_point(std::string_view ascii_string);
 
-bool constexpr is_ascii(std::u32string_view view);
-bool constexpr is_ascii(std::string_view view);
+bool ADA_CONSTEXPR is_ascii(std::u32string_view view);
+bool ADA_CONSTEXPR is_ascii(std::string_view view);
 
 }  // namespace ada::idna
 
@@ -470,7 +481,7 @@ namespace ada {
  * @brief Includes the definitions for unicode character sets.
  */
 namespace ada::character_sets {
-ada_really_inline constexpr bool bit_at(const uint8_t a[], uint8_t i);
+ada_really_inline ADA_CONSTEXPR bool bit_at(const uint8_t a[], uint8_t i);
 }  // namespace ada::character_sets
 
 #endif  // ADA_CHARACTER_SETS_H
@@ -493,7 +504,7 @@ ada_really_inline constexpr bool bit_at(const uint8_t a[], uint8_t i);
  */
 namespace ada::character_sets {
 
-constexpr char hex[1024] =
+ADA_CONSTEXPR char hex[1024] =
     "%00\0%01\0%02\0%03\0%04\0%05\0%06\0%07\0"
     "%08\0%09\0%0A\0%0B\0%0C\0%0D\0%0E\0%0F\0"
     "%10\0%11\0%12\0%13\0%14\0%15\0%16\0%17\0"
@@ -527,7 +538,7 @@ constexpr char hex[1024] =
     "%F0\0%F1\0%F2\0%F3\0%F4\0%F5\0%F6\0%F7\0"
     "%F8\0%F9\0%FA\0%FB\0%FC\0%FD\0%FE\0%FF";
 
-constexpr uint8_t C0_CONTROL_PERCENT_ENCODE[32] = {
+ADA_CONSTEXPR uint8_t C0_CONTROL_PERCENT_ENCODE[32] = {
     // 00     01     02     03     04     05     06     07
     0x01 | 0x02 | 0x04 | 0x08 | 0x10 | 0x20 | 0x40 | 0x80,
     // 08     09     0A     0B     0C     0D     0E     0F
@@ -593,7 +604,7 @@ constexpr uint8_t C0_CONTROL_PERCENT_ENCODE[32] = {
     // F8     F9     FA     FB     FC     FD     FE     FF
     0x01 | 0x02 | 0x04 | 0x08 | 0x10 | 0x20 | 0x40 | 0x80};
 
-constexpr uint8_t SPECIAL_QUERY_PERCENT_ENCODE[32] = {
+ADA_CONSTEXPR uint8_t SPECIAL_QUERY_PERCENT_ENCODE[32] = {
     // 00     01     02     03     04     05     06     07
     0x01 | 0x02 | 0x04 | 0x08 | 0x10 | 0x20 | 0x40 | 0x80,
     // 08     09     0A     0B     0C     0D     0E     0F
@@ -659,7 +670,7 @@ constexpr uint8_t SPECIAL_QUERY_PERCENT_ENCODE[32] = {
     // F8     F9     FA     FB     FC     FD     FE     FF
     0x01 | 0x02 | 0x04 | 0x08 | 0x10 | 0x20 | 0x40 | 0x80};
 
-constexpr uint8_t QUERY_PERCENT_ENCODE[32] = {
+ADA_CONSTEXPR uint8_t QUERY_PERCENT_ENCODE[32] = {
     // 00     01     02     03     04     05     06     07
     0x01 | 0x02 | 0x04 | 0x08 | 0x10 | 0x20 | 0x40 | 0x80,
     // 08     09     0A     0B     0C     0D     0E     0F
@@ -725,7 +736,7 @@ constexpr uint8_t QUERY_PERCENT_ENCODE[32] = {
     // F8     F9     FA     FB     FC     FD     FE     FF
     0x01 | 0x02 | 0x04 | 0x08 | 0x10 | 0x20 | 0x40 | 0x80};
 
-constexpr uint8_t FRAGMENT_PERCENT_ENCODE[32] = {
+ADA_CONSTEXPR uint8_t FRAGMENT_PERCENT_ENCODE[32] = {
     // 00     01     02     03     04     05     06     07
     0x01 | 0x02 | 0x04 | 0x08 | 0x10 | 0x20 | 0x40 | 0x80,
     // 08     09     0A     0B     0C     0D     0E     0F
@@ -791,7 +802,7 @@ constexpr uint8_t FRAGMENT_PERCENT_ENCODE[32] = {
     // F8     F9     FA     FB     FC     FD     FE     FF
     0x01 | 0x02 | 0x04 | 0x08 | 0x10 | 0x20 | 0x40 | 0x80};
 
-constexpr uint8_t USERINFO_PERCENT_ENCODE[32] = {
+ADA_CONSTEXPR uint8_t USERINFO_PERCENT_ENCODE[32] = {
     // 00     01     02     03     04     05     06     07
     0x01 | 0x02 | 0x04 | 0x08 | 0x10 | 0x20 | 0x40 | 0x80,
     // 08     09     0A     0B     0C     0D     0E     0F
@@ -857,7 +868,7 @@ constexpr uint8_t USERINFO_PERCENT_ENCODE[32] = {
     // F8     F9     FA     FB     FC     FD     FE     FF
     0x01 | 0x02 | 0x04 | 0x08 | 0x10 | 0x20 | 0x40 | 0x80};
 
-constexpr uint8_t PATH_PERCENT_ENCODE[32] = {
+ADA_CONSTEXPR uint8_t PATH_PERCENT_ENCODE[32] = {
     // 00     01     02     03     04     05     06     07
     0x01 | 0x02 | 0x04 | 0x08 | 0x10 | 0x20 | 0x40 | 0x80,
     // 08     09     0A     0B     0C     0D     0E     0F
@@ -923,7 +934,7 @@ constexpr uint8_t PATH_PERCENT_ENCODE[32] = {
     // F8     F9     FA     FB     FC     FD     FE     FF
     0x01 | 0x02 | 0x04 | 0x08 | 0x10 | 0x20 | 0x40 | 0x80};
 
-constexpr uint8_t WWW_FORM_URLENCODED_PERCENT_ENCODE[32] = {
+ADA_CONSTEXPR uint8_t WWW_FORM_URLENCODED_PERCENT_ENCODE[32] = {
     // 00     01     02     03     04     05     06     07
     0x01 | 0x02 | 0x04 | 0x08 | 0x10 | 0x20 | 0x40 | 0x80,
     // 08     09     0A     0B     0C     0D     0E     0F
@@ -989,7 +1000,7 @@ constexpr uint8_t WWW_FORM_URLENCODED_PERCENT_ENCODE[32] = {
     // F8     F9     FA     FB     FC     FD     FE     FF
     0x01 | 0x02 | 0x04 | 0x08 | 0x10 | 0x20 | 0x40 | 0x80};
 
-ada_really_inline constexpr bool bit_at(const uint8_t a[], const uint8_t i) {
+ada_really_inline ADA_CONSTEXPR bool bit_at(const uint8_t a[], const uint8_t i) {
   return !!(a[i >> 3] & (1 << (i & 7)));
 }
 
@@ -1010,14 +1021,14 @@ ada_really_inline constexpr bool bit_at(const uint8_t a[], const uint8_t i) {
 
 namespace ada::checkers {
 
-constexpr bool has_hex_prefix_unsafe(std::string_view input) {
+ADA_CONSTEXPR bool has_hex_prefix_unsafe(std::string_view input) {
   // This is actually efficient code, see has_hex_prefix for the assembly.
-  constexpr bool is_little_endian = std::endian::native == std::endian::little;
-  constexpr uint16_t word0x = 0x7830;
+  ADA_CONSTEXPR bool is_little_endian = std::endian::native == std::endian::little;
+  ADA_CONSTEXPR uint16_t word0x = 0x7830;
   uint16_t two_first_bytes =
       static_cast<uint16_t>(input[0]) |
       static_cast<uint16_t>((static_cast<uint16_t>(input[1]) << 8));
-  if constexpr (is_little_endian) {
+  if ADA_CONSTEXPR (is_little_endian) {
     two_first_bytes |= 0x2000;
   } else {
     two_first_bytes |= 0x020;
@@ -1025,26 +1036,26 @@ constexpr bool has_hex_prefix_unsafe(std::string_view input) {
   return two_first_bytes == word0x;
 }
 
-constexpr bool has_hex_prefix(std::string_view input) {
+ADA_CONSTEXPR bool has_hex_prefix(std::string_view input) {
   return input.size() >= 2 && has_hex_prefix_unsafe(input);
 }
 
-constexpr bool is_digit(char x) noexcept { return (x >= '0') & (x <= '9'); }
+ADA_CONSTEXPR bool is_digit(char x) noexcept { return (x >= '0') & (x <= '9'); }
 
-constexpr char to_lower(char x) noexcept { return (x | 0x20); }
+ADA_CONSTEXPR char to_lower(char x) noexcept { return (x | 0x20); }
 
-constexpr bool is_alpha(char x) noexcept {
+ADA_CONSTEXPR bool is_alpha(char x) noexcept {
   return (to_lower(x) >= 'a') && (to_lower(x) <= 'z');
 }
 
-constexpr bool is_windows_drive_letter(std::string_view input) noexcept {
+ADA_CONSTEXPR bool is_windows_drive_letter(std::string_view input) noexcept {
   return input.size() >= 2 &&
          (is_alpha(input[0]) && ((input[1] == ':') || (input[1] == '|'))) &&
          ((input.size() == 2) || (input[2] == '/' || input[2] == '\\' ||
                                   input[2] == '?' || input[2] == '#'));
 }
 
-constexpr bool is_normalized_windows_drive_letter(
+ADA_CONSTEXPR bool is_normalized_windows_drive_letter(
     std::string_view input) noexcept {
   return input.size() >= 2 && (is_alpha(input[0]) && (input[1] == ':'));
 }
@@ -1079,7 +1090,7 @@ namespace ada {
  * @private
  */
 template <typename... Args>
-constexpr ada_really_inline void log([[maybe_unused]] Args... args) {
+ADA_CONSTEXPR ada_really_inline void log([[maybe_unused]] Args... args) {
 #if ADA_LOGGING
   ((std::cout << "ADA_LOG: ") << ... << args) << std::endl;
 #endif  // ADA_LOGGING
@@ -1195,7 +1206,7 @@ enum type : uint8_t {
  * @param scheme
  * @return If scheme is a special scheme
  */
-ada_really_inline constexpr bool is_special(std::string_view scheme);
+ada_really_inline ADA_CONSTEXPR bool is_special(std::string_view scheme);
 
 /**
  * A special scheme is an ASCII string that is listed in the first column of the
@@ -1207,18 +1218,18 @@ ada_really_inline constexpr bool is_special(std::string_view scheme);
  * @param scheme
  * @return The special port
  */
-constexpr uint16_t get_special_port(std::string_view scheme) noexcept;
+ADA_CONSTEXPR uint16_t get_special_port(std::string_view scheme) noexcept;
 
 /**
  * Returns the port number of a special scheme.
  * @see https://url.spec.whatwg.org/#special-scheme
  */
-constexpr uint16_t get_special_port(ada::scheme::type type) noexcept;
+ADA_CONSTEXPR uint16_t get_special_port(ada::scheme::type type) noexcept;
 /**
  * Returns the scheme of an input, or NOT_SPECIAL if it's not a special scheme
  * defined by the spec.
  */
-constexpr ada::scheme::type get_scheme_type(std::string_view scheme) noexcept;
+ADA_CONSTEXPR ada::scheme::type get_scheme_type(std::string_view scheme) noexcept;
 
 }  // namespace ada::scheme
 
@@ -1285,7 +1296,7 @@ struct url_base {
    * A URL is special if its scheme is a special scheme. A URL is not special if
    * its scheme is not a special scheme.
    */
-  [[nodiscard]] ada_really_inline constexpr bool is_special() const noexcept;
+  [[nodiscard]] ada_really_inline ADA_CONSTEXPR bool is_special() const noexcept;
 
   /**
    * The origin getter steps are to return the serialization of this's URL's
@@ -1443,7 +1454,7 @@ ada_really_inline void remove_ascii_tab_or_newline(std::string& input) noexcept;
  * Return the substring from input going from index pos to the end.
  * This function cannot throw.
  */
-ada_really_inline constexpr std::string_view substring(std::string_view input,
+ada_really_inline ADA_CONSTEXPR std::string_view substring(std::string_view input,
                                                        size_t pos) noexcept;
 
 /**
@@ -1457,7 +1468,7 @@ bool overlaps(std::string_view input1, const std::string& input2) noexcept;
  * Return the substring from input going from index pos1 to the pos2 (non
  * included). The length of the substring is pos2 - pos1.
  */
-ada_really_inline constexpr std::string_view substring(std::string_view input,
+ada_really_inline ADA_CONSTEXPR std::string_view substring(std::string_view input,
                                                        size_t pos1,
                                                        size_t pos2) noexcept {
 #if ADA_DEVELOPMENT_CHECKS
@@ -1638,7 +1649,7 @@ inline int fast_digit_count(uint32_t x) noexcept {
 #define TL_EXPECTED_MSVC2015
 #define TL_EXPECTED_MSVC2015_CONSTEXPR
 #else
-#define TL_EXPECTED_MSVC2015_CONSTEXPR constexpr
+#define TL_EXPECTED_MSVC2015_CONSTEXPR ADA_CONSTEXPR
 #endif
 
 #if (defined(__GNUC__) && __GNUC__ == 4 && __GNUC_MINOR__ <= 9 && \
@@ -1657,7 +1668,7 @@ inline int fast_digit_count(uint32_t x) noexcept {
 #endif
 
 #if !defined(TL_ASSERT)
-// can't have assert in constexpr in C++11 and GCC 4.9 has a compiler bug
+// can't have assert in ADA_CONSTEXPR in C++11 and GCC 4.9 has a compiler bug
 #if (__cplusplus > 201103L) && !defined(TL_EXPECTED_GCC49)
 #include <cassert>
 #define TL_ASSERT(x) assert(x)
@@ -1721,14 +1732,14 @@ struct is_trivially_copy_constructible<std::vector<T, A>> : std::false_type {};
 #ifdef TL_EXPECTED_GCC49
 #define TL_EXPECTED_GCC49_CONSTEXPR
 #else
-#define TL_EXPECTED_GCC49_CONSTEXPR constexpr
+#define TL_EXPECTED_GCC49_CONSTEXPR ADA_CONSTEXPR
 #endif
 
 #if (__cplusplus == 201103L || defined(TL_EXPECTED_MSVC2015) || \
      defined(TL_EXPECTED_GCC49))
 #define TL_EXPECTED_11_CONSTEXPR
 #else
-#define TL_EXPECTED_11_CONSTEXPR constexpr
+#define TL_EXPECTED_11_CONSTEXPR ADA_CONSTEXPR
 #endif
 
 namespace tl {
@@ -1742,7 +1753,7 @@ class monostate {};
 struct in_place_t {
   explicit in_place_t() = default;
 };
-static constexpr in_place_t in_place{};
+static ADA_CONSTEXPR in_place_t in_place{};
 #endif
 
 template <class E>
@@ -1751,25 +1762,25 @@ class unexpected {
   static_assert(!std::is_same<E, void>::value, "E must not be void");
 
   unexpected() = delete;
-  constexpr explicit unexpected(const E &e) : m_val(e) {}
+  ADA_CONSTEXPR explicit unexpected(const E &e) : m_val(e) {}
 
-  constexpr explicit unexpected(E &&e) : m_val(std::move(e)) {}
+  ADA_CONSTEXPR explicit unexpected(E &&e) : m_val(std::move(e)) {}
 
   template <class... Args, typename std::enable_if<std::is_constructible<
                                E, Args &&...>::value>::type * = nullptr>
-  constexpr explicit unexpected(Args &&...args)
+  ADA_CONSTEXPR explicit unexpected(Args &&...args)
       : m_val(std::forward<Args>(args)...) {}
   template <
       class U, class... Args,
       typename std::enable_if<std::is_constructible<
           E, std::initializer_list<U> &, Args &&...>::value>::type * = nullptr>
-  constexpr explicit unexpected(std::initializer_list<U> l, Args &&...args)
+  ADA_CONSTEXPR explicit unexpected(std::initializer_list<U> l, Args &&...args)
       : m_val(l, std::forward<Args>(args)...) {}
 
-  constexpr const E &value() const & { return m_val; }
+  ADA_CONSTEXPR const E &value() const & { return m_val; }
   TL_EXPECTED_11_CONSTEXPR E &value() & { return m_val; }
   TL_EXPECTED_11_CONSTEXPR E &&value() && { return std::move(m_val); }
-  constexpr const E &&value() const && { return std::move(m_val); }
+  ADA_CONSTEXPR const E &&value() const && { return std::move(m_val); }
 
  private:
   E m_val;
@@ -1781,27 +1792,27 @@ unexpected(E) -> unexpected<E>;
 #endif
 
 template <class E>
-constexpr bool operator==(const unexpected<E> &lhs, const unexpected<E> &rhs) {
+ADA_CONSTEXPR bool operator==(const unexpected<E> &lhs, const unexpected<E> &rhs) {
   return lhs.value() == rhs.value();
 }
 template <class E>
-constexpr bool operator!=(const unexpected<E> &lhs, const unexpected<E> &rhs) {
+ADA_CONSTEXPR bool operator!=(const unexpected<E> &lhs, const unexpected<E> &rhs) {
   return lhs.value() != rhs.value();
 }
 template <class E>
-constexpr bool operator<(const unexpected<E> &lhs, const unexpected<E> &rhs) {
+ADA_CONSTEXPR bool operator<(const unexpected<E> &lhs, const unexpected<E> &rhs) {
   return lhs.value() < rhs.value();
 }
 template <class E>
-constexpr bool operator<=(const unexpected<E> &lhs, const unexpected<E> &rhs) {
+ADA_CONSTEXPR bool operator<=(const unexpected<E> &lhs, const unexpected<E> &rhs) {
   return lhs.value() <= rhs.value();
 }
 template <class E>
-constexpr bool operator>(const unexpected<E> &lhs, const unexpected<E> &rhs) {
+ADA_CONSTEXPR bool operator>(const unexpected<E> &lhs, const unexpected<E> &rhs) {
   return lhs.value() > rhs.value();
 }
 template <class E>
-constexpr bool operator>=(const unexpected<E> &lhs, const unexpected<E> &rhs) {
+ADA_CONSTEXPR bool operator>=(const unexpected<E> &lhs, const unexpected<E> &rhs) {
   return lhs.value() >= rhs.value();
 }
 
@@ -1813,7 +1824,7 @@ unexpected<typename std::decay<E>::type> make_unexpected(E &&e) {
 struct unexpect_t {
   unexpect_t() = default;
 };
-static constexpr unexpect_t unexpect{};
+static ADA_CONSTEXPR unexpect_t unexpect{};
 
 namespace detail {
 template <typename E>
@@ -1899,7 +1910,7 @@ template <
                              is_const_or_const_ref<Args...>::value)>,
 #endif
     typename = enable_if_t<std::is_member_pointer<decay_t<Fn>>::value>, int = 0>
-constexpr auto invoke(Fn &&f, Args &&...args) noexcept(
+ADA_CONSTEXPR auto invoke(Fn &&f, Args &&...args) noexcept(
     noexcept(std::mem_fn(f)(std::forward<Args>(args)...)))
     -> decltype(std::mem_fn(f)(std::forward<Args>(args)...)) {
   return std::mem_fn(f)(std::forward<Args>(args)...);
@@ -1907,7 +1918,7 @@ constexpr auto invoke(Fn &&f, Args &&...args) noexcept(
 
 template <typename Fn, typename... Args,
           typename = enable_if_t<!std::is_member_pointer<decay_t<Fn>>::value>>
-constexpr auto invoke(Fn &&f, Args &&...args) noexcept(
+ADA_CONSTEXPR auto invoke(Fn &&f, Args &&...args) noexcept(
     noexcept(std::forward<Fn>(f)(std::forward<Args>(args)...)))
     -> decltype(std::forward<Fn>(f)(std::forward<Args>(args)...)) {
   return std::forward<Fn>(f)(std::forward<Args>(args)...);
@@ -2059,7 +2070,7 @@ using is_move_assignable_or_void = is_void_or<T, std::is_move_assignable<T>>;
 
 namespace detail {
 struct no_init_t {};
-static constexpr no_init_t no_init{};
+static ADA_CONSTEXPR no_init_t no_init{};
 
 // Implements the storage of the values, and ensures that the destructor is
 // trivial if it can be.
@@ -2070,31 +2081,31 @@ static constexpr no_init_t no_init{};
 template <class T, class E, bool = std::is_trivially_destructible<T>::value,
           bool = std::is_trivially_destructible<E>::value>
 struct expected_storage_base {
-  constexpr expected_storage_base() : m_val(T{}), m_has_val(true) {}
-  constexpr expected_storage_base(no_init_t) : m_no_init(), m_has_val(false) {}
+  ADA_CONSTEXPR expected_storage_base() : m_val(T{}), m_has_val(true) {}
+  ADA_CONSTEXPR expected_storage_base(no_init_t) : m_no_init(), m_has_val(false) {}
 
   template <class... Args,
             detail::enable_if_t<std::is_constructible<T, Args &&...>::value> * =
                 nullptr>
-  constexpr expected_storage_base(in_place_t, Args &&...args)
+  ADA_CONSTEXPR expected_storage_base(in_place_t, Args &&...args)
       : m_val(std::forward<Args>(args)...), m_has_val(true) {}
 
   template <class U, class... Args,
             detail::enable_if_t<std::is_constructible<
                 T, std::initializer_list<U> &, Args &&...>::value> * = nullptr>
-  constexpr expected_storage_base(in_place_t, std::initializer_list<U> il,
+  ADA_CONSTEXPR expected_storage_base(in_place_t, std::initializer_list<U> il,
                                   Args &&...args)
       : m_val(il, std::forward<Args>(args)...), m_has_val(true) {}
   template <class... Args,
             detail::enable_if_t<std::is_constructible<E, Args &&...>::value> * =
                 nullptr>
-  constexpr explicit expected_storage_base(unexpect_t, Args &&...args)
+  ADA_CONSTEXPR explicit expected_storage_base(unexpect_t, Args &&...args)
       : m_unexpect(std::forward<Args>(args)...), m_has_val(false) {}
 
   template <class U, class... Args,
             detail::enable_if_t<std::is_constructible<
                 E, std::initializer_list<U> &, Args &&...>::value> * = nullptr>
-  constexpr explicit expected_storage_base(unexpect_t,
+  ADA_CONSTEXPR explicit expected_storage_base(unexpect_t,
                                            std::initializer_list<U> il,
                                            Args &&...args)
       : m_unexpect(il, std::forward<Args>(args)...), m_has_val(false) {}
@@ -2118,31 +2129,31 @@ struct expected_storage_base {
 // so the destructor of the `expected` can be trivial.
 template <class T, class E>
 struct expected_storage_base<T, E, true, true> {
-  constexpr expected_storage_base() : m_val(T{}), m_has_val(true) {}
-  constexpr expected_storage_base(no_init_t) : m_no_init(), m_has_val(false) {}
+  ADA_CONSTEXPR expected_storage_base() : m_val(T{}), m_has_val(true) {}
+  ADA_CONSTEXPR expected_storage_base(no_init_t) : m_no_init(), m_has_val(false) {}
 
   template <class... Args,
             detail::enable_if_t<std::is_constructible<T, Args &&...>::value> * =
                 nullptr>
-  constexpr expected_storage_base(in_place_t, Args &&...args)
+  ADA_CONSTEXPR expected_storage_base(in_place_t, Args &&...args)
       : m_val(std::forward<Args>(args)...), m_has_val(true) {}
 
   template <class U, class... Args,
             detail::enable_if_t<std::is_constructible<
                 T, std::initializer_list<U> &, Args &&...>::value> * = nullptr>
-  constexpr expected_storage_base(in_place_t, std::initializer_list<U> il,
+  ADA_CONSTEXPR expected_storage_base(in_place_t, std::initializer_list<U> il,
                                   Args &&...args)
       : m_val(il, std::forward<Args>(args)...), m_has_val(true) {}
   template <class... Args,
             detail::enable_if_t<std::is_constructible<E, Args &&...>::value> * =
                 nullptr>
-  constexpr explicit expected_storage_base(unexpect_t, Args &&...args)
+  ADA_CONSTEXPR explicit expected_storage_base(unexpect_t, Args &&...args)
       : m_unexpect(std::forward<Args>(args)...), m_has_val(false) {}
 
   template <class U, class... Args,
             detail::enable_if_t<std::is_constructible<
                 E, std::initializer_list<U> &, Args &&...>::value> * = nullptr>
-  constexpr explicit expected_storage_base(unexpect_t,
+  ADA_CONSTEXPR explicit expected_storage_base(unexpect_t,
                                            std::initializer_list<U> il,
                                            Args &&...args)
       : m_unexpect(il, std::forward<Args>(args)...), m_has_val(false) {}
@@ -2159,32 +2170,32 @@ struct expected_storage_base<T, E, true, true> {
 // T is trivial, E is not.
 template <class T, class E>
 struct expected_storage_base<T, E, true, false> {
-  constexpr expected_storage_base() : m_val(T{}), m_has_val(true) {}
+  ADA_CONSTEXPR expected_storage_base() : m_val(T{}), m_has_val(true) {}
   TL_EXPECTED_MSVC2015_CONSTEXPR expected_storage_base(no_init_t)
       : m_no_init(), m_has_val(false) {}
 
   template <class... Args,
             detail::enable_if_t<std::is_constructible<T, Args &&...>::value> * =
                 nullptr>
-  constexpr expected_storage_base(in_place_t, Args &&...args)
+  ADA_CONSTEXPR expected_storage_base(in_place_t, Args &&...args)
       : m_val(std::forward<Args>(args)...), m_has_val(true) {}
 
   template <class U, class... Args,
             detail::enable_if_t<std::is_constructible<
                 T, std::initializer_list<U> &, Args &&...>::value> * = nullptr>
-  constexpr expected_storage_base(in_place_t, std::initializer_list<U> il,
+  ADA_CONSTEXPR expected_storage_base(in_place_t, std::initializer_list<U> il,
                                   Args &&...args)
       : m_val(il, std::forward<Args>(args)...), m_has_val(true) {}
   template <class... Args,
             detail::enable_if_t<std::is_constructible<E, Args &&...>::value> * =
                 nullptr>
-  constexpr explicit expected_storage_base(unexpect_t, Args &&...args)
+  ADA_CONSTEXPR explicit expected_storage_base(unexpect_t, Args &&...args)
       : m_unexpect(std::forward<Args>(args)...), m_has_val(false) {}
 
   template <class U, class... Args,
             detail::enable_if_t<std::is_constructible<
                 E, std::initializer_list<U> &, Args &&...>::value> * = nullptr>
-  constexpr explicit expected_storage_base(unexpect_t,
+  ADA_CONSTEXPR explicit expected_storage_base(unexpect_t,
                                            std::initializer_list<U> il,
                                            Args &&...args)
       : m_unexpect(il, std::forward<Args>(args)...), m_has_val(false) {}
@@ -2206,31 +2217,31 @@ struct expected_storage_base<T, E, true, false> {
 // E is trivial, T is not.
 template <class T, class E>
 struct expected_storage_base<T, E, false, true> {
-  constexpr expected_storage_base() : m_val(T{}), m_has_val(true) {}
-  constexpr expected_storage_base(no_init_t) : m_no_init(), m_has_val(false) {}
+  ADA_CONSTEXPR expected_storage_base() : m_val(T{}), m_has_val(true) {}
+  ADA_CONSTEXPR expected_storage_base(no_init_t) : m_no_init(), m_has_val(false) {}
 
   template <class... Args,
             detail::enable_if_t<std::is_constructible<T, Args &&...>::value> * =
                 nullptr>
-  constexpr expected_storage_base(in_place_t, Args &&...args)
+  ADA_CONSTEXPR expected_storage_base(in_place_t, Args &&...args)
       : m_val(std::forward<Args>(args)...), m_has_val(true) {}
 
   template <class U, class... Args,
             detail::enable_if_t<std::is_constructible<
                 T, std::initializer_list<U> &, Args &&...>::value> * = nullptr>
-  constexpr expected_storage_base(in_place_t, std::initializer_list<U> il,
+  ADA_CONSTEXPR expected_storage_base(in_place_t, std::initializer_list<U> il,
                                   Args &&...args)
       : m_val(il, std::forward<Args>(args)...), m_has_val(true) {}
   template <class... Args,
             detail::enable_if_t<std::is_constructible<E, Args &&...>::value> * =
                 nullptr>
-  constexpr explicit expected_storage_base(unexpect_t, Args &&...args)
+  ADA_CONSTEXPR explicit expected_storage_base(unexpect_t, Args &&...args)
       : m_unexpect(std::forward<Args>(args)...), m_has_val(false) {}
 
   template <class U, class... Args,
             detail::enable_if_t<std::is_constructible<
                 E, std::initializer_list<U> &, Args &&...>::value> * = nullptr>
-  constexpr explicit expected_storage_base(unexpect_t,
+  ADA_CONSTEXPR explicit expected_storage_base(unexpect_t,
                                            std::initializer_list<U> il,
                                            Args &&...args)
       : m_unexpect(il, std::forward<Args>(args)...), m_has_val(false) {}
@@ -2252,26 +2263,26 @@ struct expected_storage_base<T, E, false, true> {
 template <class E>
 struct expected_storage_base<void, E, false, true> {
 #if __GNUC__ <= 5
-// no constexpr for GCC 4/5 bug
+// no ADA_CONSTEXPR for GCC 4/5 bug
 #else
   TL_EXPECTED_MSVC2015_CONSTEXPR
 #endif
   expected_storage_base() : m_has_val(true) {}
 
-  constexpr expected_storage_base(no_init_t) : m_val(), m_has_val(false) {}
+  ADA_CONSTEXPR expected_storage_base(no_init_t) : m_val(), m_has_val(false) {}
 
-  constexpr expected_storage_base(in_place_t) : m_has_val(true) {}
+  ADA_CONSTEXPR expected_storage_base(in_place_t) : m_has_val(true) {}
 
   template <class... Args,
             detail::enable_if_t<std::is_constructible<E, Args &&...>::value> * =
                 nullptr>
-  constexpr explicit expected_storage_base(unexpect_t, Args &&...args)
+  ADA_CONSTEXPR explicit expected_storage_base(unexpect_t, Args &&...args)
       : m_unexpect(std::forward<Args>(args)...), m_has_val(false) {}
 
   template <class U, class... Args,
             detail::enable_if_t<std::is_constructible<
                 E, std::initializer_list<U> &, Args &&...>::value> * = nullptr>
-  constexpr explicit expected_storage_base(unexpect_t,
+  ADA_CONSTEXPR explicit expected_storage_base(unexpect_t,
                                            std::initializer_list<U> il,
                                            Args &&...args)
       : m_unexpect(il, std::forward<Args>(args)...), m_has_val(false) {}
@@ -2288,21 +2299,21 @@ struct expected_storage_base<void, E, false, true> {
 // `T` is `void`, `E` is not trivially-destructible
 template <class E>
 struct expected_storage_base<void, E, false, false> {
-  constexpr expected_storage_base() : m_dummy(), m_has_val(true) {}
-  constexpr expected_storage_base(no_init_t) : m_dummy(), m_has_val(false) {}
+  ADA_CONSTEXPR expected_storage_base() : m_dummy(), m_has_val(true) {}
+  ADA_CONSTEXPR expected_storage_base(no_init_t) : m_dummy(), m_has_val(false) {}
 
-  constexpr expected_storage_base(in_place_t) : m_dummy(), m_has_val(true) {}
+  ADA_CONSTEXPR expected_storage_base(in_place_t) : m_dummy(), m_has_val(true) {}
 
   template <class... Args,
             detail::enable_if_t<std::is_constructible<E, Args &&...>::value> * =
                 nullptr>
-  constexpr explicit expected_storage_base(unexpect_t, Args &&...args)
+  ADA_CONSTEXPR explicit expected_storage_base(unexpect_t, Args &&...args)
       : m_unexpect(std::forward<Args>(args)...), m_has_val(false) {}
 
   template <class U, class... Args,
             detail::enable_if_t<std::is_constructible<
                 E, std::initializer_list<U> &, Args &&...>::value> * = nullptr>
-  constexpr explicit expected_storage_base(unexpect_t,
+  ADA_CONSTEXPR explicit expected_storage_base(unexpect_t,
                                            std::initializer_list<U> il,
                                            Args &&...args)
       : m_unexpect(il, std::forward<Args>(args)...), m_has_val(false) {}
@@ -2488,21 +2499,21 @@ struct expected_operations_base : expected_storage_base<T, E> {
   bool has_value() const { return this->m_has_val; }
 
   TL_EXPECTED_11_CONSTEXPR T &get() & { return this->m_val; }
-  constexpr const T &get() const & { return this->m_val; }
+  ADA_CONSTEXPR const T &get() const & { return this->m_val; }
   TL_EXPECTED_11_CONSTEXPR T &&get() && { return std::move(this->m_val); }
 #ifndef TL_EXPECTED_NO_CONSTRR
-  constexpr const T &&get() const && { return std::move(this->m_val); }
+  ADA_CONSTEXPR const T &&get() const && { return std::move(this->m_val); }
 #endif
 
   TL_EXPECTED_11_CONSTEXPR unexpected<E> &geterr() & {
     return this->m_unexpect;
   }
-  constexpr const unexpected<E> &geterr() const & { return this->m_unexpect; }
+  ADA_CONSTEXPR const unexpected<E> &geterr() const & { return this->m_unexpect; }
   TL_EXPECTED_11_CONSTEXPR unexpected<E> &&geterr() && {
     return std::move(this->m_unexpect);
   }
 #ifndef TL_EXPECTED_NO_CONSTRR
-  constexpr const unexpected<E> &&geterr() const && {
+  ADA_CONSTEXPR const unexpected<E> &&geterr() const && {
     return std::move(this->m_unexpect);
   }
 #endif
@@ -2556,12 +2567,12 @@ struct expected_operations_base<void, E> : expected_storage_base<void, E> {
   TL_EXPECTED_11_CONSTEXPR unexpected<E> &geterr() & {
     return this->m_unexpect;
   }
-  constexpr const unexpected<E> &geterr() const & { return this->m_unexpect; }
+  ADA_CONSTEXPR const unexpected<E> &geterr() const & { return this->m_unexpect; }
   TL_EXPECTED_11_CONSTEXPR unexpected<E> &&geterr() && {
     return std::move(this->m_unexpect);
   }
 #ifndef TL_EXPECTED_NO_CONSTRR
-  constexpr const unexpected<E> &&geterr() const && {
+  ADA_CONSTEXPR const unexpected<E> &&geterr() const && {
     return std::move(this->m_unexpect);
   }
 #endif
@@ -2826,7 +2837,7 @@ struct expected_delete_assign_base<T, E, false, false> {
 // This is needed to be able to construct the expected_default_ctor_base which
 // follows, while still conditionally deleting the default constructor.
 struct default_constructor_tag {
-  explicit constexpr default_constructor_tag() = default;
+  explicit ADA_CONSTEXPR default_constructor_tag() = default;
 };
 
 // expected_default_ctor_base will ensure that expected has a deleted default
@@ -2836,33 +2847,33 @@ template <class T, class E,
           bool Enable =
               std::is_default_constructible<T>::value || std::is_void<T>::value>
 struct expected_default_ctor_base {
-  constexpr expected_default_ctor_base() noexcept = default;
-  constexpr expected_default_ctor_base(
+  ADA_CONSTEXPR expected_default_ctor_base() noexcept = default;
+  ADA_CONSTEXPR expected_default_ctor_base(
       expected_default_ctor_base const &) noexcept = default;
-  constexpr expected_default_ctor_base(expected_default_ctor_base &&) noexcept =
+  ADA_CONSTEXPR expected_default_ctor_base(expected_default_ctor_base &&) noexcept =
       default;
   expected_default_ctor_base &operator=(
       expected_default_ctor_base const &) noexcept = default;
   expected_default_ctor_base &operator=(
       expected_default_ctor_base &&) noexcept = default;
 
-  constexpr explicit expected_default_ctor_base(default_constructor_tag) {}
+  ADA_CONSTEXPR explicit expected_default_ctor_base(default_constructor_tag) {}
 };
 
 // This specialization is for when T is not default constructible
 template <class T, class E>
 struct expected_default_ctor_base<T, E, false> {
-  constexpr expected_default_ctor_base() noexcept = delete;
-  constexpr expected_default_ctor_base(
+  ADA_CONSTEXPR expected_default_ctor_base() noexcept = delete;
+  ADA_CONSTEXPR expected_default_ctor_base(
       expected_default_ctor_base const &) noexcept = default;
-  constexpr expected_default_ctor_base(expected_default_ctor_base &&) noexcept =
+  ADA_CONSTEXPR expected_default_ctor_base(expected_default_ctor_base &&) noexcept =
       default;
   expected_default_ctor_base &operator=(
       expected_default_ctor_base const &) noexcept = default;
   expected_default_ctor_base &operator=(
       expected_default_ctor_base &&) noexcept = default;
 
-  constexpr explicit expected_default_ctor_base(default_constructor_tag) {}
+  ADA_CONSTEXPR explicit expected_default_ctor_base(default_constructor_tag) {}
 };
 }  // namespace detail
 
@@ -2922,10 +2933,10 @@ class expected : private detail::expected_move_assign_base<T, E>,
 
   template <class U = T,
             detail::enable_if_t<!std::is_void<U>::value> * = nullptr>
-  constexpr const U &val() const {
+  ADA_CONSTEXPR const U &val() const {
     return this->m_val;
   }
-  constexpr const unexpected<E> &err() const { return this->m_unexpect; }
+  ADA_CONSTEXPR const unexpected<E> &err() const { return this->m_unexpect; }
 
   using impl_base = detail::expected_move_assign_base<T, E>;
   using ctor_base = detail::expected_default_ctor_base<T, E>;
@@ -2946,13 +2957,13 @@ class expected : private detail::expected_move_assign_base<T, E>,
     return and_then_impl(std::move(*this), std::forward<F>(f));
   }
   template <class F>
-  constexpr auto and_then(F &&f) const & {
+  ADA_CONSTEXPR auto and_then(F &&f) const & {
     return and_then_impl(*this, std::forward<F>(f));
   }
 
 #ifndef TL_EXPECTED_NO_CONSTRR
   template <class F>
-  constexpr auto and_then(F &&f) const && {
+  ADA_CONSTEXPR auto and_then(F &&f) const && {
     return and_then_impl(std::move(*this), std::forward<F>(f));
   }
 #endif
@@ -2969,14 +2980,14 @@ class expected : private detail::expected_move_assign_base<T, E>,
     return and_then_impl(std::move(*this), std::forward<F>(f));
   }
   template <class F>
-  constexpr auto and_then(F &&f) const & -> decltype(and_then_impl(
+  ADA_CONSTEXPR auto and_then(F &&f) const & -> decltype(and_then_impl(
       std::declval<expected const &>(), std::forward<F>(f))) {
     return and_then_impl(*this, std::forward<F>(f));
   }
 
 #ifndef TL_EXPECTED_NO_CONSTRR
   template <class F>
-  constexpr auto and_then(F &&f) const && -> decltype(and_then_impl(
+  ADA_CONSTEXPR auto and_then(F &&f) const && -> decltype(and_then_impl(
       std::declval<expected const &&>(), std::forward<F>(f))) {
     return and_then_impl(std::move(*this), std::forward<F>(f));
   }
@@ -2994,11 +3005,11 @@ class expected : private detail::expected_move_assign_base<T, E>,
     return expected_map_impl(std::move(*this), std::forward<F>(f));
   }
   template <class F>
-  constexpr auto map(F &&f) const & {
+  ADA_CONSTEXPR auto map(F &&f) const & {
     return expected_map_impl(*this, std::forward<F>(f));
   }
   template <class F>
-  constexpr auto map(F &&f) const && {
+  ADA_CONSTEXPR auto map(F &&f) const && {
     return expected_map_impl(std::move(*this), std::forward<F>(f));
   }
 #else
@@ -3015,7 +3026,7 @@ class expected : private detail::expected_move_assign_base<T, E>,
     return expected_map_impl(std::move(*this), std::forward<F>(f));
   }
   template <class F>
-  constexpr decltype(expected_map_impl(std::declval<const expected &>(),
+  ADA_CONSTEXPR decltype(expected_map_impl(std::declval<const expected &>(),
                                        std::declval<F &&>()))
   map(F &&f) const & {
     return expected_map_impl(*this, std::forward<F>(f));
@@ -3023,7 +3034,7 @@ class expected : private detail::expected_move_assign_base<T, E>,
 
 #ifndef TL_EXPECTED_NO_CONSTRR
   template <class F>
-  constexpr decltype(expected_map_impl(std::declval<const expected &&>(),
+  ADA_CONSTEXPR decltype(expected_map_impl(std::declval<const expected &&>(),
                                        std::declval<F &&>()))
   map(F &&f) const && {
     return expected_map_impl(std::move(*this), std::forward<F>(f));
@@ -3042,11 +3053,11 @@ class expected : private detail::expected_move_assign_base<T, E>,
     return expected_map_impl(std::move(*this), std::forward<F>(f));
   }
   template <class F>
-  constexpr auto transform(F &&f) const & {
+  ADA_CONSTEXPR auto transform(F &&f) const & {
     return expected_map_impl(*this, std::forward<F>(f));
   }
   template <class F>
-  constexpr auto transform(F &&f) const && {
+  ADA_CONSTEXPR auto transform(F &&f) const && {
     return expected_map_impl(std::move(*this), std::forward<F>(f));
   }
 #else
@@ -3063,7 +3074,7 @@ class expected : private detail::expected_move_assign_base<T, E>,
     return expected_map_impl(std::move(*this), std::forward<F>(f));
   }
   template <class F>
-  constexpr decltype(expected_map_impl(std::declval<const expected &>(),
+  ADA_CONSTEXPR decltype(expected_map_impl(std::declval<const expected &>(),
                                        std::declval<F &&>()))
   transform(F &&f) const & {
     return expected_map_impl(*this, std::forward<F>(f));
@@ -3071,7 +3082,7 @@ class expected : private detail::expected_move_assign_base<T, E>,
 
 #ifndef TL_EXPECTED_NO_CONSTRR
   template <class F>
-  constexpr decltype(expected_map_impl(std::declval<const expected &&>(),
+  ADA_CONSTEXPR decltype(expected_map_impl(std::declval<const expected &&>(),
                                        std::declval<F &&>()))
   transform(F &&f) const && {
     return expected_map_impl(std::move(*this), std::forward<F>(f));
@@ -3090,11 +3101,11 @@ class expected : private detail::expected_move_assign_base<T, E>,
     return map_error_impl(std::move(*this), std::forward<F>(f));
   }
   template <class F>
-  constexpr auto map_error(F &&f) const & {
+  ADA_CONSTEXPR auto map_error(F &&f) const & {
     return map_error_impl(*this, std::forward<F>(f));
   }
   template <class F>
-  constexpr auto map_error(F &&f) const && {
+  ADA_CONSTEXPR auto map_error(F &&f) const && {
     return map_error_impl(std::move(*this), std::forward<F>(f));
   }
 #else
@@ -3111,7 +3122,7 @@ class expected : private detail::expected_move_assign_base<T, E>,
     return map_error_impl(std::move(*this), std::forward<F>(f));
   }
   template <class F>
-  constexpr decltype(map_error_impl(std::declval<const expected &>(),
+  ADA_CONSTEXPR decltype(map_error_impl(std::declval<const expected &>(),
                                     std::declval<F &&>()))
   map_error(F &&f) const & {
     return map_error_impl(*this, std::forward<F>(f));
@@ -3119,7 +3130,7 @@ class expected : private detail::expected_move_assign_base<T, E>,
 
 #ifndef TL_EXPECTED_NO_CONSTRR
   template <class F>
-  constexpr decltype(map_error_impl(std::declval<const expected &&>(),
+  ADA_CONSTEXPR decltype(map_error_impl(std::declval<const expected &&>(),
                                     std::declval<F &&>()))
   map_error(F &&f) const && {
     return map_error_impl(std::move(*this), std::forward<F>(f));
@@ -3137,11 +3148,11 @@ class expected : private detail::expected_move_assign_base<T, E>,
     return map_error_impl(std::move(*this), std::forward<F>(f));
   }
   template <class F>
-  constexpr auto transform_error(F &&f) const & {
+  ADA_CONSTEXPR auto transform_error(F &&f) const & {
     return map_error_impl(*this, std::forward<F>(f));
   }
   template <class F>
-  constexpr auto transform_error(F &&f) const && {
+  ADA_CONSTEXPR auto transform_error(F &&f) const && {
     return map_error_impl(std::move(*this), std::forward<F>(f));
   }
 #else
@@ -3158,7 +3169,7 @@ class expected : private detail::expected_move_assign_base<T, E>,
     return map_error_impl(std::move(*this), std::forward<F>(f));
   }
   template <class F>
-  constexpr decltype(map_error_impl(std::declval<const expected &>(),
+  ADA_CONSTEXPR decltype(map_error_impl(std::declval<const expected &>(),
                                     std::declval<F &&>()))
   transform_error(F &&f) const & {
     return map_error_impl(*this, std::forward<F>(f));
@@ -3166,7 +3177,7 @@ class expected : private detail::expected_move_assign_base<T, E>,
 
 #ifndef TL_EXPECTED_NO_CONSTRR
   template <class F>
-  constexpr decltype(map_error_impl(std::declval<const expected &&>(),
+  ADA_CONSTEXPR decltype(map_error_impl(std::declval<const expected &&>(),
                                     std::declval<F &&>()))
   transform_error(F &&f) const && {
     return map_error_impl(std::move(*this), std::forward<F>(f));
@@ -3184,33 +3195,33 @@ class expected : private detail::expected_move_assign_base<T, E>,
   }
 
   template <class F>
-  expected constexpr or_else(F &&f) const & {
+  expected ADA_CONSTEXPR or_else(F &&f) const & {
     return or_else_impl(*this, std::forward<F>(f));
   }
 
 #ifndef TL_EXPECTED_NO_CONSTRR
   template <class F>
-  expected constexpr or_else(F &&f) const && {
+  expected ADA_CONSTEXPR or_else(F &&f) const && {
     return or_else_impl(std::move(*this), std::forward<F>(f));
   }
 #endif
-  constexpr expected() = default;
-  constexpr expected(const expected &rhs) = default;
-  constexpr expected(expected &&rhs) = default;
+  ADA_CONSTEXPR expected() = default;
+  ADA_CONSTEXPR expected(const expected &rhs) = default;
+  ADA_CONSTEXPR expected(expected &&rhs) = default;
   expected &operator=(const expected &rhs) = default;
   expected &operator=(expected &&rhs) = default;
 
   template <class... Args,
             detail::enable_if_t<std::is_constructible<T, Args &&...>::value> * =
                 nullptr>
-  constexpr expected(in_place_t, Args &&...args)
+  ADA_CONSTEXPR expected(in_place_t, Args &&...args)
       : impl_base(in_place, std::forward<Args>(args)...),
         ctor_base(detail::default_constructor_tag{}) {}
 
   template <class U, class... Args,
             detail::enable_if_t<std::is_constructible<
                 T, std::initializer_list<U> &, Args &&...>::value> * = nullptr>
-  constexpr expected(in_place_t, std::initializer_list<U> il, Args &&...args)
+  ADA_CONSTEXPR expected(in_place_t, std::initializer_list<U> il, Args &&...args)
       : impl_base(in_place, il, std::forward<Args>(args)...),
         ctor_base(detail::default_constructor_tag{}) {}
 
@@ -3219,7 +3230,7 @@ class expected : private detail::expected_move_assign_base<T, E>,
                 nullptr,
             detail::enable_if_t<!std::is_convertible<const G &, E>::value> * =
                 nullptr>
-  explicit constexpr expected(const unexpected<G> &e)
+  explicit ADA_CONSTEXPR expected(const unexpected<G> &e)
       : impl_base(unexpect, e.value()),
         ctor_base(detail::default_constructor_tag{}) {}
 
@@ -3228,7 +3239,7 @@ class expected : private detail::expected_move_assign_base<T, E>,
       detail::enable_if_t<std::is_constructible<E, const G &>::value> * =
           nullptr,
       detail::enable_if_t<std::is_convertible<const G &, E>::value> * = nullptr>
-  constexpr expected(unexpected<G> const &e)
+  ADA_CONSTEXPR expected(unexpected<G> const &e)
       : impl_base(unexpect, e.value()),
         ctor_base(detail::default_constructor_tag{}) {}
 
@@ -3236,7 +3247,7 @@ class expected : private detail::expected_move_assign_base<T, E>,
       class G = E,
       detail::enable_if_t<std::is_constructible<E, G &&>::value> * = nullptr,
       detail::enable_if_t<!std::is_convertible<G &&, E>::value> * = nullptr>
-  explicit constexpr expected(unexpected<G> &&e) noexcept(
+  explicit ADA_CONSTEXPR expected(unexpected<G> &&e) noexcept(
       std::is_nothrow_constructible<E, G &&>::value)
       : impl_base(unexpect, std::move(e.value())),
         ctor_base(detail::default_constructor_tag{}) {}
@@ -3245,7 +3256,7 @@ class expected : private detail::expected_move_assign_base<T, E>,
       class G = E,
       detail::enable_if_t<std::is_constructible<E, G &&>::value> * = nullptr,
       detail::enable_if_t<std::is_convertible<G &&, E>::value> * = nullptr>
-  constexpr expected(unexpected<G> &&e) noexcept(
+  ADA_CONSTEXPR expected(unexpected<G> &&e) noexcept(
       std::is_nothrow_constructible<E, G &&>::value)
       : impl_base(unexpect, std::move(e.value())),
         ctor_base(detail::default_constructor_tag{}) {}
@@ -3253,14 +3264,14 @@ class expected : private detail::expected_move_assign_base<T, E>,
   template <class... Args,
             detail::enable_if_t<std::is_constructible<E, Args &&...>::value> * =
                 nullptr>
-  constexpr explicit expected(unexpect_t, Args &&...args)
+  ADA_CONSTEXPR explicit expected(unexpect_t, Args &&...args)
       : impl_base(unexpect, std::forward<Args>(args)...),
         ctor_base(detail::default_constructor_tag{}) {}
 
   template <class U, class... Args,
             detail::enable_if_t<std::is_constructible<
                 E, std::initializer_list<U> &, Args &&...>::value> * = nullptr>
-  constexpr explicit expected(unexpect_t, std::initializer_list<U> il,
+  ADA_CONSTEXPR explicit expected(unexpect_t, std::initializer_list<U> il,
                               Args &&...args)
       : impl_base(unexpect, il, std::forward<Args>(args)...),
         ctor_base(detail::default_constructor_tag{}) {}
@@ -3613,7 +3624,7 @@ class expected : private detail::expected_move_assign_base<T, E>,
     }
   }
 
-  constexpr const T *operator->() const {
+  ADA_CONSTEXPR const T *operator->() const {
     TL_ASSERT(has_value());
     return valptr();
   }
@@ -3624,7 +3635,7 @@ class expected : private detail::expected_move_assign_base<T, E>,
 
   template <class U = T,
             detail::enable_if_t<!std::is_void<U>::value> * = nullptr>
-  constexpr const U &operator*() const & {
+  ADA_CONSTEXPR const U &operator*() const & {
     TL_ASSERT(has_value());
     return val();
   }
@@ -3636,7 +3647,7 @@ class expected : private detail::expected_move_assign_base<T, E>,
   }
   template <class U = T,
             detail::enable_if_t<!std::is_void<U>::value> * = nullptr>
-  constexpr const U &&operator*() const && {
+  ADA_CONSTEXPR const U &&operator*() const && {
     TL_ASSERT(has_value());
     return std::move(val());
   }
@@ -3647,8 +3658,8 @@ class expected : private detail::expected_move_assign_base<T, E>,
     return std::move(val());
   }
 
-  constexpr bool has_value() const noexcept { return this->m_has_val; }
-  constexpr explicit operator bool() const noexcept { return this->m_has_val; }
+  ADA_CONSTEXPR bool has_value() const noexcept { return this->m_has_val; }
+  ADA_CONSTEXPR explicit operator bool() const noexcept { return this->m_has_val; }
 
   template <class U = T,
             detail::enable_if_t<!std::is_void<U>::value> * = nullptr>
@@ -3679,7 +3690,7 @@ class expected : private detail::expected_move_assign_base<T, E>,
     return std::move(val());
   }
 
-  constexpr const E &error() const & {
+  ADA_CONSTEXPR const E &error() const & {
     TL_ASSERT(!has_value());
     return err().value();
   }
@@ -3687,7 +3698,7 @@ class expected : private detail::expected_move_assign_base<T, E>,
     TL_ASSERT(!has_value());
     return err().value();
   }
-  constexpr const E &&error() const && {
+  ADA_CONSTEXPR const E &&error() const && {
     TL_ASSERT(!has_value());
     return std::move(err().value());
   }
@@ -3697,7 +3708,7 @@ class expected : private detail::expected_move_assign_base<T, E>,
   }
 
   template <class U>
-  constexpr T value_or(U &&v) const & {
+  ADA_CONSTEXPR T value_or(U &&v) const & {
     static_assert(std::is_copy_constructible<T>::value &&
                       std::is_convertible<U &&, T>::value,
                   "T must be copy-constructible and convertible to from U&&");
@@ -3725,7 +3736,7 @@ template <class Exp, class F,
           detail::enable_if_t<!std::is_void<exp_t<Exp>>::value> * = nullptr,
           class Ret = decltype(detail::invoke(std::declval<F>(),
                                               *std::declval<Exp>()))>
-constexpr auto and_then_impl(Exp &&exp, F &&f) {
+ADA_CONSTEXPR auto and_then_impl(Exp &&exp, F &&f) {
   static_assert(detail::is_expected<Ret>::value, "F must return an expected");
 
   return exp.has_value()
@@ -3736,7 +3747,7 @@ constexpr auto and_then_impl(Exp &&exp, F &&f) {
 template <class Exp, class F,
           detail::enable_if_t<std::is_void<exp_t<Exp>>::value> * = nullptr,
           class Ret = decltype(detail::invoke(std::declval<F>()))>
-constexpr auto and_then_impl(Exp &&exp, F &&f) {
+ADA_CONSTEXPR auto and_then_impl(Exp &&exp, F &&f) {
   static_assert(detail::is_expected<Ret>::value, "F must return an expected");
 
   return exp.has_value() ? detail::invoke(std::forward<F>(f))
@@ -3760,7 +3771,7 @@ auto and_then_impl(Exp &&exp, F &&f) -> Ret {
 template <class Exp, class F,
           class Ret = decltype(detail::invoke(std::declval<F>())),
           detail::enable_if_t<std::is_void<exp_t<Exp>>::value> * = nullptr>
-constexpr auto and_then_impl(Exp &&exp, F &&f) -> Ret {
+ADA_CONSTEXPR auto and_then_impl(Exp &&exp, F &&f) -> Ret {
   static_assert(detail::is_expected<Ret>::value, "F must return an expected");
 
   return exp.has_value() ? detail::invoke(std::forward<F>(f))
@@ -3774,7 +3785,7 @@ template <class Exp, class F,
           class Ret = decltype(detail::invoke(std::declval<F>(),
                                               *std::declval<Exp>())),
           detail::enable_if_t<!std::is_void<Ret>::value> * = nullptr>
-constexpr auto expected_map_impl(Exp &&exp, F &&f) {
+ADA_CONSTEXPR auto expected_map_impl(Exp &&exp, F &&f) {
   using result = ret_t<Exp, detail::decay_t<Ret>>;
   return exp.has_value() ? result(detail::invoke(std::forward<F>(f),
                                                  *std::forward<Exp>(exp)))
@@ -3800,7 +3811,7 @@ template <class Exp, class F,
           detail::enable_if_t<std::is_void<exp_t<Exp>>::value> * = nullptr,
           class Ret = decltype(detail::invoke(std::declval<F>())),
           detail::enable_if_t<!std::is_void<Ret>::value> * = nullptr>
-constexpr auto expected_map_impl(Exp &&exp, F &&f) {
+ADA_CONSTEXPR auto expected_map_impl(Exp &&exp, F &&f) {
   using result = ret_t<Exp, detail::decay_t<Ret>>;
   return exp.has_value() ? result(detail::invoke(std::forward<F>(f)))
                          : result(unexpect, std::forward<Exp>(exp).error());
@@ -3826,7 +3837,7 @@ template <class Exp, class F,
                                               *std::declval<Exp>())),
           detail::enable_if_t<!std::is_void<Ret>::value> * = nullptr>
 
-constexpr auto expected_map_impl(Exp &&exp, F &&f)
+ADA_CONSTEXPR auto expected_map_impl(Exp &&exp, F &&f)
     -> ret_t<Exp, detail::decay_t<Ret>> {
   using result = ret_t<Exp, detail::decay_t<Ret>>;
 
@@ -3855,7 +3866,7 @@ template <class Exp, class F,
           class Ret = decltype(detail::invoke(std::declval<F>())),
           detail::enable_if_t<!std::is_void<Ret>::value> * = nullptr>
 
-constexpr auto expected_map_impl(Exp &&exp, F &&f)
+ADA_CONSTEXPR auto expected_map_impl(Exp &&exp, F &&f)
     -> ret_t<Exp, detail::decay_t<Ret>> {
   using result = ret_t<Exp, detail::decay_t<Ret>>;
 
@@ -3885,7 +3896,7 @@ template <class Exp, class F,
           class Ret = decltype(detail::invoke(std::declval<F>(),
                                               std::declval<Exp>().error())),
           detail::enable_if_t<!std::is_void<Ret>::value> * = nullptr>
-constexpr auto map_error_impl(Exp &&exp, F &&f) {
+ADA_CONSTEXPR auto map_error_impl(Exp &&exp, F &&f) {
   using result = expected<exp_t<Exp>, detail::decay_t<Ret>>;
   return exp.has_value()
              ? result(*std::forward<Exp>(exp))
@@ -3911,7 +3922,7 @@ template <class Exp, class F,
           class Ret = decltype(detail::invoke(std::declval<F>(),
                                               std::declval<Exp>().error())),
           detail::enable_if_t<!std::is_void<Ret>::value> * = nullptr>
-constexpr auto map_error_impl(Exp &&exp, F &&f) {
+ADA_CONSTEXPR auto map_error_impl(Exp &&exp, F &&f) {
   using result = expected<exp_t<Exp>, detail::decay_t<Ret>>;
   return exp.has_value()
              ? result()
@@ -3938,7 +3949,7 @@ template <class Exp, class F,
           class Ret = decltype(detail::invoke(std::declval<F>(),
                                               std::declval<Exp>().error())),
           detail::enable_if_t<!std::is_void<Ret>::value> * = nullptr>
-constexpr auto map_error_impl(Exp &&exp, F &&f)
+ADA_CONSTEXPR auto map_error_impl(Exp &&exp, F &&f)
     -> expected<exp_t<Exp>, detail::decay_t<Ret>> {
   using result = expected<exp_t<Exp>, detail::decay_t<Ret>>;
 
@@ -3968,7 +3979,7 @@ template <class Exp, class F,
           class Ret = decltype(detail::invoke(std::declval<F>(),
                                               std::declval<Exp>().error())),
           detail::enable_if_t<!std::is_void<Ret>::value> * = nullptr>
-constexpr auto map_error_impl(Exp &&exp, F &&f)
+ADA_CONSTEXPR auto map_error_impl(Exp &&exp, F &&f)
     -> expected<exp_t<Exp>, detail::decay_t<Ret>> {
   using result = expected<exp_t<Exp>, detail::decay_t<Ret>>;
 
@@ -3999,7 +4010,7 @@ template <class Exp, class F,
           class Ret = decltype(detail::invoke(std::declval<F>(),
                                               std::declval<Exp>().error())),
           detail::enable_if_t<!std::is_void<Ret>::value> * = nullptr>
-constexpr auto or_else_impl(Exp &&exp, F &&f) {
+ADA_CONSTEXPR auto or_else_impl(Exp &&exp, F &&f) {
   static_assert(detail::is_expected<Ret>::value, "F must return an expected");
   return exp.has_value() ? std::forward<Exp>(exp)
                          : detail::invoke(std::forward<F>(f),
@@ -4042,28 +4053,28 @@ detail::decay_t<Exp> or_else_impl(Exp &&exp, F &&f) {
 }  // namespace detail
 
 template <class T, class E, class U, class F>
-constexpr bool operator==(const expected<T, E> &lhs,
+ADA_CONSTEXPR bool operator==(const expected<T, E> &lhs,
                           const expected<U, F> &rhs) {
   return (lhs.has_value() != rhs.has_value())
              ? false
              : (!lhs.has_value() ? lhs.error() == rhs.error() : *lhs == *rhs);
 }
 template <class T, class E, class U, class F>
-constexpr bool operator!=(const expected<T, E> &lhs,
+ADA_CONSTEXPR bool operator!=(const expected<T, E> &lhs,
                           const expected<U, F> &rhs) {
   return (lhs.has_value() != rhs.has_value())
              ? true
              : (!lhs.has_value() ? lhs.error() != rhs.error() : *lhs != *rhs);
 }
 template <class E, class F>
-constexpr bool operator==(const expected<void, E> &lhs,
+ADA_CONSTEXPR bool operator==(const expected<void, E> &lhs,
                           const expected<void, F> &rhs) {
   return (lhs.has_value() != rhs.has_value())
              ? false
              : (!lhs.has_value() ? lhs.error() == rhs.error() : true);
 }
 template <class E, class F>
-constexpr bool operator!=(const expected<void, E> &lhs,
+ADA_CONSTEXPR bool operator!=(const expected<void, E> &lhs,
                           const expected<void, F> &rhs) {
   return (lhs.has_value() != rhs.has_value())
              ? true
@@ -4071,36 +4082,36 @@ constexpr bool operator!=(const expected<void, E> &lhs,
 }
 
 template <class T, class E, class U>
-constexpr bool operator==(const expected<T, E> &x, const U &v) {
+ADA_CONSTEXPR bool operator==(const expected<T, E> &x, const U &v) {
   return x.has_value() ? *x == v : false;
 }
 template <class T, class E, class U>
-constexpr bool operator==(const U &v, const expected<T, E> &x) {
+ADA_CONSTEXPR bool operator==(const U &v, const expected<T, E> &x) {
   return x.has_value() ? *x == v : false;
 }
 template <class T, class E, class U>
-constexpr bool operator!=(const expected<T, E> &x, const U &v) {
+ADA_CONSTEXPR bool operator!=(const expected<T, E> &x, const U &v) {
   return x.has_value() ? *x != v : true;
 }
 template <class T, class E, class U>
-constexpr bool operator!=(const U &v, const expected<T, E> &x) {
+ADA_CONSTEXPR bool operator!=(const U &v, const expected<T, E> &x) {
   return x.has_value() ? *x != v : true;
 }
 
 template <class T, class E>
-constexpr bool operator==(const expected<T, E> &x, const unexpected<E> &e) {
+ADA_CONSTEXPR bool operator==(const expected<T, E> &x, const unexpected<E> &e) {
   return x.has_value() ? false : x.error() == e.value();
 }
 template <class T, class E>
-constexpr bool operator==(const unexpected<E> &e, const expected<T, E> &x) {
+ADA_CONSTEXPR bool operator==(const unexpected<E> &e, const expected<T, E> &x) {
   return x.has_value() ? false : x.error() == e.value();
 }
 template <class T, class E>
-constexpr bool operator!=(const expected<T, E> &x, const unexpected<E> &e) {
+ADA_CONSTEXPR bool operator!=(const expected<T, E> &x, const unexpected<E> &e) {
   return x.has_value() ? true : x.error() != e.value();
 }
 template <class T, class E>
-constexpr bool operator!=(const unexpected<E> &e, const expected<T, E> &x) {
+ADA_CONSTEXPR bool operator!=(const unexpected<E> &e, const expected<T, E> &x) {
   return x.has_value() ? true : x.error() != e.value();
 }
 
@@ -4454,18 +4465,18 @@ namespace ada::checkers {
  * @private
  * Assuming that x is an ASCII letter, this function returns the lower case
  * equivalent.
- * @details More likely to be inlined by the compiler and constexpr.
+ * @details More likely to be inlined by the compiler and ADA_CONSTEXPR.
  */
-constexpr char to_lower(char x) noexcept;
+ADA_CONSTEXPR char to_lower(char x) noexcept;
 
 /**
  * @private
  * Returns true if the character is an ASCII letter. Equivalent to std::isalpha
  * but more likely to be inlined by the compiler.
  *
- * @attention std::isalpha is not constexpr generally.
+ * @attention std::isalpha is not ADA_CONSTEXPR generally.
  */
-constexpr bool is_alpha(char x) noexcept;
+ADA_CONSTEXPR bool is_alpha(char x) noexcept;
 
 /**
  * @private
@@ -4474,19 +4485,19 @@ constexpr bool is_alpha(char x) noexcept;
  *
  * @see has_hex_prefix
  */
-constexpr bool has_hex_prefix_unsafe(std::string_view input);
+ADA_CONSTEXPR bool has_hex_prefix_unsafe(std::string_view input);
 /**
  * @private
  * Check whether a string starts with 0x or 0X.
  */
-constexpr bool has_hex_prefix(std::string_view input);
+ADA_CONSTEXPR bool has_hex_prefix(std::string_view input);
 
 /**
  * @private
  * Check whether x is an ASCII digit. More likely to be inlined than
  * std::isdigit.
  */
-constexpr bool is_digit(char x) noexcept;
+ADA_CONSTEXPR bool is_digit(char x) noexcept;
 
 /**
  * @private
@@ -4500,14 +4511,14 @@ constexpr bool is_digit(char x) noexcept;
  *
  * https://url.spec.whatwg.org/#start-with-a-windows-drive-letter
  */
-inline constexpr bool is_windows_drive_letter(std::string_view input) noexcept;
+inline ADA_CONSTEXPR bool is_windows_drive_letter(std::string_view input) noexcept;
 
 /**
  * @private
  * @details A normalized Windows drive letter is a Windows drive letter of which
  * the second code point is U+003A (:).
  */
-inline constexpr bool is_normalized_windows_drive_letter(
+inline ADA_CONSTEXPR bool is_normalized_windows_drive_letter(
     std::string_view input) noexcept;
 
 /**
@@ -4516,7 +4527,7 @@ inline constexpr bool is_normalized_windows_drive_letter(
  * does not contain uppercase ASCII characters (the input should have been
  * lowered cased before calling this function) and is not empty.
  */
-ada_really_inline constexpr bool is_ipv4(std::string_view view) noexcept;
+ada_really_inline ADA_CONSTEXPR bool is_ipv4(std::string_view view) noexcept;
 
 /**
  * @private
@@ -4525,7 +4536,7 @@ ada_really_inline constexpr bool is_ipv4(std::string_view view) noexcept;
  * is set then we have a dot. If the fourth bit is set, then we have a percent
  * character.
  */
-ada_really_inline constexpr uint8_t path_signature(
+ada_really_inline ADA_CONSTEXPR uint8_t path_signature(
     std::string_view input) noexcept;
 
 /**
@@ -4539,7 +4550,7 @@ ada_really_inline constexpr uint8_t path_signature(
  * @see section 3.1. of https://www.rfc-editor.org/rfc/rfc1034
  * @see https://www.unicode.org/reports/tr46/#ToASCII
  */
-ada_really_inline constexpr bool verify_dns_length(
+ada_really_inline ADA_CONSTEXPR bool verify_dns_length(
     std::string_view input) noexcept;
 
 }  // namespace ada::checkers
@@ -4565,7 +4576,7 @@ namespace ada {
  * This struct is used to extract components from a single 'href'.
  */
 struct url_components {
-  constexpr static uint32_t omitted = uint32_t(-1);
+  ADA_CONSTEXPR static uint32_t omitted = uint32_t(-1);
 
   url_components() = default;
   url_components(const url_components &u) = default;
@@ -4611,7 +4622,7 @@ struct url_components {
    * @return true if the offset values are
    *  consistent with a possible URL string
    */
-  [[nodiscard]] constexpr bool check_offset_consistency() const noexcept;
+  [[nodiscard]] ADA_CONSTEXPR bool check_offset_consistency() const noexcept;
 
   /**
    * Converts a url_components to JSON stringified version.
@@ -4762,7 +4773,7 @@ struct url : url_base {
    * @return a newly allocated string.
    * @see https://url.spec.whatwg.org/#dom-url-pathname
    */
-  [[nodiscard]] constexpr std::string_view get_pathname() const noexcept;
+  [[nodiscard]] ADA_CONSTEXPR std::string_view get_pathname() const noexcept;
 
   /**
    * Compute the pathname length in bytes without instantiating a view or a
@@ -4896,9 +4907,9 @@ struct url : url_base {
   [[nodiscard]] ada_really_inline ada::url_components get_components()
       const noexcept;
   /** @return true if the URL has a hash component */
-  [[nodiscard]] constexpr bool has_hash() const noexcept override;
+  [[nodiscard]] ADA_CONSTEXPR bool has_hash() const noexcept override;
   /** @return true if the URL has a search component */
-  [[nodiscard]] constexpr bool has_search() const noexcept override;
+  [[nodiscard]] ADA_CONSTEXPR bool has_search() const noexcept override;
 
  private:
   friend ada::url ada::parser::parse_url<ada::url>(std::string_view,
@@ -4986,9 +4997,9 @@ struct url : url_base {
   template <bool has_state_override = false>
   [[nodiscard]] ada_really_inline bool parse_scheme(std::string_view input);
 
-  constexpr void clear_pathname() override;
-  constexpr void clear_search() override;
-  constexpr void set_protocol_as_file();
+  ADA_CONSTEXPR void clear_pathname() override;
+  ADA_CONSTEXPR void clear_search() override;
+  ADA_CONSTEXPR void set_protocol_as_file();
 
   /**
    * Parse the path from the provided input.
@@ -5013,13 +5024,13 @@ struct url : url_base {
    * Take the scheme from another URL. The scheme string is moved from the
    * provided url.
    */
-  constexpr void copy_scheme(ada::url &&u) noexcept;
+  ADA_CONSTEXPR void copy_scheme(ada::url &&u) noexcept;
 
   /**
    * Take the scheme from another URL. The scheme string is copied from the
    * provided url.
    */
-  constexpr void copy_scheme(const ada::url &u);
+  ADA_CONSTEXPR void copy_scheme(const ada::url &u);
 
 };  // struct url
 
@@ -5547,10 +5558,10 @@ class Tokenizer {
       : input(new_input), policy(new_policy) {}
 
   // @see https://urlpattern.spec.whatwg.org/#get-the-next-code-point
-  constexpr void get_next_code_point();
+  ADA_CONSTEXPR void get_next_code_point();
 
   // @see https://urlpattern.spec.whatwg.org/#seek-and-get-the-next-code-point
-  constexpr void seek_and_get_next_code_point(size_t index);
+  ADA_CONSTEXPR void seek_and_get_next_code_point(size_t index);
 
   // @see https://urlpattern.spec.whatwg.org/#add-a-token
 
@@ -5617,53 +5628,53 @@ struct constructor_string_parser {
 
  private:
   // @see https://urlpattern.spec.whatwg.org/#rewind
-  constexpr void rewind();
+  ADA_CONSTEXPR void rewind();
 
   // @see https://urlpattern.spec.whatwg.org/#is-a-hash-prefix
-  constexpr bool is_hash_prefix();
+  ADA_CONSTEXPR bool is_hash_prefix();
 
   // @see https://urlpattern.spec.whatwg.org/#is-a-search-prefix
-  constexpr bool is_search_prefix();
+  ADA_CONSTEXPR bool is_search_prefix();
 
   // @see https://urlpattern.spec.whatwg.org/#change-state
   void change_state(State state, size_t skip);
 
   // @see https://urlpattern.spec.whatwg.org/#is-a-group-open
-  constexpr bool is_group_open() const;
+  ADA_CONSTEXPR bool is_group_open() const;
 
   // @see https://urlpattern.spec.whatwg.org/#is-a-group-close
-  constexpr bool is_group_close() const;
+  ADA_CONSTEXPR bool is_group_close() const;
 
   // @see https://urlpattern.spec.whatwg.org/#is-a-protocol-suffix
-  constexpr bool is_protocol_suffix() const;
+  ADA_CONSTEXPR bool is_protocol_suffix() const;
 
   // @see https://urlpattern.spec.whatwg.org/#next-is-authority-slashes
-  constexpr bool next_is_authority_slashes() const;
+  ADA_CONSTEXPR bool next_is_authority_slashes() const;
 
   // @see https://urlpattern.spec.whatwg.org/#is-an-identity-terminator
-  constexpr bool is_an_identity_terminator() const;
+  ADA_CONSTEXPR bool is_an_identity_terminator() const;
 
   // @see https://urlpattern.spec.whatwg.org/#is-a-pathname-start
-  constexpr bool is_pathname_start() const;
+  ADA_CONSTEXPR bool is_pathname_start() const;
 
   // @see https://urlpattern.spec.whatwg.org/#is-a-password-prefix
-  constexpr bool is_password_prefix() const;
+  ADA_CONSTEXPR bool is_password_prefix() const;
 
   // @see https://urlpattern.spec.whatwg.org/#is-an-ipv6-open
-  constexpr bool is_an_ipv6_open() const;
+  ADA_CONSTEXPR bool is_an_ipv6_open() const;
 
   // @see https://urlpattern.spec.whatwg.org/#is-an-ipv6-close
-  constexpr bool is_an_ipv6_close() const;
+  ADA_CONSTEXPR bool is_an_ipv6_close() const;
 
   // @see https://urlpattern.spec.whatwg.org/#is-a-port-prefix
-  constexpr bool is_port_prefix() const;
+  ADA_CONSTEXPR bool is_port_prefix() const;
 
   // @see https://urlpattern.spec.whatwg.org/#is-a-non-special-pattern-char
-  constexpr bool is_non_special_pattern_char(size_t index,
+  ADA_CONSTEXPR bool is_non_special_pattern_char(size_t index,
                                              uint32_t value) const;
 
   // @see https://urlpattern.spec.whatwg.org/#get-a-safe-token
-  constexpr const token* get_safe_token(size_t index) const;
+  ADA_CONSTEXPR const token* get_safe_token(size_t index) const;
 
   // @see https://urlpattern.spec.whatwg.org/#make-a-component-string
   std::string make_component_string();
@@ -5744,7 +5755,7 @@ std::string escape_pattern_string(std::string_view input);
 std::string escape_regexp_string(std::string_view input);
 
 // @see https://urlpattern.spec.whatwg.org/#is-an-absolute-pathname
-constexpr bool is_absolute_pathname(
+ADA_CONSTEXPR bool is_absolute_pathname(
     std::string_view input, url_pattern_init::process_type type) noexcept;
 
 // @see https://urlpattern.spec.whatwg.org/#parse-a-pattern-string
@@ -6068,10 +6079,10 @@ namespace ada::scheme {
 namespace details {
 // for use with is_special and get_special_port
 // Spaces, if present, are removed from URL.
-constexpr std::string_view is_special_list[] = {"http", " ",   "https", "ws",
+ADA_CONSTEXPR std::string_view is_special_list[] = {"http", " ",   "https", "ws",
                                                 "ftp",  "wss", "file",  " "};
 // for use with get_special_port
-constexpr uint16_t special_ports[] = {80, 0, 443, 80, 21, 443, 0, 0};
+ADA_CONSTEXPR uint16_t special_ports[] = {80, 0, 443, 80, 21, 443, 0, 0};
 }  // namespace details
 
 /****
@@ -6098,7 +6109,7 @@ constexpr uint16_t special_ports[] = {80, 0, 443, 80, 21, 443, 0, 0};
  * Reference: https://github.com/ada-url/ada/issues/617
  ****/
 
-ada_really_inline constexpr bool is_special(std::string_view scheme) {
+ada_really_inline ADA_CONSTEXPR bool is_special(std::string_view scheme) {
   if (scheme.empty()) {
     return false;
   }
@@ -6106,7 +6117,7 @@ ada_really_inline constexpr bool is_special(std::string_view scheme) {
   const std::string_view target = details::is_special_list[hash_value];
   return (target[0] == scheme[0]) && (target.substr(1) == scheme.substr(1));
 }
-constexpr uint16_t get_special_port(std::string_view scheme) noexcept {
+ADA_CONSTEXPR uint16_t get_special_port(std::string_view scheme) noexcept {
   if (scheme.empty()) {
     return 0;
   }
@@ -6118,10 +6129,10 @@ constexpr uint16_t get_special_port(std::string_view scheme) noexcept {
     return 0;
   }
 }
-constexpr uint16_t get_special_port(ada::scheme::type type) noexcept {
+ADA_CONSTEXPR uint16_t get_special_port(ada::scheme::type type) noexcept {
   return details::special_ports[int(type)];
 }
-constexpr ada::scheme::type get_scheme_type(std::string_view scheme) noexcept {
+ADA_CONSTEXPR ada::scheme::type get_scheme_type(std::string_view scheme) noexcept {
   if (scheme.empty()) {
     return ada::scheme::NOT_SPECIAL;
   }
@@ -6392,14 +6403,14 @@ ada_really_inline bool has_tabs_or_newline(
  * Checks if the input is a forbidden host code point.
  * @see https://url.spec.whatwg.org/#forbidden-host-code-point
  */
-ada_really_inline constexpr bool is_forbidden_host_code_point(char c) noexcept;
+ada_really_inline ADA_CONSTEXPR bool is_forbidden_host_code_point(char c) noexcept;
 
 /**
  * @private
  * Checks if the input contains a forbidden domain code point.
  * @see https://url.spec.whatwg.org/#forbidden-domain-code-point
  */
-ada_really_inline constexpr bool contains_forbidden_domain_code_point(
+ada_really_inline ADA_CONSTEXPR bool contains_forbidden_domain_code_point(
     const char* input, size_t length) noexcept;
 
 /**
@@ -6409,7 +6420,7 @@ ada_really_inline constexpr bool contains_forbidden_domain_code_point(
  * then the second bit is set to 1.
  * @see https://url.spec.whatwg.org/#forbidden-domain-code-point
  */
-ada_really_inline constexpr uint8_t
+ada_really_inline ADA_CONSTEXPR uint8_t
 contains_forbidden_domain_code_point_or_upper(const char* input,
                                               size_t length) noexcept;
 
@@ -6418,14 +6429,14 @@ contains_forbidden_domain_code_point_or_upper(const char* input,
  * Checks if the input is a forbidden domain code point.
  * @see https://url.spec.whatwg.org/#forbidden-domain-code-point
  */
-ada_really_inline constexpr bool is_forbidden_domain_code_point(
+ada_really_inline ADA_CONSTEXPR bool is_forbidden_domain_code_point(
     char c) noexcept;
 
 /**
  * @private
  * Checks if the input is alphanumeric, '+', '-' or '.'
  */
-ada_really_inline constexpr bool is_alnum_plus(char c) noexcept;
+ada_really_inline ADA_CONSTEXPR bool is_alnum_plus(char c) noexcept;
 
 /**
  * @private
@@ -6434,21 +6445,21 @@ ada_really_inline constexpr bool is_alnum_plus(char c) noexcept;
  * range U+0041 (A) to U+0046 (F), inclusive. An ASCII lower hex digit is an
  * ASCII digit or a code point in the range U+0061 (a) to U+0066 (f), inclusive.
  */
-ada_really_inline constexpr bool is_ascii_hex_digit(char c) noexcept;
+ada_really_inline ADA_CONSTEXPR bool is_ascii_hex_digit(char c) noexcept;
 
 /**
  * @private
  * An ASCII digit is a code point in the range U+0030 (0) to U+0039 (9),
  * inclusive.
  */
-ada_really_inline constexpr bool is_ascii_digit(char c) noexcept;
+ada_really_inline ADA_CONSTEXPR bool is_ascii_digit(char c) noexcept;
 
 /**
  * @private
  * @details If a char is between U+0000 and U+007F inclusive, then it's an ASCII
  * character.
  */
-ada_really_inline constexpr bool is_ascii(char32_t c) noexcept;
+ada_really_inline ADA_CONSTEXPR bool is_ascii(char32_t c) noexcept;
 
 /**
  * @private
@@ -6458,7 +6469,7 @@ ada_really_inline constexpr bool is_ascii(char32_t c) noexcept;
  * A C0 control is a code point in the range U+0000 NULL to U+001F INFORMATION
  * SEPARATOR ONE, inclusive.
  */
-ada_really_inline constexpr bool is_c0_control_or_space(char c) noexcept;
+ada_really_inline ADA_CONSTEXPR bool is_c0_control_or_space(char c) noexcept;
 
 /**
  * @private
@@ -6466,14 +6477,14 @@ ada_really_inline constexpr bool is_c0_control_or_space(char c) noexcept;
  *
  * @details An ASCII tab or newline is U+0009 TAB, U+000A LF, or U+000D CR.
  */
-ada_really_inline constexpr bool is_ascii_tab_or_newline(char c) noexcept;
+ada_really_inline ADA_CONSTEXPR bool is_ascii_tab_or_newline(char c) noexcept;
 
 /**
  * @private
  * @details A double-dot path segment must be ".." or an ASCII case-insensitive
  * match for ".%2e", "%2e.", or "%2e%2e".
  */
-ada_really_inline constexpr bool is_double_dot_path_segment(
+ada_really_inline ADA_CONSTEXPR bool is_double_dot_path_segment(
     std::string_view input) noexcept;
 
 /**
@@ -6481,21 +6492,21 @@ ada_really_inline constexpr bool is_double_dot_path_segment(
  * @details A single-dot path segment must be "." or an ASCII case-insensitive
  * match for "%2e".
  */
-ada_really_inline constexpr bool is_single_dot_path_segment(
+ada_really_inline ADA_CONSTEXPR bool is_single_dot_path_segment(
     std::string_view input) noexcept;
 
 /**
  * @private
  * @details ipv4 character might contain 0-9 or a-f character ranges.
  */
-ada_really_inline constexpr bool is_lowercase_hex(char c) noexcept;
+ada_really_inline ADA_CONSTEXPR bool is_lowercase_hex(char c) noexcept;
 
 /**
  * @private
  * @details Convert hex to binary. Caller is responsible to ensure that
  * the parameter is an hexadecimal digit (0-9, A-F, a-f).
  */
-ada_really_inline unsigned constexpr convert_hex_to_binary(char c) noexcept;
+ada_really_inline unsigned ADA_CONSTEXPR convert_hex_to_binary(char c) noexcept;
 
 /**
  * @private
@@ -6546,7 +6557,7 @@ ada_really_inline size_t percent_encode_index(std::string_view input,
  * Lowers the string in-place, assuming that the content is ASCII.
  * Return true if the content was ASCII.
  */
-constexpr bool to_lower_ascii(char* input, size_t length) noexcept;
+ADA_CONSTEXPR bool to_lower_ascii(char* input, size_t length) noexcept;
 }  // namespace ada::unicode
 
 #endif  // ADA_UNICODE_H
@@ -6567,7 +6578,7 @@ constexpr bool to_lower_ascii(char* input, size_t length) noexcept;
 
 namespace ada {
 
-[[nodiscard]] ada_really_inline constexpr bool url_base::is_special()
+[[nodiscard]] ada_really_inline ADA_CONSTEXPR bool url_base::is_special()
     const noexcept {
   return type != ada::scheme::NOT_SPECIAL;
 }
@@ -6629,7 +6640,7 @@ inline std::ostream &operator<<(std::ostream &out, const ada::url &u) {
   return path.size();
 }
 
-[[nodiscard]] constexpr std::string_view url::get_pathname() const noexcept {
+[[nodiscard]] ADA_CONSTEXPR std::string_view url::get_pathname() const noexcept {
   return path;
 }
 
@@ -6739,19 +6750,19 @@ inline void url::update_base_port(std::optional<uint16_t> input) {
   port = input;
 }
 
-constexpr void url::clear_pathname() { path.clear(); }
+ADA_CONSTEXPR void url::clear_pathname() { path.clear(); }
 
-constexpr void url::clear_search() { query = std::nullopt; }
+ADA_CONSTEXPR void url::clear_search() { query = std::nullopt; }
 
-[[nodiscard]] constexpr bool url::has_hash() const noexcept {
+[[nodiscard]] ADA_CONSTEXPR bool url::has_hash() const noexcept {
   return hash.has_value();
 }
 
-[[nodiscard]] constexpr bool url::has_search() const noexcept {
+[[nodiscard]] ADA_CONSTEXPR bool url::has_search() const noexcept {
   return query.has_value();
 }
 
-constexpr void url::set_protocol_as_file() { type = ada::scheme::type::FILE; }
+ADA_CONSTEXPR void url::set_protocol_as_file() { type = ada::scheme::type::FILE; }
 
 inline void url::set_scheme(std::string &&new_scheme) noexcept {
   type = ada::scheme::get_scheme_type(new_scheme);
@@ -6761,12 +6772,12 @@ inline void url::set_scheme(std::string &&new_scheme) noexcept {
   }
 }
 
-constexpr void url::copy_scheme(ada::url &&u) noexcept {
+ADA_CONSTEXPR void url::copy_scheme(ada::url &&u) noexcept {
   non_special_scheme = u.non_special_scheme;
   type = u.type;
 }
 
-constexpr void url::copy_scheme(const ada::url &u) {
+ADA_CONSTEXPR void url::copy_scheme(const ada::url &u) {
   non_special_scheme = u.non_special_scheme;
   type = u.type;
 }
@@ -6853,7 +6864,7 @@ ada_really_inline size_t url::parse_port(std::string_view view,
 
 namespace ada {
 
-[[nodiscard]] constexpr bool url_components::check_offset_consistency()
+[[nodiscard]] ADA_CONSTEXPR bool url_components::check_offset_consistency()
     const noexcept {
   /**
    * https://user:pass@example.com:1234/foo/bar?baz#quux
@@ -6988,7 +6999,7 @@ struct url_aggregator : url_base {
    * @see https://url.spec.whatwg.org/#dom-url-href
    * @see https://url.spec.whatwg.org/#concept-url-serializer
    */
-  [[nodiscard]] constexpr std::string_view get_href() const noexcept
+  [[nodiscard]] ADA_CONSTEXPR std::string_view get_href() const noexcept
       ada_lifetime_bound;
   /**
    * The username getter steps are to return this's URL's username.
@@ -7045,7 +7056,7 @@ struct url_aggregator : url_base {
    * @return a lightweight std::string_view.
    * @see https://url.spec.whatwg.org/#dom-url-pathname
    */
-  [[nodiscard]] constexpr std::string_view get_pathname() const noexcept
+  [[nodiscard]] ADA_CONSTEXPR std::string_view get_pathname() const noexcept
       ada_lifetime_bound;
   /**
    * Compute the pathname length in bytes without instantiating a view or a
@@ -7075,7 +7086,7 @@ struct url_aggregator : url_base {
    * A URL includes credentials if its username or password is not the empty
    * string.
    */
-  [[nodiscard]] ada_really_inline constexpr bool has_credentials()
+  [[nodiscard]] ada_really_inline ADA_CONSTEXPR bool has_credentials()
       const noexcept;
 
   /**
@@ -7115,24 +7126,24 @@ struct url_aggregator : url_base {
    * @return true if the URL is valid, otherwise return true of the offsets are
    * possible.
    */
-  [[nodiscard]] constexpr bool validate() const noexcept;
+  [[nodiscard]] ADA_CONSTEXPR bool validate() const noexcept;
 
   /** @return true if it has an host but it is the empty string */
-  [[nodiscard]] constexpr bool has_empty_hostname() const noexcept;
+  [[nodiscard]] ADA_CONSTEXPR bool has_empty_hostname() const noexcept;
   /** @return true if it has a host (included an empty host) */
-  [[nodiscard]] constexpr bool has_hostname() const noexcept;
+  [[nodiscard]] ADA_CONSTEXPR bool has_hostname() const noexcept;
   /** @return true if the URL has a non-empty username */
-  [[nodiscard]] constexpr bool has_non_empty_username() const noexcept;
+  [[nodiscard]] ADA_CONSTEXPR bool has_non_empty_username() const noexcept;
   /** @return true if the URL has a non-empty password */
-  [[nodiscard]] constexpr bool has_non_empty_password() const noexcept;
+  [[nodiscard]] ADA_CONSTEXPR bool has_non_empty_password() const noexcept;
   /** @return true if the URL has a (non default) port */
-  [[nodiscard]] constexpr bool has_port() const noexcept;
+  [[nodiscard]] ADA_CONSTEXPR bool has_port() const noexcept;
   /** @return true if the URL has a password */
-  [[nodiscard]] constexpr bool has_password() const noexcept;
+  [[nodiscard]] ADA_CONSTEXPR bool has_password() const noexcept;
   /** @return true if the URL has a hash component */
-  [[nodiscard]] constexpr bool has_hash() const noexcept override;
+  [[nodiscard]] ADA_CONSTEXPR bool has_hash() const noexcept override;
   /** @return true if the URL has a search component */
-  [[nodiscard]] constexpr bool has_search() const noexcept override;
+  [[nodiscard]] ADA_CONSTEXPR bool has_search() const noexcept override;
 
   inline void clear_port();
   inline void clear_hash();
@@ -7176,7 +7187,7 @@ struct url_aggregator : url_base {
    * To optimize performance, you may indicate how much memory to allocate
    * within this instance.
    */
-  constexpr void reserve(uint32_t capacity);
+  ADA_CONSTEXPR void reserve(uint32_t capacity);
 
   ada_really_inline size_t parse_port(
       std::string_view view, bool check_trailing_content) noexcept override;
@@ -7211,7 +7222,7 @@ struct url_aggregator : url_base {
    * A URL cannot have a username/password/port if its host is null or the empty
    * string, or its scheme is "file".
    */
-  [[nodiscard]] constexpr bool cannot_have_credentials_or_port() const;
+  [[nodiscard]] ADA_CONSTEXPR bool cannot_have_credentials_or_port() const;
 
   template <bool override_hostname = false>
   bool set_host_or_hostname(std::string_view input);
@@ -7233,10 +7244,10 @@ struct url_aggregator : url_base {
   inline void update_base_port(uint32_t input);
   inline void append_base_pathname(std::string_view input);
   [[nodiscard]] inline uint32_t retrieve_base_port() const;
-  constexpr void clear_hostname();
-  constexpr void clear_password();
-  constexpr void clear_pathname() override;
-  [[nodiscard]] constexpr bool has_dash_dot() const noexcept;
+  ADA_CONSTEXPR void clear_hostname();
+  ADA_CONSTEXPR void clear_password();
+  ADA_CONSTEXPR void clear_pathname() override;
+  [[nodiscard]] ADA_CONSTEXPR bool has_dash_dot() const noexcept;
   void delete_dash_dot();
   inline void consume_prepared_path(std::string_view input);
   template <bool has_state_override = false>
@@ -7244,8 +7255,8 @@ struct url_aggregator : url_base {
       std::string_view input);
   ada_really_inline uint32_t replace_and_resize(uint32_t start, uint32_t end,
                                                 std::string_view input);
-  [[nodiscard]] constexpr bool has_authority() const noexcept;
-  constexpr void set_protocol_as_file();
+  [[nodiscard]] ADA_CONSTEXPR bool has_authority() const noexcept;
+  ADA_CONSTEXPR void set_protocol_as_file();
   inline void set_scheme(std::string_view new_scheme) noexcept;
   /**
    * Fast function to set the scheme from a view with a colon in the
@@ -7717,7 +7728,7 @@ inline void url_aggregator::append_base_username(const std::string_view input) {
   ADA_ASSERT_TRUE(validate());
 }
 
-constexpr void url_aggregator::clear_password() {
+ADA_CONSTEXPR void url_aggregator::clear_password() {
   ada_log("url_aggregator::clear_password ", to_string());
   ADA_ASSERT_TRUE(validate());
   if (!has_password()) {
@@ -7939,7 +7950,7 @@ inline void url_aggregator::clear_hash() {
   ADA_ASSERT_TRUE(validate());
 }
 
-constexpr void url_aggregator::clear_pathname() {
+ADA_CONSTEXPR void url_aggregator::clear_pathname() {
   ada_log("url_aggregator::clear_pathname");
   ADA_ASSERT_TRUE(validate());
   uint32_t ending_index = uint32_t(buffer.size());
@@ -7974,7 +7985,7 @@ constexpr void url_aggregator::clear_pathname() {
   ada_log("url_aggregator::clear_pathname completed, running checks... ok");
 }
 
-constexpr void url_aggregator::clear_hostname() {
+ADA_CONSTEXPR void url_aggregator::clear_hostname() {
   ada_log("url_aggregator::clear_hostname");
   ADA_ASSERT_TRUE(validate());
   if (!has_authority()) {
@@ -8011,22 +8022,22 @@ constexpr void url_aggregator::clear_hostname() {
   ADA_ASSERT_TRUE(validate());
 }
 
-[[nodiscard]] constexpr bool url_aggregator::has_hash() const noexcept {
+[[nodiscard]] ADA_CONSTEXPR bool url_aggregator::has_hash() const noexcept {
   ada_log("url_aggregator::has_hash");
   return components.hash_start != url_components::omitted;
 }
 
-[[nodiscard]] constexpr bool url_aggregator::has_search() const noexcept {
+[[nodiscard]] ADA_CONSTEXPR bool url_aggregator::has_search() const noexcept {
   ada_log("url_aggregator::has_search");
   return components.search_start != url_components::omitted;
 }
 
-constexpr bool url_aggregator::has_credentials() const noexcept {
+ADA_CONSTEXPR bool url_aggregator::has_credentials() const noexcept {
   ada_log("url_aggregator::has_credentials");
   return has_non_empty_username() || has_non_empty_password();
 }
 
-constexpr bool url_aggregator::cannot_have_credentials_or_port() const {
+ADA_CONSTEXPR bool url_aggregator::cannot_have_credentials_or_port() const {
   ada_log("url_aggregator::cannot_have_credentials_or_port");
   return type == ada::scheme::type::FILE ||
          components.host_start == components.host_end;
@@ -8037,7 +8048,7 @@ url_aggregator::get_components() const noexcept {
   return components;
 }
 
-[[nodiscard]] constexpr bool ada::url_aggregator::has_authority()
+[[nodiscard]] ADA_CONSTEXPR bool ada::url_aggregator::has_authority()
     const noexcept {
   ada_log("url_aggregator::has_authority");
   // Performance: instead of doing this potentially expensive check, we could
@@ -8073,28 +8084,28 @@ inline void ada::url_aggregator::add_authority_slashes_if_needed() noexcept {
   ADA_ASSERT_TRUE(validate());
 }
 
-constexpr void ada::url_aggregator::reserve(uint32_t capacity) {
+ADA_CONSTEXPR void ada::url_aggregator::reserve(uint32_t capacity) {
   buffer.reserve(capacity);
 }
 
-constexpr bool url_aggregator::has_non_empty_username() const noexcept {
+ADA_CONSTEXPR bool url_aggregator::has_non_empty_username() const noexcept {
   ada_log("url_aggregator::has_non_empty_username");
   return components.protocol_end + 2 < components.username_end;
 }
 
-constexpr bool url_aggregator::has_non_empty_password() const noexcept {
+ADA_CONSTEXPR bool url_aggregator::has_non_empty_password() const noexcept {
   ada_log("url_aggregator::has_non_empty_password");
   return components.host_start - components.username_end > 0;
 }
 
-constexpr bool url_aggregator::has_password() const noexcept {
+ADA_CONSTEXPR bool url_aggregator::has_password() const noexcept {
   ada_log("url_aggregator::has_password");
   // This function does not care about the length of the password
   return components.host_start > components.username_end &&
          buffer[components.username_end] == ':';
 }
 
-constexpr bool url_aggregator::has_empty_hostname() const noexcept {
+ADA_CONSTEXPR bool url_aggregator::has_empty_hostname() const noexcept {
   if (!has_hostname()) {
     return false;
   }
@@ -8107,18 +8118,18 @@ constexpr bool url_aggregator::has_empty_hostname() const noexcept {
   return components.username_end != components.host_start;
 }
 
-constexpr bool url_aggregator::has_hostname() const noexcept {
+ADA_CONSTEXPR bool url_aggregator::has_hostname() const noexcept {
   return has_authority();
 }
 
-constexpr bool url_aggregator::has_port() const noexcept {
+ADA_CONSTEXPR bool url_aggregator::has_port() const noexcept {
   ada_log("url_aggregator::has_port");
   // A URL cannot have a username/password/port if its host is null or the empty
   // string, or its scheme is "file".
   return has_hostname() && components.pathname_start != components.host_end;
 }
 
-[[nodiscard]] constexpr bool url_aggregator::has_dash_dot() const noexcept {
+[[nodiscard]] ADA_CONSTEXPR bool url_aggregator::has_dash_dot() const noexcept {
   // If url's host is null, url does not have an opaque path, url's path's size
   // is greater than 1, and url's path[0] is the empty string, then append
   // U+002F (/) followed by U+002E (.) to output.
@@ -8150,7 +8161,7 @@ constexpr bool url_aggregator::has_port() const noexcept {
          buffer[components.host_end + 1] == '.';
 }
 
-[[nodiscard]] constexpr std::string_view url_aggregator::get_href()
+[[nodiscard]] ADA_CONSTEXPR std::string_view url_aggregator::get_href()
     const noexcept ada_lifetime_bound {
   ada_log("url_aggregator::get_href");
   return buffer;
@@ -8195,7 +8206,7 @@ ada_really_inline size_t url_aggregator::parse_port(
   return consumed;
 }
 
-constexpr void url_aggregator::set_protocol_as_file() {
+ADA_CONSTEXPR void url_aggregator::set_protocol_as_file() {
   ada_log("url_aggregator::set_protocol_as_file ");
   ADA_ASSERT_TRUE(validate());
   type = ada::scheme::type::FILE;
@@ -8225,7 +8236,7 @@ constexpr void url_aggregator::set_protocol_as_file() {
   ADA_ASSERT_TRUE(validate());
 }
 
-[[nodiscard]] constexpr bool url_aggregator::validate() const noexcept {
+[[nodiscard]] ADA_CONSTEXPR bool url_aggregator::validate() const noexcept {
   if (!is_valid) {
     return true;
   }
@@ -8395,7 +8406,7 @@ constexpr void url_aggregator::set_protocol_as_file() {
   return true;
 }
 
-[[nodiscard]] constexpr std::string_view url_aggregator::get_pathname()
+[[nodiscard]] ADA_CONSTEXPR std::string_view url_aggregator::get_pathname()
     const noexcept ada_lifetime_bound {
   ada_log("url_aggregator::get_pathname pathname_start = ",
           components.pathname_start, " buffer.size() = ", buffer.size(),
@@ -9457,7 +9468,7 @@ inline std::string to_string(token_type type) {
 #endif  // defined(ADA_TESTING) || defined(ADA_LOGGING)
 
 template <url_pattern_regex::regex_concept regex_provider>
-constexpr void constructor_string_parser<regex_provider>::rewind() {
+ADA_CONSTEXPR void constructor_string_parser<regex_provider>::rewind() {
   // Set parser's token index to parser's component start.
   token_index = component_start;
   // Set parser's token increment to 0.
@@ -9465,14 +9476,14 @@ constexpr void constructor_string_parser<regex_provider>::rewind() {
 }
 
 template <url_pattern_regex::regex_concept regex_provider>
-constexpr bool constructor_string_parser<regex_provider>::is_hash_prefix() {
+ADA_CONSTEXPR bool constructor_string_parser<regex_provider>::is_hash_prefix() {
   // Return the result of running is a non-special pattern char given parser,
   // parser's token index and "#".
   return is_non_special_pattern_char(token_index, '#');
 }
 
 template <url_pattern_regex::regex_concept regex_provider>
-constexpr bool constructor_string_parser<regex_provider>::is_search_prefix() {
+ADA_CONSTEXPR bool constructor_string_parser<regex_provider>::is_search_prefix() {
   // If result of running is a non-special pattern char given parser, parser's
   // token index and "?" is true, then return true.
   if (is_non_special_pattern_char(token_index, '?')) {
@@ -9505,7 +9516,7 @@ constexpr bool constructor_string_parser<regex_provider>::is_search_prefix() {
 }
 
 template <url_pattern_regex::regex_concept regex_provider>
-constexpr bool
+ADA_CONSTEXPR bool
 constructor_string_parser<regex_provider>::is_non_special_pattern_char(
     size_t index, uint32_t value) const {
   // Let token be the result of running get a safe token given parser and index.
@@ -9531,7 +9542,7 @@ constructor_string_parser<regex_provider>::is_non_special_pattern_char(
 }
 
 template <url_pattern_regex::regex_concept regex_provider>
-constexpr const token*
+ADA_CONSTEXPR const token*
 constructor_string_parser<regex_provider>::get_safe_token(size_t index) const {
   // If index is less than parser's token list's size, then return parser's
   // token list[index].
@@ -9551,7 +9562,7 @@ constructor_string_parser<regex_provider>::get_safe_token(size_t index) const {
 }
 
 template <url_pattern_regex::regex_concept regex_provider>
-constexpr bool constructor_string_parser<regex_provider>::is_group_open()
+ADA_CONSTEXPR bool constructor_string_parser<regex_provider>::is_group_open()
     const {
   // If parser's token list[parser's token index]'s type is "open", then return
   // true.
@@ -9559,7 +9570,7 @@ constexpr bool constructor_string_parser<regex_provider>::is_group_open()
 }
 
 template <url_pattern_regex::regex_concept regex_provider>
-constexpr bool constructor_string_parser<regex_provider>::is_group_close()
+ADA_CONSTEXPR bool constructor_string_parser<regex_provider>::is_group_close()
     const {
   // If parser's token list[parser's token index]'s type is "close", then return
   // true.
@@ -9567,7 +9578,7 @@ constexpr bool constructor_string_parser<regex_provider>::is_group_close()
 }
 
 template <url_pattern_regex::regex_concept regex_provider>
-constexpr bool
+ADA_CONSTEXPR bool
 constructor_string_parser<regex_provider>::next_is_authority_slashes() const {
   // If the result of running is a non-special pattern char given parser,
   // parser's token index + 1, and "/" is false, then return false.
@@ -9583,7 +9594,7 @@ constructor_string_parser<regex_provider>::next_is_authority_slashes() const {
 }
 
 template <url_pattern_regex::regex_concept regex_provider>
-constexpr bool constructor_string_parser<regex_provider>::is_protocol_suffix()
+ADA_CONSTEXPR bool constructor_string_parser<regex_provider>::is_protocol_suffix()
     const {
   // Return the result of running is a non-special pattern char given parser,
   // parser's token index, and ":".
@@ -9711,7 +9722,7 @@ std::string constructor_string_parser<regex_provider>::make_component_string() {
 }
 
 template <url_pattern_regex::regex_concept regex_provider>
-constexpr bool
+ADA_CONSTEXPR bool
 constructor_string_parser<regex_provider>::is_an_identity_terminator() const {
   // Return the result of running is a non-special pattern char given parser,
   // parser's token index, and "@".
@@ -9719,7 +9730,7 @@ constructor_string_parser<regex_provider>::is_an_identity_terminator() const {
 }
 
 template <url_pattern_regex::regex_concept regex_provider>
-constexpr bool constructor_string_parser<regex_provider>::is_pathname_start()
+ADA_CONSTEXPR bool constructor_string_parser<regex_provider>::is_pathname_start()
     const {
   // Return the result of running is a non-special pattern char given parser,
   // parser's token index, and "/".
@@ -9727,7 +9738,7 @@ constexpr bool constructor_string_parser<regex_provider>::is_pathname_start()
 }
 
 template <url_pattern_regex::regex_concept regex_provider>
-constexpr bool constructor_string_parser<regex_provider>::is_password_prefix()
+ADA_CONSTEXPR bool constructor_string_parser<regex_provider>::is_password_prefix()
     const {
   // Return the result of running is a non-special pattern char given parser,
   // parser's token index, and ":".
@@ -9735,7 +9746,7 @@ constexpr bool constructor_string_parser<regex_provider>::is_password_prefix()
 }
 
 template <url_pattern_regex::regex_concept regex_provider>
-constexpr bool constructor_string_parser<regex_provider>::is_an_ipv6_open()
+ADA_CONSTEXPR bool constructor_string_parser<regex_provider>::is_an_ipv6_open()
     const {
   // Return the result of running is a non-special pattern char given parser,
   // parser's token index, and "[".
@@ -9743,7 +9754,7 @@ constexpr bool constructor_string_parser<regex_provider>::is_an_ipv6_open()
 }
 
 template <url_pattern_regex::regex_concept regex_provider>
-constexpr bool constructor_string_parser<regex_provider>::is_an_ipv6_close()
+ADA_CONSTEXPR bool constructor_string_parser<regex_provider>::is_an_ipv6_close()
     const {
   // Return the result of running is a non-special pattern char given parser,
   // parser's token index, and "]".
@@ -9751,14 +9762,14 @@ constexpr bool constructor_string_parser<regex_provider>::is_an_ipv6_close()
 }
 
 template <url_pattern_regex::regex_concept regex_provider>
-constexpr bool constructor_string_parser<regex_provider>::is_port_prefix()
+ADA_CONSTEXPR bool constructor_string_parser<regex_provider>::is_port_prefix()
     const {
   // Return the result of running is a non-special pattern char given parser,
   // parser's token index, and ":".
   return is_non_special_pattern_char(token_index, ':');
 }
 
-constexpr void Tokenizer::get_next_code_point() {
+ADA_CONSTEXPR void Tokenizer::get_next_code_point() {
   ada_log("Tokenizer::get_next_code_point called with index=", next_index);
   ADA_ASSERT_TRUE(next_index < input.size());
   // this assumes that we have a valid, non-truncated UTF-8 stream.
@@ -9805,7 +9816,7 @@ constexpr void Tokenizer::get_next_code_point() {
   next_index += number_bytes;
 }
 
-constexpr void Tokenizer::seek_and_get_next_code_point(size_t new_index) {
+ADA_CONSTEXPR void Tokenizer::seek_and_get_next_code_point(size_t new_index) {
   ada_log("Tokenizer::seek_and_get_next_code_point called with new_index=",
           new_index);
   // Set tokenizer's next index to index.
