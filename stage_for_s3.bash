@@ -12,10 +12,19 @@ echo "Current timestamp is $TIMESTAMP"
 # Download node tarballs from the latest release
 gh release download -R Asana/node -p "*.xz"
 
+# Download and prepare fibers package
+curl "https://asana-oss-cache.s3.us-east-1.amazonaws.com/node-fibers/fibers-5.0.4.pc.tgz" --output fibers-5.0.4.tar.gz
+tar -xzf fibers-5.0.4.tar.gz
+rm fibers-5.0.4.tar.gz
+
 # Generate unique identifier from timestamp and hash of downloaded files
 SHORT_HASH=$(cat *.xz | sha1sum | cut -c1-4)
 echo "HASH: $SHORT_HASH"
 UNIQUE="pc-${TIMESTAMP}-${SHORT_HASH}"
+
+# Repackage fibers with unique identifier
+tar -czf "fibers-5.0.4-${UNIQUE}.tgz" package/
+rm -rf package
 
 for file in *.tar.xz; do
   if [[ "$file" == *-LATEST.tar.xz ]]; then
