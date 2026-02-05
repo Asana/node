@@ -518,14 +518,22 @@ size_t Isolate::HashIsolateForEmbeddedBlob() {
   return hash;
 }
 
-thread_local Isolate::PerIsolateThreadData* g_current_per_isolate_thread_data_
-    V8_CONSTINIT = nullptr;
-thread_local Isolate* g_current_isolate_ V8_CONSTINIT = nullptr;
+// LocalStorageKey-based thread locals for fibers support
+base::Thread::LocalStorageKey Isolate::isolate_key_;
+base::Thread::LocalStorageKey Isolate::per_isolate_thread_data_key_;
+std::atomic<bool> Isolate::isolate_key_created_{false};
+// Commented out for fibers support - replaced with LocalStorageKey
+//thread_local Isolate::PerIsolateThreadData* g_current_per_isolate_thread_data_
+//    V8_CONSTINIT = nullptr;
+//thread_local Isolate* g_current_isolate_ V8_CONSTINIT = nullptr;
 
-V8_TLS_DEFINE_GETTER(Isolate::TryGetCurrent, Isolate*, g_current_isolate_)
+//V8_TLS_DEFINE_GETTER(Isolate::TryGetCurrent, Isolate*, g_current_isolate_)
 
 // static
-void Isolate::SetCurrent(Isolate* isolate) { g_current_isolate_ = isolate; }
+void Isolate::SetCurrent(Isolate* isolate) {
+  // Use LocalStorageKey for fibers support
+  base::Thread::SetThreadLocal(isolate_key_, isolate);
+}
 
 namespace {
 // A global counter for all generated Isolates, might overflow.
@@ -580,7 +588,24 @@ Isolate::PerIsolateThreadData* Isolate::FindPerThreadDataForThread(
   return per_thread;
 }
 
-void Isolate::InitializeOncePerProcess() { Heap::InitializeOncePerProcess(); }
+void Isolate::InitializeOncePerProcess() {
+  // Initialize LocalStorageKeys for fibers support
+  isolate_key_ = base::Thread::CreateThreadLocalKey();
+  bool expected = false;
+  CHECK(isolate_key_created_.compare_exchange_strong(
+      expected, true, std::memory_order_relaxed));
+  per_isolate_thread_data_key_ = base::Thread::CreateThreadLocalKey();
+
+  Heap::InitializeOncePerProcess();
+}
+
+void Isolate::DisposeOncePerProcess() {
+  base::Thread::DeleteThreadLocalKey(isolate_key_);
+  bool expected = true;
+  CHECK(isolate_key_created_.compare_exchange_strong(
+      expected, false, std::memory_order_relaxed));
+  base::Thread::DeleteThreadLocalKey(per_isolate_thread_data_key_);
+}
 
 Address Isolate::get_address_from_id(IsolateAddressId id) {
   return isolate_addresses_[id];
@@ -4147,10 +4172,14 @@ void Isolate::Deinitialize(Isolate* isolate) {
   // direct pointer. We don't use Enter/Exit here to avoid
   // initializing the thread data.
   PerIsolateThreadData* saved_data = isolate->CurrentPerIsolateThreadData();
-  Isolate* saved_isolate = isolate->TryGetCurrent();
+  // Use LocalStorageKey directly for fibers support
+  DCHECK_EQ(true, isolate_key_created_.load(std::memory_order_relaxed));
+  Isolate* saved_isolate = reinterpret_cast<Isolate*>(
+      base::Thread::GetThreadLocal(isolate->isolate_key_));
   SetIsolateThreadLocals(isolate, nullptr);
   isolate->set_thread_id(ThreadId::Current());
-  isolate->heap()->SetStackStart();
+  // Commented out for fibers support - can cause issues with fiber switching
+  //isolate->heap()->SetStackStart();
 
   isolate->Deinit();
 
@@ -4676,8 +4705,11 @@ void Isolate::Deinit() {
 
 void Isolate::SetIsolateThreadLocals(Isolate* isolate,
                                      PerIsolateThreadData* data) {
-  Isolate::SetCurrent(isolate);
-  g_current_per_isolate_thread_data_ = data;
+  // Use LocalStorageKey for fibers support
+  //Isolate::SetCurrent(isolate);
+  //g_current_per_isolate_thread_data_ = data;
+  base::Thread::SetThreadLocal(isolate_key_, isolate);
+  base::Thread::SetThreadLocal(per_isolate_thread_data_key_, data);
 
 #ifdef V8_COMPRESS_POINTERS_IN_MULTIPLE_CAGES
   V8HeapCompressionScheme::InitBase(isolate ? isolate->cage_base()
@@ -5289,10 +5321,17 @@ void Isolate::AddCrashKeysForIsolateAndHeapPointers() {
   add_crash_key_callback_(v8::CrashKeyId::kReadonlySpaceFirstPageAddress,
                           ToHexString(ro_space_firstpage_address));
 
-  const uintptr_t old_space_firstpage_address =
-      heap()->old_space()->FirstPageAddress();
-  add_crash_key_callback_(v8::CrashKeyId::kOldSpaceFirstPageAddress,
-                          ToHexString(old_space_firstpage_address));
+  // Commented out for pointer compression / fibers support
+  //const uintptr_t old_space_firstpage_address =
+  //    heap()->old_space()->FirstPageAddress();
+  //add_crash_key_callback_(v8::CrashKeyId::kOldSpaceFirstPageAddress,
+  //                        ToHexString(old_space_firstpage_address));
+  if (heap()->new_space()) {
+    const uintptr_t map_space_firstpage_address =
+        heap()->new_space()->FirstPageAddress();
+    add_crash_key_callback_(v8::CrashKeyId::kMapSpaceFirstPageAddress,
+                            ToHexString(map_space_firstpage_address));
+  }
 
   if (heap()->code_range_base()) {
     const uintptr_t code_range_base_address = heap()->code_range_base();

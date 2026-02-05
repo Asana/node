@@ -345,6 +345,8 @@ Isolate* NewIsolate(Isolate::CreateParams* params,
   // so that the isolate can access the platform during initialization.
   platform->RegisterIsolate(isolate, event_loop);
 
+  // NOTE: CppHeap re-enabled for v24 - required for vm module and contextify.
+  // If fibers have issues, investigate stack scanning in cppgc.
   // Ensure that there is always a CppHeap.
   if (settings.cpp_heap == nullptr) {
     params->cpp_heap =

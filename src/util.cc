@@ -746,6 +746,7 @@ RAIIIsolateWithoutEntering::RAIIIsolateWithoutEntering(const SnapshotData* data)
     SnapshotBuilder::InitializeIsolateParams(data, &params);
   }
   params.array_buffer_allocator = allocator_.get();
+  // NOTE: CppHeap re-enabled for v24 - required for vm module and contextify.
   params.cpp_heap = v8::CppHeap::Create(per_process::v8_platform.Platform(),
                                         v8::CppHeapCreateParams{{}})
                         .release();
