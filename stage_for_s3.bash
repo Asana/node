@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-set -e
-
 mkdir stage
 cd stage || exit
 
@@ -9,22 +7,25 @@ TIMESTAMP=$(date '+%Y%m%d.%H%M')
 
 echo "Current timestamp is $TIMESTAMP"
 
-# Download node tarballs from the latest release
-gh release download -R Asana/node -p "*.xz"
+gh release download -p "*.gz"
+gh release download -p "*.xz"
 
-# Download and prepare fibers package
-curl "https://asana-oss-cache.s3.us-east-1.amazonaws.com/node-fibers/fibers-5.0.4.pc.tgz" --output fibers-5.0.4.tar.gz
+curl "https://asana-oss-cache.s3.us-east-1.amazonaws.com/node-fibers/fibers-5.0.4.pc.tgz"  --output fibers-5.0.4.tar.gz
 tar -xzf fibers-5.0.4.tar.gz
-rm fibers-5.0.4.tar.gz
 
-# Generate unique identifier from timestamp and hash of downloaded files
-SHORT_HASH=$(cat *.xz | sha1sum | cut -c1-4)
+find . -name "*.gz" | while read -r a
+do
+	tar -xzf "$a" -C package/bin
+	rm "$a"
+done
+
+tar -czf temp.tgz package/
+rm -fr package
+SHORT_HASH=$(cat temp.tgz | sha1sum | cut -c1-4)
 echo "HASH: $SHORT_HASH"
 UNIQUE="pc-${TIMESTAMP}-${SHORT_HASH}"
 
-# Repackage fibers with unique identifier
-tar -czf "fibers-5.0.4-${UNIQUE}.tgz" package/
-rm -rf package
+mv temp.tgz "fibers-5.0.4-${UNIQUE}.tgz"
 
 for file in *.tar.xz; do
   if [[ "$file" == *-LATEST.tar.xz ]]; then
@@ -34,7 +35,7 @@ for file in *.tar.xz; do
     echo "Renaming: $file -> $new_name"
     mv "$file" "$new_name"
 
-    if [[ "$new_name" =~ node-v([0-9.]+)-(darwin|linux)-(arm64|x64).*\.tar\.xz$ ]]; then
+    if [[ "$new_name" =~ node-v([0-9.]+)-(darwin|linux)-(arm64|x64)-pc.*\.tar\.xz$ ]]; then
       version="${BASH_REMATCH[1]}"
       os="${BASH_REMATCH[2]}"
       arch="${BASH_REMATCH[3]}"
@@ -42,19 +43,15 @@ for file in *.tar.xz; do
 
       echo "Target Dir: $target_dir"
       mkdir "$target_dir"
-      tar -xJf "$new_name" -C "$target_dir"
-
-      # Flatten directory structure if needed (handle both usr/local and direct layouts)
-      if [ -d "$target_dir/usr/local" ]; then
-        mv $target_dir/usr/local/* "$target_dir"
-        rm -rf "$target_dir/usr"
-      fi
+      tar -xzf "$new_name" -C "$target_dir"
+      mv "$target_dir/usr/local/*" "$target_dir"
+      rm -fr "$target_dir/usr/local"
 
       tar -cJf "$new_name" "$target_dir"
 
-      rm -rf "$target_dir"
+      rm -fr "$target_dir"
 
-      echo "Done: Archive now contains:"
+      echo "✅ Done: Archive now contains:"
       tar -tf "$new_name" | head
 
     else
@@ -63,7 +60,11 @@ for file in *.tar.xz; do
   fi
 done
 
+
 cd ..
 mv stage "node-${UNIQUE}"
 
 echo "Files are in node-${UNIQUE}, please upload to s3"
+
+
+
