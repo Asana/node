@@ -4576,7 +4576,7 @@ namespace ada {
  * This struct is used to extract components from a single 'href'.
  */
 struct url_components {
-  ADA_CONSTEXPR static uint32_t omitted = uint32_t(-1);
+  constexpr static uint32_t omitted = uint32_t(-1);
 
   url_components() = default;
   url_components(const url_components &u) = default;
