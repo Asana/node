@@ -111,7 +111,7 @@ struct V8Platform {
         [](auto& categories) -> std::set<std::string> {
       std::set<std::string> out;
       for (const auto& s : categories) {
-        out.emplace(std::string(s.data(), s.size()));
+        out.emplace(std::string(std::ranges::begin(s), std::ranges::end(s)));
       }
       return out;
     };
