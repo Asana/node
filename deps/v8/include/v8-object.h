@@ -5,6 +5,8 @@
 #ifndef INCLUDE_V8_OBJECT_H_
 #define INCLUDE_V8_OBJECT_H_
 
+#include <cstring>  // for memcpy in SetAccessor compatibility shim
+
 #include "v8-internal.h"           // NOLINT(build/include_directory)
 #include "v8-local-handle.h"       // NOLINT(build/include_directory)
 #include "v8-maybe.h"              // NOLINT(build/include_directory)
@@ -157,6 +159,17 @@ using AccessorNameGetterCallback =
 
 using AccessorNameSetterCallback =
     void (*)(Local<Name> property, Local<Value> value,
+             const PropertyCallbackInfo<void>& info);
+
+/**
+ * Compatibility shim for node-fibers: Old-style accessor callbacks using
+ * Local<String> instead of Local<Name>. These were removed in V8 12.x.
+ */
+using AccessorGetterCallback =
+    void (*)(Local<String> property, const PropertyCallbackInfo<Value>& info);
+
+using AccessorSetterCallback =
+    void (*)(Local<String> property, Local<Value> value,
              const PropertyCallbackInfo<void>& info);
 
 /**
@@ -378,6 +391,29 @@ class V8_EXPORT Object : public Value {
     return SetNativeDataProperty(context, name, getter, setter, data,
                                  attributes, getter_side_effect_type,
                                  setter_side_effect_type);
+  }
+
+  /**
+   * Compatibility shim for node-fibers: Old-style SetAccessor accepting
+   * AccessorGetterCallback (Local<String> based) instead of
+   * AccessorNameGetterCallback (Local<Name> based).
+   */
+  V8_WARN_UNUSED_RESULT Maybe<bool> SetAccessor(
+      Local<Context> context, Local<String> name,
+      AccessorGetterCallback getter,
+      AccessorSetterCallback setter = nullptr,
+      Local<Value> data = Local<Value>(), PropertyAttribute attributes = None,
+      SideEffectType getter_side_effect_type = SideEffectType::kHasSideEffect,
+      SideEffectType setter_side_effect_type = SideEffectType::kHasSideEffect) {
+    // String inherits from Name. Safe type pun since Local is just a pointer.
+    Local<Name> name_as_name;
+    static_assert(sizeof(name_as_name) == sizeof(name), "Local size mismatch");
+    memcpy(&name_as_name, &name, sizeof(name));
+    return SetNativeDataProperty(
+        context, name_as_name,
+        reinterpret_cast<AccessorNameGetterCallback>(getter),
+        reinterpret_cast<AccessorNameSetterCallback>(setter), data, attributes,
+        getter_side_effect_type, setter_side_effect_type);
   }
 
   /**

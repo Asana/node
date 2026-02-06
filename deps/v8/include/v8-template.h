@@ -6,6 +6,7 @@
 #define INCLUDE_V8_TEMPLATE_H_
 
 #include <cstddef>
+#include <cstring>  // for memcpy in SetAccessor compatibility shim
 #include <string_view>
 
 #include "v8-data.h"               // NOLINT(build/include_directory)
@@ -120,6 +121,28 @@ class V8_EXPORT Template : public Data {
       SideEffectType setter_side_effect_type = SideEffectType::kHasSideEffect) {
     SetNativeDataProperty(name, getter, setter, data, attribute,
                           getter_side_effect_type, setter_side_effect_type);
+  }
+
+  /**
+   * Compatibility shim for node-fibers: Old-style SetAccessor accepting
+   * AccessorGetterCallback (Local<String> based) instead of
+   * AccessorNameGetterCallback (Local<Name> based).
+   */
+  void SetAccessor(
+      Local<String> name, AccessorGetterCallback getter,
+      AccessorSetterCallback setter = nullptr,
+      Local<Value> data = Local<Value>(), PropertyAttribute attribute = None,
+      SideEffectType getter_side_effect_type = SideEffectType::kHasSideEffect,
+      SideEffectType setter_side_effect_type = SideEffectType::kHasSideEffect) {
+    // String inherits from Name. Safe type pun since Local is just a pointer.
+    Local<Name> name_as_name;
+    static_assert(sizeof(name_as_name) == sizeof(name), "Local size mismatch");
+    memcpy(&name_as_name, &name, sizeof(name));
+    SetNativeDataProperty(
+        name_as_name,
+        reinterpret_cast<AccessorNameGetterCallback>(getter),
+        reinterpret_cast<AccessorNameSetterCallback>(setter), data, attribute,
+        getter_side_effect_type, setter_side_effect_type);
   }
 
   /**
