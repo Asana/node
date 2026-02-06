@@ -6,16 +6,33 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # Install necessary dependencies
 # Ubuntu 22.04 has Python 3.10 which meets Node.js v24 requirement (3.9+)
-# Install GCC 13 from Ubuntu Toolchain PPA for full C++20 support
-RUN apt-get update
-RUN apt-get install -y software-properties-common
-RUN add-apt-repository -y ppa:ubuntu-toolchain-r/test
-RUN apt-get update && apt-get install -y build-essential python3 python3-distutils gcc-13 g++-13 make curl git pkg-config libssl-dev libffi-dev libgmp-dev libtool autoconf automake cmake wget xz-utils unzip vim
-RUN rm -rf /var/lib/apt/lists/*
+# Use GCC 11 (default in Ubuntu 22.04) for C++20 support with compatible GLIBCXX symbols
+# GCC 13 requires GLIBCXX_3.4.31/32 which older systems don't have
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    python3 \
+    python3-distutils \
+    g++-11 \
+    make \
+    curl \
+    git \
+    pkg-config \
+    libssl-dev \
+    libffi-dev \
+    libgmp-dev \
+    libtool \
+    autoconf \
+    automake \
+    cmake \
+    wget \
+    xz-utils \
+    unzip \
+    vim \
+    && rm -rf /var/lib/apt/lists/*
 
-# Set GCC 13 as the default compiler
-RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 100
-RUN update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-13 100
+# Set GCC 11 as the default compiler
+RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 100
+RUN update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-11 100
 
 # Copy local Node.js source into the image
 WORKDIR /usr/src/node
