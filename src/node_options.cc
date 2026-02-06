@@ -63,7 +63,10 @@ void DebugOptions::CheckOptions(std::vector<std::string>* errors,
   inspect_publish_uid.console = false;
   inspect_publish_uid.http = false;
   for (const auto& entry : entries) {
-    std::string_view destination(entry.data(), entry.size());
+    // Use std::ranges::copy for GCC 11 C++20 compatibility
+    // (split_view subranges don't have .data() and .size())
+    std::string destination;
+    std::ranges::copy(entry, std::back_inserter(destination));
     if (destination == "stderr"sv) {
       inspect_publish_uid.console = true;
     } else if (destination == "http"sv) {
