@@ -5547,10 +5547,10 @@ class Tokenizer {
       : input(new_input), policy(new_policy) {}
 
   // @see https://urlpattern.spec.whatwg.org/#get-the-next-code-point
-  constexpr void get_next_code_point();
+  inline void get_next_code_point();
 
   // @see https://urlpattern.spec.whatwg.org/#seek-and-get-the-next-code-point
-  constexpr void seek_and_get_next_code_point(size_t index);
+  inline void seek_and_get_next_code_point(size_t index);
 
   // @see https://urlpattern.spec.whatwg.org/#add-a-token
 
@@ -8150,7 +8150,7 @@ constexpr bool url_aggregator::has_port() const noexcept {
          buffer[components.host_end + 1] == '.';
 }
 
-[[nodiscard]] constexpr std::string_view url_aggregator::get_href()
+[[nodiscard]] inline std::string_view url_aggregator::get_href()
     const noexcept ada_lifetime_bound {
   ada_log("url_aggregator::get_href");
   return buffer;
@@ -8195,7 +8195,7 @@ ada_really_inline size_t url_aggregator::parse_port(
   return consumed;
 }
 
-constexpr void url_aggregator::set_protocol_as_file() {
+inline void url_aggregator::set_protocol_as_file() {
   ada_log("url_aggregator::set_protocol_as_file ");
   ADA_ASSERT_TRUE(validate());
   type = ada::scheme::type::FILE;
@@ -9758,7 +9758,7 @@ constexpr bool constructor_string_parser<regex_provider>::is_port_prefix()
   return is_non_special_pattern_char(token_index, ':');
 }
 
-constexpr void Tokenizer::get_next_code_point() {
+inline void Tokenizer::get_next_code_point() {
   ada_log("Tokenizer::get_next_code_point called with index=", next_index);
   ADA_ASSERT_TRUE(next_index < input.size());
   // this assumes that we have a valid, non-truncated UTF-8 stream.
@@ -9805,7 +9805,7 @@ constexpr void Tokenizer::get_next_code_point() {
   next_index += number_bytes;
 }
 
-constexpr void Tokenizer::seek_and_get_next_code_point(size_t new_index) {
+inline void Tokenizer::seek_and_get_next_code_point(size_t new_index) {
   ada_log("Tokenizer::seek_and_get_next_code_point called with new_index=",
           new_index);
   // Set tokenizer's next index to index.
