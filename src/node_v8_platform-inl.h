@@ -111,7 +111,11 @@ struct V8Platform {
         [](auto& categories) -> std::set<std::string> {
       std::set<std::string> out;
       for (const auto& s : categories) {
-        out.emplace(std::string(std::ranges::begin(s), std::ranges::end(s)));
+        // Use std::ranges::copy instead of string iterator constructor
+        // for GCC 11 C++20 compatibility
+        std::string str;
+        std::ranges::copy(s, std::back_inserter(str));
+        out.emplace(std::move(str));
       }
       return out;
     };
