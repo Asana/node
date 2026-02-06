@@ -49,8 +49,9 @@ for pattern in "${EXPECTED_FIBERS_BINARIES[@]}"; do
 done
 
 echo ""
-echo "=== Downloading fibers package from S3 ==="
-curl --fail -sS "https://asana-oss-cache.s3.us-east-1.amazonaws.com/node-fibers/fibers-5.0.4.pc.tgz" --output fibers-5.0.4.tar.gz
+echo "=== Downloading fibers package via CloudFront ==="
+# Download fibers base package via CloudFront (public S3 access was disabled)
+curl --fail -sS "https://asana-oss-cache.asana.biz/node-fibers/fibers-5.0.4.pc.tgz" --output fibers-5.0.4.tar.gz
 
 if [[ ! -f fibers-5.0.4.tar.gz ]]; then
   echo "ERROR: Failed to download fibers package from S3" >&2
