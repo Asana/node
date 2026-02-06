@@ -2,18 +2,15 @@
 set -euo pipefail
 
 # Expected files that must be present after downloads
+# Note: Only Linux builds come from CI releases; macOS must be built locally
 EXPECTED_NODE_TARBALLS=(
-  "node-*-linux-x64-pc-LATEST.tar.xz"
-  "node-*-linux-arm64-pc-LATEST.tar.xz"
-  "node-*-darwin-x64-pc-LATEST.tar.xz"
-  "node-*-darwin-arm64-pc-LATEST.tar.xz"
+  "node-*-linux-x64-LATEST.tar.xz"
+  "node-*-linux-arm64-LATEST.tar.xz"
 )
 
 EXPECTED_FIBERS_BINARIES=(
   "linux-x64-*.tar.gz"
   "linux-arm64-*.tar.gz"
-  "darwin-x64-*.tar.gz"
-  "darwin-arm64-*.tar.gz"
 )
 
 check_files_exist() {
@@ -122,8 +119,8 @@ for file in *.tar.xz; do
   fi
 done
 
-if [[ $processed_count -lt 4 ]]; then
-  echo "ERROR: Expected to process at least 4 Node.js tarballs, but only processed $processed_count" >&2
+if [[ $processed_count -lt 2 ]]; then
+  echo "ERROR: Expected to process at least 2 Node.js tarballs, but only processed $processed_count" >&2
   exit 1
 fi
 
