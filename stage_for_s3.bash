@@ -60,6 +60,7 @@ fi
 echo "✓ Downloaded fibers-5.0.4.tar.gz"
 
 tar -xzf fibers-5.0.4.tar.gz
+rm fibers-5.0.4.tar.gz
 
 if [[ ! -d package ]]; then
   echo "ERROR: fibers tarball did not contain expected 'package' directory" >&2
@@ -68,7 +69,8 @@ fi
 
 echo ""
 echo "=== Extracting fibers binaries into package ==="
-find . -name "*.gz" | while read -r a
+# Only extract linux fibers binaries (not all .gz files)
+find . -name "linux-*.gz" | while read -r a
 do
 	echo "  Extracting: $a"
 	tar -xzf "$a" -C package/bin
@@ -94,7 +96,7 @@ for file in *.tar.xz; do
     echo "Renaming: $file -> $new_name"
     mv "$file" "$new_name"
 
-    if [[ "$new_name" =~ node-v([0-9.]+)-(darwin|linux)-(arm64|x64)-pc.*\.tar\.xz$ ]]; then
+    if [[ "$new_name" =~ node-v([0-9.]+)-(darwin|linux)-(arm64|x64).*\.tar\.xz$ ]]; then
       version="${BASH_REMATCH[1]}"
       os="${BASH_REMATCH[2]}"
       arch="${BASH_REMATCH[3]}"
@@ -103,8 +105,12 @@ for file in *.tar.xz; do
       echo "Target Dir: $target_dir"
       mkdir "$target_dir"
       tar -xJf "$new_name" -C "$target_dir"
-      mv "$target_dir/usr/local/"* "$target_dir/"
-      rm -fr "$target_dir/usr"
+
+      # Flatten directory structure if needed (handle both usr/local and direct layouts)
+      if [ -d "$target_dir/usr/local" ]; then
+        mv "$target_dir/usr/local/"* "$target_dir/"
+        rm -rf "$target_dir/usr"
+      fi
 
       tar -cJf "$new_name" "$target_dir"
 
