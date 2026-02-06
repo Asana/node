@@ -4762,7 +4762,7 @@ struct url : url_base {
    * @return a newly allocated string.
    * @see https://url.spec.whatwg.org/#dom-url-pathname
    */
-  [[nodiscard]] constexpr std::string_view get_pathname() const noexcept;
+  [[nodiscard]] inline std::string_view get_pathname() const noexcept;
 
   /**
    * Compute the pathname length in bytes without instantiating a view or a
@@ -4986,8 +4986,8 @@ struct url : url_base {
   template <bool has_state_override = false>
   [[nodiscard]] ada_really_inline bool parse_scheme(std::string_view input);
 
-  constexpr void clear_pathname() override;
-  constexpr void clear_search() override;
+  inline void clear_pathname() override;
+  inline void clear_search() override;
   constexpr void set_protocol_as_file();
 
   /**
@@ -5013,13 +5013,13 @@ struct url : url_base {
    * Take the scheme from another URL. The scheme string is moved from the
    * provided url.
    */
-  constexpr void copy_scheme(ada::url &&u) noexcept;
+  inline void copy_scheme(ada::url &&u) noexcept;
 
   /**
    * Take the scheme from another URL. The scheme string is copied from the
    * provided url.
    */
-  constexpr void copy_scheme(const ada::url &u);
+  inline void copy_scheme(const ada::url &u);
 
 };  // struct url
 
@@ -6629,7 +6629,7 @@ inline std::ostream &operator<<(std::ostream &out, const ada::url &u) {
   return path.size();
 }
 
-[[nodiscard]] constexpr std::string_view url::get_pathname() const noexcept {
+[[nodiscard]] inline std::string_view url::get_pathname() const noexcept {
   return path;
 }
 
@@ -6739,9 +6739,9 @@ inline void url::update_base_port(std::optional<uint16_t> input) {
   port = input;
 }
 
-constexpr void url::clear_pathname() { path.clear(); }
+inline void url::clear_pathname() { path.clear(); }
 
-constexpr void url::clear_search() { query = std::nullopt; }
+inline void url::clear_search() { query = std::nullopt; }
 
 [[nodiscard]] constexpr bool url::has_hash() const noexcept {
   return hash.has_value();
@@ -6761,12 +6761,12 @@ inline void url::set_scheme(std::string &&new_scheme) noexcept {
   }
 }
 
-constexpr void url::copy_scheme(ada::url &&u) noexcept {
+inline void url::copy_scheme(ada::url &&u) noexcept {
   non_special_scheme = u.non_special_scheme;
   type = u.type;
 }
 
-constexpr void url::copy_scheme(const ada::url &u) {
+inline void url::copy_scheme(const ada::url &u) {
   non_special_scheme = u.non_special_scheme;
   type = u.type;
 }
@@ -7045,7 +7045,7 @@ struct url_aggregator : url_base {
    * @return a lightweight std::string_view.
    * @see https://url.spec.whatwg.org/#dom-url-pathname
    */
-  [[nodiscard]] constexpr std::string_view get_pathname() const noexcept
+  [[nodiscard]] inline std::string_view get_pathname() const noexcept
       ada_lifetime_bound;
   /**
    * Compute the pathname length in bytes without instantiating a view or a
@@ -7176,7 +7176,7 @@ struct url_aggregator : url_base {
    * To optimize performance, you may indicate how much memory to allocate
    * within this instance.
    */
-  constexpr void reserve(uint32_t capacity);
+  inline void reserve(uint32_t capacity);
 
   ada_really_inline size_t parse_port(
       std::string_view view, bool check_trailing_content) noexcept override;
@@ -7233,9 +7233,9 @@ struct url_aggregator : url_base {
   inline void update_base_port(uint32_t input);
   inline void append_base_pathname(std::string_view input);
   [[nodiscard]] inline uint32_t retrieve_base_port() const;
-  constexpr void clear_hostname();
-  constexpr void clear_password();
-  constexpr void clear_pathname() override;
+  inline void clear_hostname();
+  inline void clear_password();
+  inline void clear_pathname() override;
   [[nodiscard]] constexpr bool has_dash_dot() const noexcept;
   void delete_dash_dot();
   inline void consume_prepared_path(std::string_view input);
@@ -7717,7 +7717,7 @@ inline void url_aggregator::append_base_username(const std::string_view input) {
   ADA_ASSERT_TRUE(validate());
 }
 
-constexpr void url_aggregator::clear_password() {
+inline void url_aggregator::clear_password() {
   ada_log("url_aggregator::clear_password ", to_string());
   ADA_ASSERT_TRUE(validate());
   if (!has_password()) {
@@ -7939,7 +7939,7 @@ inline void url_aggregator::clear_hash() {
   ADA_ASSERT_TRUE(validate());
 }
 
-constexpr void url_aggregator::clear_pathname() {
+inline void url_aggregator::clear_pathname() {
   ada_log("url_aggregator::clear_pathname");
   ADA_ASSERT_TRUE(validate());
   uint32_t ending_index = uint32_t(buffer.size());
@@ -7974,7 +7974,7 @@ constexpr void url_aggregator::clear_pathname() {
   ada_log("url_aggregator::clear_pathname completed, running checks... ok");
 }
 
-constexpr void url_aggregator::clear_hostname() {
+inline void url_aggregator::clear_hostname() {
   ada_log("url_aggregator::clear_hostname");
   ADA_ASSERT_TRUE(validate());
   if (!has_authority()) {
@@ -8073,7 +8073,7 @@ inline void ada::url_aggregator::add_authority_slashes_if_needed() noexcept {
   ADA_ASSERT_TRUE(validate());
 }
 
-constexpr void ada::url_aggregator::reserve(uint32_t capacity) {
+inline void ada::url_aggregator::reserve(uint32_t capacity) {
   buffer.reserve(capacity);
 }
 
@@ -8395,7 +8395,7 @@ constexpr void url_aggregator::set_protocol_as_file() {
   return true;
 }
 
-[[nodiscard]] constexpr std::string_view url_aggregator::get_pathname()
+[[nodiscard]] inline std::string_view url_aggregator::get_pathname()
     const noexcept ada_lifetime_bound {
   ada_log("url_aggregator::get_pathname pathname_start = ",
           components.pathname_start, " buffer.size() = ", buffer.size(),
