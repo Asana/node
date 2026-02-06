@@ -33,8 +33,8 @@ echo "Current timestamp is $TIMESTAMP"
 echo ""
 echo "=== Downloading Node.js release artifacts ==="
 
-gh release download -p "*.gz"
-gh release download -p "*.xz"
+gh release download -R Asana/node -p "linux-*.gz"
+gh release download -R Asana/node -p "*.xz"
 
 echo ""
 echo "=== Validating Node.js tarballs ==="
@@ -119,7 +119,7 @@ for file in *.tar.xz; do
       echo "✓ Done: Archive now contains:"
       tar -tf "$new_name" | head
       echo ""
-      ((processed_count++))
+      processed_count=$((processed_count + 1))
     else
       echo "Warning: Skipped $new_name due to unexpected filename format."
     fi
