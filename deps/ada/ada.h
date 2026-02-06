@@ -6988,7 +6988,7 @@ struct url_aggregator : url_base {
    * @see https://url.spec.whatwg.org/#dom-url-href
    * @see https://url.spec.whatwg.org/#concept-url-serializer
    */
-  [[nodiscard]] constexpr std::string_view get_href() const noexcept
+  [[nodiscard]] inline std::string_view get_href() const noexcept
       ada_lifetime_bound;
   /**
    * The username getter steps are to return this's URL's username.
@@ -7245,7 +7245,7 @@ struct url_aggregator : url_base {
   ada_really_inline uint32_t replace_and_resize(uint32_t start, uint32_t end,
                                                 std::string_view input);
   [[nodiscard]] constexpr bool has_authority() const noexcept;
-  constexpr void set_protocol_as_file();
+  inline void set_protocol_as_file();
   inline void set_scheme(std::string_view new_scheme) noexcept;
   /**
    * Fast function to set the scheme from a view with a colon in the
