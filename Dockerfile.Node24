@@ -38,9 +38,11 @@ RUN update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-11 100
 WORKDIR /usr/src/node
 COPY . .
 
-# Disable maglev for fibers compatibility - maglev uses thread_local and stack manipulation
-# that conflicts with fiber context switching
-RUN ./configure --experimental-enable-pointer-compression --v8-disable-maglev
+# Configure Node.js for fibers compatibility:
+# - v8_enable_sandbox is already disabled in configure.py (required for ucontext stack switching)
+# - Do NOT enable pointer compression (unsupported without sandbox, adds ABI complexity)
+# - Disable maglev (its stack manipulation conflicts with fiber context switching)
+RUN ./configure --v8-disable-maglev
 RUN make -j4 install DESTDIR=./node-install
 
 CMD ["bash"]

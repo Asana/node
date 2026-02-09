@@ -49,7 +49,22 @@ RUN echo -------------------
 RUN git clone --branch jackstrohm_node20_fibers --depth 1 https://github.com/asana/node-fibers.git node-fibers
 
 WORKDIR /usr/src/node/node-fibers
+
+# Apply V8 v13 API compatibility patches for accessor callbacks
+# Change Local<String> to Local<Name> in getter/setter signatures
+RUN sed -i 's/GetStarted(Local<String> property/GetStarted(Local<Name> property/g' src/fibers.cc && \
+    sed -i 's/GetCurrent(Local<String> property/GetCurrent(Local<Name> property/g' src/fibers.cc && \
+    sed -i 's/GetPoolSize(Local<String> property/GetPoolSize(Local<Name> property/g' src/fibers.cc && \
+    sed -i 's/SetPoolSize(Local<String> property/SetPoolSize(Local<Name> property/g' src/fibers.cc && \
+    sed -i 's/GetFibersCreated(Local<String> property/GetFibersCreated(Local<Name> property/g' src/fibers.cc
+
+# Build node-fibers against the custom Node.js headers
 RUN npm install --nodedir="/usr/src/node/node-install/usr/local"
+
+# Verify fibers native module loads correctly
+RUN node -e "const Fiber = require('./build/Release/fibers.node'); console.log('Fibers native module loaded successfully');"
+
+# Run tests
 RUN npm test || true
 RUN rm bin/repl
 RUN find .
