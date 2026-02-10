@@ -2,12 +2,16 @@ name: Build node-packages with prebuilt Node
 
 on:
   workflow_dispatch:
-  push:
+  workflow_run:
+    workflows: ["Build Node"]
+    types:
+      - completed
     branches:
       - v22.21.1
 
 jobs:
   build-packages:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     strategy:
       matrix:
         include:

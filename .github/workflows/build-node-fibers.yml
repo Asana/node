@@ -2,12 +2,16 @@ name: Build node-fibers with prebuilt Node
 
 on:
   workflow_dispatch:
-  push:
+  workflow_run:
+    workflows: ["Build Node"]
+    types:
+      - completed
     branches:
       - v22.21.1
 
 jobs:
   build-fibers:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     strategy:
       matrix:
         include:
