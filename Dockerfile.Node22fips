@@ -8,7 +8,33 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update
 RUN apt-get install -y software-properties-common
 RUN add-apt-repository -y ppa:ubuntu-toolchain-r/test
-RUN apt-get update && apt-get install -y build-essential python3 python3-distutils g++-10 make curl git pkg-config libssl-dev libffi-dev libgmp-dev libtool autoconf automake cmake wget xz-utils unzip
+RUN set -e; \
+    for i in 1 2 3 4 5; do \
+        echo "Attempt $i: Updating and installing..."; \
+        apt-get update --allow-releaseinfo-change && \
+        apt-get install -y --no-install-recommends --fix-missing \
+            build-essential \
+            python3 \
+            python3-distutils \
+            g++-10 \
+            make \
+            curl \
+            git \
+            pkg-config \
+            libssl-dev \
+            libffi-dev \
+            libgmp-dev \
+            libtool \
+            autoconf \
+            automake \
+            cmake \
+            wget \
+            xz-utils \
+            unzip \
+            vim \
+        && break || \
+        echo "Attempt $i failed! Waiting 15 seconds..." && sleep 15; \
+    done
 RUN rm -rf /var/lib/apt/lists/*
 
 # Set g++ 10 as the default
