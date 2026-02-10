@@ -1,4 +1,4 @@
-name: Build Node with FIPS-enabled OpenSSL
+name: Build Node (FIPS)
 
 on:
   workflow_dispatch:

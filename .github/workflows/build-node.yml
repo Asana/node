@@ -1,4 +1,4 @@
-name: Build Node
+name: Build Node (Standard)
 
 on:
   workflow_dispatch:

@@ -1,9 +1,9 @@
-name: Build node-packages with prebuilt Node
+name: Build Node-Packages
 
 on:
   workflow_dispatch:
   workflow_run:
-    workflows: ["Build Node"]
+    workflows: ["Build Node (Standard)"]
     types:
       - completed
     branches:

@@ -1,9 +1,9 @@
-name: Build node-fibers with prebuilt Node
+name: Build Custom Fibers
 
 on:
   workflow_dispatch:
   workflow_run:
-    workflows: ["Build Node"]
+    workflows: ["Build Node (Standard)"]
     types:
       - completed
     branches:
