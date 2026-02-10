@@ -2,9 +2,6 @@ name: Build Node
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - v22.21.1
 
 jobs:
   build-node:
