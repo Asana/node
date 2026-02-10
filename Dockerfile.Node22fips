@@ -9,12 +9,13 @@ ARG SHARED_OPENSSL_LIBPATH
 # Set non-interactive mode to avoid prompts during installation
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Configure APT to retry on transient failures (common with ARM64 mirrors)
-RUN echo 'Acquire::Retries "3";' > /etc/apt/apt.conf.d/80-retries
+# Configure APT: retry on failures and use Azure mirror (ports.ubuntu.com rate-limits ARM64 builds)
+RUN echo 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/80-retries && \
+    sed -i 's|http://ports.ubuntu.com|http://azure.ports.ubuntu.com|g' /etc/apt/sources.list
 
 # Install necessary dependencies (--no-install-recommends reduces package count to avoid mirror rate limits)
 RUN apt-get update --fix-missing && \
-    apt-get install -y --no-install-recommends software-properties-common gpg-agent
+    apt-get install -y --no-install-recommends ca-certificates software-properties-common gpg-agent
 
 RUN add-apt-repository -y ppa:ubuntu-toolchain-r/test
 
