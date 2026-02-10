@@ -1,6 +1,7 @@
 name: Build Node
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - v20.18.3
