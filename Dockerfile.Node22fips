@@ -4,13 +4,13 @@ FROM ubuntu:22.04 AS base
 # Set non-interactive mode to avoid prompts during installation
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install necessary dependencies
-RUN apt-get update
-RUN apt-get install -y software-properties-common
-RUN add-apt-repository -y ppa:ubuntu-toolchain-r/test
+# Combine update, PPA setup, and install into one robust retry loop
 RUN set -e; \
     for i in 1 2 3 4 5; do \
-        echo "Attempt $i: Updating and installing..."; \
+        echo "Attempt $i: Setting up build environment..." && \
+        apt-get update --allow-releaseinfo-change && \
+        apt-get install -y --no-install-recommends software-properties-common && \
+        add-apt-repository -y ppa:ubuntu-toolchain-r/test && \
         apt-get update --allow-releaseinfo-change && \
         apt-get install -y --no-install-recommends --fix-missing \
             build-essential \
@@ -33,7 +33,7 @@ RUN set -e; \
             unzip \
             vim \
         && break || \
-        echo "Attempt $i failed! Waiting 15 seconds..." && sleep 15; \
+        (echo "Attempt $i failed! Sleeping 15s..." && sleep 15); \
     done
 RUN rm -rf /var/lib/apt/lists/*
 
