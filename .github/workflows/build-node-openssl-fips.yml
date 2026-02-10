@@ -1,0 +1,98 @@
+name: Build Node with FIPS-enabled OpenSSL
+
+on:
+  workflow_dispatch:
+    inputs:
+      BUILD_REF:
+        description: 'Git ref to build Node.js from'
+        required: true
+        default: 'v22.21.1'
+        type: string
+      DOCKER_FILE:
+        description: 'Dockerfile to use for building Node.js'
+        required: true
+        default: 'Dockerfile.Node22fips'
+        type: string
+
+jobs:
+  build-node:
+    name: Build ${{ matrix.platform }}-${{ matrix.arch }} with FIPS OpenSSL
+    strategy:
+      matrix:
+        include:
+          - platform: linux
+            arch: x64
+            runs_on: ubuntu-22.04
+          - platform: linux
+            arch: arm64
+            runs_on: ubuntu-22.04-arm
+    runs-on: ${{ matrix.runs_on }}
+
+    steps:
+      - name: Checkout Node fork
+        uses: actions/checkout@v3
+        with:
+          repository: Asana/node
+          path: node
+          ref: ${{ inputs.BUILD_REF }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Node Version
+        id: extract-node-version
+        run: |
+           NODE_MAJOR_VERSION=$(grep '#define NODE_MAJOR_VERSION' node/src/node_version.h | awk '{print $3}')
+           NODE_MINOR_VERSION=$(grep '#define NODE_MINOR_VERSION' node/src/node_version.h | awk '{print $3}')
+           NODE_PATCH_VERSION=$(grep '#define NODE_PATCH_VERSION' node/src/node_version.h | awk '{print $3}')
+           NODE_VERSION="v${NODE_MAJOR_VERSION}.${NODE_MINOR_VERSION}.${NODE_PATCH_VERSION}"
+           echo "NODE_VERSION=${NODE_VERSION}" >> $GITHUB_ENV
+
+      - name: Set build metadata
+        id: meta
+        working-directory: node
+        run: |
+          TIMESTAMP=$(date -u +%Y-%m-%dT%H-%M)
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          echo "BUILD_ID=${TIMESTAMP}-${SHORT_SHA}" >> $GITHUB_ENV
+          echo "build_id=${TIMESTAMP}-${SHORT_SHA}" >> $GITHUB_OUTPUT
+
+      - name: Execute the Dockerfile
+        working-directory: node
+        run: |
+          docker build -t node22_fips_build -f ./${{ inputs.DOCKER_FILE }} .
+
+      - name: Extract resources
+        run: |
+          docker create --name temp_node_extract node22_fips_build
+          docker cp temp_node_extract:/usr/src/node/node-install $GITHUB_WORKSPACE/node-install
+          docker rm temp_node_extract
+
+      - name: Archive Node
+        run: |
+          mkdir -p artifacts
+          FILENAME=node-${NODE_VERSION}-fips-${{ matrix.platform }}-${{ matrix.arch }}-${{ steps.meta.outputs.build_id }}.tar.xz
+          FILENAME_LATEST=node-${NODE_VERSION}-fips-${{ matrix.platform }}-${{ matrix.arch }}-LATEST.tar.xz
+          tar -C node-install -cJf artifacts/$FILENAME .
+          cp artifacts/$FILENAME artifacts/$FILENAME_LATEST
+          echo "NODE_ARCHIVE=$FILENAME" >> $GITHUB_ENV
+          echo "NODE_ARCHIVE_LATEST=$FILENAME_LATEST" >> $GITHUB_ENV
+
+      - name: Upload Node archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: node-${{ env.NODE_VERSION }}-fips-${{ matrix.platform }}-${{ matrix.arch }}-${{ steps.meta.outputs.build_id }}
+          path: artifacts/${{ env.NODE_ARCHIVE }}
+
+      - name: Upload Node archive latest
+        uses: actions/upload-artifact@v4
+        with:
+          name: node-${{ env.NODE_VERSION }}-fips-${{ matrix.platform }}-${{ matrix.arch }}-LATEST
+          path: artifacts/${{ env.NODE_ARCHIVE_LATEST }}
+
+      - name: Upload Node archive to release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: node-${{ env.NODE_VERSION }}-fips-LATEST
+          tag_name: node-${{ env.NODE_VERSION }}-fips-release
+          files: ./artifacts/${{ env.NODE_ARCHIVE_LATEST }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
