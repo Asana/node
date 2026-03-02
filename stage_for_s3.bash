@@ -23,20 +23,52 @@ gh release download -R Asana/node node-v22.21.1-release -p "*.xz"
 gh release download -R Asana/node node-v22.21.1-fips-release -p "*.xz"
 
 # Download fibers base package via CloudFront (public S3 access was disabled)
-curl "https://asana-oss-cache.asana.biz/node-fibers/fibers-5.0.4.pc.tgz" --output fibers-5.0.4.tar.gz
+curl "https://asana-oss-cache.asana.biz/node-fibers/fibers-5.0.4-pc-20250515.1411-960a.tgz" --output fibers-5.0.4.tar.gz
 tar -xzf fibers-5.0.4.tar.gz
 rm fibers-5.0.4.tar.gz
 
 # Extract linux fibers binaries into the package
-find . -name "linux-*.gz" | while read -r a
-do
-	tar -xzf "$a" -C package/bin
-	rm "$a"
-done
+LINUX_GZ_FILES=$(find . -name "linux-*.gz")
+if [ -z "$LINUX_GZ_FILES" ]; then
+	echo "WARNING: No linux-*.gz fibers archives were found to inject (check CI artifact names)"
+else
+	echo "$LINUX_GZ_FILES" | while read -r a; do
+		echo "Injecting $(basename "$a") into package/bin..."
+		tar -xzf "$a" -C package/bin
+		rm "$a"
+	done
+fi
+echo "Contents of package/bin after injection:"
+ls package/bin/
 
 # Repackage fibers with combined binaries
 tar -czf temp.tgz package/
 rm -rf package
+
+# Validate combined archive contains Node 18, 20, and 22 binaries
+echo "Validating combined fibers archive..."
+echo "fibers.node entries in archive:"
+tar -tzf temp.tgz | grep 'fibers\.node' || echo "  (none found)"
+FOUND_VERSIONS=""
+for bin_path in $(tar -tzf temp.tgz | grep 'fibers\.node$'); do
+    abi_ver=$(echo "$bin_path" | cut -d/ -f3 | cut -d- -f3)
+    case "$abi_ver" in
+        109) FOUND_VERSIONS="$FOUND_VERSIONS Node18(abi=$abi_ver)" ;;
+        115) FOUND_VERSIONS="$FOUND_VERSIONS Node20(abi=$abi_ver)" ;;
+        127) FOUND_VERSIONS="$FOUND_VERSIONS Node22(abi=$abi_ver)" ;;
+    esac
+done
+echo "Found binaries:${FOUND_VERSIONS}"
+MISSING=""
+echo "$FOUND_VERSIONS" | grep -q "Node18" || MISSING="$MISSING Node18(abi=109)"
+echo "$FOUND_VERSIONS" | grep -q "Node20" || MISSING="$MISSING Node20(abi=115)"
+echo "$FOUND_VERSIONS" | grep -q "Node22" || MISSING="$MISSING Node22(abi=127)"
+if [ -n "$MISSING" ]; then
+    echo "ERROR: Combined fibers archive is missing binaries for:$MISSING" >&2
+    exit 1
+fi
+echo "Validation passed: archive contains binaries for Node 18, 20, and 22"
+
 SHORT_HASH=$(cat temp.tgz | sha1sum | cut -c1-4)
 echo "HASH: $SHORT_HASH"
 UNIQUE="pc-${TIMESTAMP}-${SHORT_HASH}"
@@ -115,14 +147,42 @@ echo ""
 echo "Updating $CODEZ/asana2/third_party/node/node_setup.bzl..."
 NODE_SETUP_FILE="$CODEZ/asana2/third_party/node/node_setup.bzl"
 
-# Remove existing nodejs22pc block if present
-sed -i '' '/nodejs_register_toolchains(/,/^[[:space:]]*)/{ /name = "nodejs22pc"/,/^[[:space:]]*node_urls = NODE_FORK_URLS,/{ /^[[:space:]]*)/d; }; /name = "nodejs22pc"/,/node_urls = NODE_FORK_URLS,/d; }' "$NODE_SETUP_FILE"
+# Remove existing nodejs22pc and nodejs22fips blocks if present
+python3 - "$NODE_SETUP_FILE" <<'PYEOF'
+import sys
 
-# Remove existing nodejsfips block (the old v20 one)
-sed -i '' '/nodejs_register_toolchains(/,/^[[:space:]]*)/{ /name = "nodejsfips"/,/^[[:space:]]*node_urls = NODE_FIPS_URLS,/{ /^[[:space:]]*)/d; }; /name = "nodejsfips"/,/node_urls = NODE_FIPS_URLS,/d; }' "$NODE_SETUP_FILE"
+def remove_toolchain_block(lines, name):
+    result = []
+    i = 0
+    while i < len(lines):
+        if 'nodejs_register_toolchains(' in lines[i]:
+            block = [lines[i]]
+            j = i + 1
+            while j < len(lines):
+                block.append(lines[j])
+                if lines[j].strip() == ')':
+                    break
+                j += 1
+            if any(f'name = "{name}"' in l for l in block):
+                i = j + 1  # skip the whole block
+                continue
+            else:
+                result.extend(block)
+                i = j + 1
+        else:
+            result.append(lines[i])
+            i += 1
+    return result
 
-# Remove existing nodejs22fips block if present
-sed -i '' '/nodejs_register_toolchains(/,/^[[:space:]]*)/{ /name = "nodejs22fips"/,/^[[:space:]]*node_urls = NODE_FIPS_URLS,/{ /^[[:space:]]*)/d; }; /name = "nodejs22fips"/,/node_urls = NODE_FIPS_URLS,/d; }' "$NODE_SETUP_FILE"
+with open(sys.argv[1], 'r') as f:
+    lines = f.read().splitlines(keepends=True)
+
+for name in ['nodejs22pc', 'nodejs22fips']:
+    lines = remove_toolchain_block(lines, name)
+
+with open(sys.argv[1], 'w') as f:
+    f.writelines(lines)
+PYEOF
 
 # Write the new toolchain blocks to a temp file
 TEMP_BLOCKS=$(mktemp)
@@ -160,7 +220,6 @@ fi
 rm "$TEMP_BLOCKS"
 
 echo "  Added nodejs22pc and nodejs22fips toolchains"
-echo "  Removed old nodejsfips toolchain"
 
 echo ""
 echo "=========================================="
