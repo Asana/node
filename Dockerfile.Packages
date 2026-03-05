@@ -28,6 +28,23 @@ RUN npm i --nodedir="/usr/src/node/node-install/usr/local" bcrypt@5.1.0
 RUN npm i --nodedir="/usr/src/node/node-install/usr/local" cld@2.9.1
 RUN npm i --nodedir="/usr/src/node/node-install/usr/local" unix-dgram@2.0.6
 
+# Build @datadog/pprof from source against Asana custom Node.
+# The npm package ships with "install: exit 0" and no C++ source (only prebuilts),
+# so we clone from GitHub to build the native binding against our pointer-compressed V8.
+# The standard prebuilts are ABI-incompatible with --experimental-enable-pointer-compression.
+RUN npm i @datadog/pprof@5.8.0 --ignore-scripts
+RUN git clone --branch v5.8.0 --depth 1 https://github.com/DataDog/pprof-nodejs.git /usr/src/pprof-source
+WORKDIR /usr/src/pprof-source
+RUN npm install --ignore-scripts
+RUN npm_config_nodedir="/usr/src/node/node-install/usr/local" node_modules/.bin/node-gyp rebuild --jobs=max
+# Replace the linux prebuilt with our pointer-compression-compatible binary.
+# NODE_MODULE_VERSION and arch are read dynamically from the custom Node binary.
+WORKDIR /usr/src/node
+RUN ARCH=$(node -e "process.stdout.write(process.arch)") && \
+    MODULES_VER=$(node -e "process.stdout.write(process.versions.modules)") && \
+    cp /usr/src/pprof-source/build/Release/profiler.node \
+       node_modules/@datadog/pprof/prebuilds/linuxglibc-${ARCH}/node-${MODULES_VER}.node
+
 RUN ls
 RUN ls node_modules
 
