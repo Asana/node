@@ -36,6 +36,7 @@ RUN npm i @datadog/pprof@5.8.0 --ignore-scripts
 RUN git clone --branch v5.8.0 --depth 1 https://github.com/DataDog/pprof-nodejs.git /usr/src/pprof-source
 WORKDIR /usr/src/pprof-source
 RUN npm install --ignore-scripts
+RUN npm install --unsafe-perm node-gyp
 RUN npm_config_nodedir="/usr/src/node/node-install/usr/local" node_modules/.bin/node-gyp rebuild --jobs=max
 # Replace the linux prebuilt with our pointer-compression-compatible binary.
 # NODE_MODULE_VERSION and arch are read dynamically from the custom Node binary.
