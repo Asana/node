@@ -10,6 +10,22 @@ echo "Current timestamp is $TIMESTAMP"
 gh release download -p "*.gz"
 gh release download -p "*.xz"
 
+# Separate packages tarballs — these are uploaded to S3 by the build-node-packages.yml
+# workflow (with content-hashed keys like packages_amd64_node22-bb5ac136.tar.gz) and
+# consumed by Bazel via http_file in codez. They should NOT be mixed into the fibers archive.
+echo ""
+echo "=== Native packages (node-gyp) ==="
+echo "These are uploaded to s3://asana-oss-cache/node-gyp/ by the build-node-packages.yml workflow"
+echo "with content-hashed S3 keys. Each build produces an immutable artifact."
+for pkg in packages_*.tar.gz; do
+  if [ -f "$pkg" ]; then
+    echo "  $pkg: sha256=$(sha256sum "$pkg" | awk '{print $1}')"
+    rm "$pkg"
+  fi
+done
+echo "No manual action needed for packages — they are already in S3."
+echo ""
+
 curl "https://asana-oss-cache.s3.us-east-1.amazonaws.com/node-fibers/fibers-5.0.4.pc.tgz"  --output fibers-5.0.4.tar.gz
 tar -xzf fibers-5.0.4.tar.gz
 

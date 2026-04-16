@@ -12,14 +12,19 @@ on:
 jobs:
   build-packages:
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    permissions:
+      id-token: write
+      contents: write
     strategy:
       matrix:
         include:
           - platform: linux
             arch: x64
+            bazel_arch: amd64
             runs_on: ubuntu-22.04
           - platform: linux
             arch: arm64
+            bazel_arch: arm64
             runs_on: ubuntu-22.04-arm
     runs-on: ${{ matrix.runs_on }}
 
@@ -75,3 +80,28 @@ jobs:
           files: packages_${{matrix.arch}}.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # S3 upload is restricted to the protected main branch only. The IAM role
+      # (push_node_gyp_packages) trusts only refs/heads/main via OIDC. To upload
+      # packages to S3 after a Node upgrade, trigger workflow_dispatch from main.
+      - name: Configure AWS credentials
+        if: github.ref == 'refs/heads/main'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::403483446840:role/autogen_github_actions_beta_push_node_gyp_packages
+
+      - name: Upload packages to S3
+        if: github.ref == 'refs/heads/main'
+        run: |
+          NODE_MAJOR=$(echo "${{ env.NODE_VERSION }}" | sed 's/^v//' | cut -d. -f1)
+          SHA256=$(sha256sum "packages_${{ matrix.arch }}.tar.gz" | awk '{print $1}')
+          SHORT_HASH=${SHA256:0:8}
+          S3_KEY="node-gyp/packages_${{ matrix.bazel_arch }}_node${NODE_MAJOR}-${SHORT_HASH}.tar.gz"
+          echo "Uploading packages_${{ matrix.arch }}.tar.gz to s3://asana-oss-cache/${S3_KEY}"
+          aws s3 cp "packages_${{ matrix.arch }}.tar.gz" "s3://asana-oss-cache/${S3_KEY}" --acl public-read
+          echo ""
+          echo "=== Update tools_repositories.bzl in codez ==="
+          echo "  name = \"node_gyp_packages_${{ matrix.bazel_arch }}_node${NODE_MAJOR}\","
+          echo "  urls = [\"https://asana-oss-cache.s3.us-east-1.amazonaws.com/${S3_KEY}\"],"
+          echo "  sha256 = \"${SHA256}\","
