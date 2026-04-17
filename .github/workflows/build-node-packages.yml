@@ -73,13 +73,17 @@ jobs:
           tar --hard-dereference -cvzf packages_${{matrix.arch}}.tar.gz bcrypt@5.1.0 cld@2.9.1 unix-dgram@2.0.6 "@datadog+pprof@5.8.0"
 
       - name: Upload archive to release
-        uses: softprops/action-gh-release@v1
-        with:
-          name: node-${{ env.NODE_VERSION }}-LATEST
-          tag_name: node-${{ env.NODE_VERSION }}-release
-          files: packages_${{matrix.arch}}.tar.gz
+        # Use `gh release upload` (first-party GitHub CLI, pre-installed on runners)
+        # instead of softprops/action-gh-release (one-maintainer third-party action).
+        # Behavior: --clobber overwrites an existing asset with the same name, matching
+        # softprops's default. The release must already exist (created by build-node.yml).
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "node-${{ env.NODE_VERSION }}-release" \
+            "packages_${{ matrix.arch }}.tar.gz" \
+            --clobber \
+            --repo "${{ github.repository }}"
 
       # S3 upload is restricted to the protected main branch only. The IAM role
       # (push_node_gyp_packages) trusts only refs/heads/main via OIDC. To upload
@@ -94,12 +98,38 @@ jobs:
       - name: Upload packages to S3
         if: github.ref == 'refs/heads/main'
         run: |
+          # Upload to s3://asana-oss-cache/node-gyp/... (CloudFront path_patterns entry
+          # added in codez PR #390222 — that must be merged + applied via Spacelift
+          # before this workflow can successfully publish fetchable objects).
+          #
+          # No --acl public-read: the bucket has BucketOwnerEnforced
+          # (disable_confusing_acls = true), which disables ACLs entirely.
+          # BlockPublicAcls + IgnorePublicAcls provide additional coverage.
+          # Reads come via CloudFront OAC.
           NODE_MAJOR=$(echo "${{ env.NODE_VERSION }}" | sed 's/^v//' | cut -d. -f1)
           SHA256=$(sha256sum "packages_${{ matrix.arch }}.tar.gz" | awk '{print $1}')
           SHORT_HASH=${SHA256:0:8}
           S3_KEY="node-gyp/packages_${{ matrix.bazel_arch }}_node${NODE_MAJOR}-${SHORT_HASH}.tar.gz"
           echo "Uploading packages_${{ matrix.arch }}.tar.gz to s3://asana-oss-cache/${S3_KEY}"
-          aws s3 cp "packages_${{ matrix.arch }}.tar.gz" "s3://asana-oss-cache/${S3_KEY}" --acl public-read
+          aws s3 cp "packages_${{ matrix.arch }}.tar.gz" "s3://asana-oss-cache/${S3_KEY}"
+          echo "S3_KEY=${S3_KEY}" >> "$GITHUB_ENV"
+          echo "SHA256=${SHA256}" >> "$GITHUB_ENV"
+          echo "NODE_MAJOR=${NODE_MAJOR}" >> "$GITHUB_ENV"
+
+      - name: Verify upload is reachable via CloudFront
+        if: github.ref == 'refs/heads/main'
+        run: |
+          # Mac Bazel builds rewrite asana-oss-cache.s3.us-east-1.amazonaws.com/*
+          # to asana-oss-cache.asana.biz/* (CloudFront). If the S3 key prefix isn't
+          # allowlisted in CloudFront's path_patterns, Bazel fetches will 403.
+          # Fail fast here rather than after someone tries to build.
+          URL="https://asana-oss-cache.asana.biz/${S3_KEY}"
+          echo "Checking ${URL}"
+          curl -fsSI "${URL}" || { echo "CloudFront returned an error for ${URL}. Check path_patterns in system_packages.tf."; exit 1; }
+
+      - name: Print tools_repositories.bzl stanza
+        if: github.ref == 'refs/heads/main'
+        run: |
           echo ""
           echo "=== Update tools_repositories.bzl in codez ==="
           echo "  name = \"node_gyp_packages_${{ matrix.bazel_arch }}_node${NODE_MAJOR}\","
