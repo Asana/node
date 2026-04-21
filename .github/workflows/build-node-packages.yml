@@ -123,9 +123,12 @@ jobs:
           # to asana-oss-cache.asana.biz/* (CloudFront). If the S3 key prefix isn't
           # allowlisted in CloudFront's path_patterns, Bazel fetches will 403.
           # Fail fast here rather than after someone tries to build.
-          URL="https://asana-oss-cache.asana.biz/${S3_KEY}"
-          echo "Checking ${URL}"
-          curl -fsSI "${URL}" || { echo "CloudFront returned an error for ${URL}. Check path_patterns in system_packages.tf."; exit 1; }
+          URL="https://asana-oss-cache.asana.biz/$S3_KEY"
+          echo "Checking $URL"
+          if ! curl -fsSI "$URL"; then
+            echo "CloudFront returned an error for $URL. Check path_patterns in system_packages.tf."
+            exit 1
+          fi
 
       - name: Print tools_repositories.bzl stanza
         if: github.ref == 'refs/heads/main'
