@@ -36,8 +36,24 @@ jobs:
       REPO: ${{ github.repository }}
 
     steps:
+      # Check out the v22.21.1 branch (not the workflow's default branch) so that
+      # Dockerfile.Packages and the Node source tree are present. The workflow YAML
+      # itself runs from whichever ref triggered it (main for workflow_dispatch, or
+      # v22.21.1 for workflow_run) — that's what the OIDC subject claim binds to,
+      # and it's how the IAM role's ref_patterns gate works. `ref:` here only
+      # controls which tree gets checked out into $GITHUB_WORKSPACE.
+      #
+      # Security note: v22.21.1 is not a protected branch, so in principle any of
+      # the repo's ~530 collaborators could push a malicious Dockerfile.Packages
+      # and have this workflow build+upload the resulting image. That same risk
+      # already existed for the Node source itself (which also lives on this
+      # branch), so this change does not expand the attack surface. A follow-up
+      # PR will propose a structural fix (branch protection, patch series, or
+      # submodule model) — tracked in our internal project notes.
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          ref: ${{ env.NODE_VERSION }}
 
       - name: Debug Matrix Values
         run: |
