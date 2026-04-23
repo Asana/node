@@ -98,14 +98,26 @@ jobs:
           path: artifacts/${{ env.NODE_ARCHIVE_LATEST }}
 
       - name: Upload Node archive to release
-        # Use `gh release upload` (first-party GitHub CLI, pre-installed on runners)
-        # instead of softprops/action-gh-release (one-maintainer third-party action).
-        # The view-or-create guard is race-safe under the matrix: if the sibling
-        # job creates the release first, `gh release create` fails and the second
-        # `gh release view` confirms the release now exists. `--clobber` overwrites
-        # an existing asset with the same name, matching softprops's default. The
-        # final `gh release edit --title` preserves softprops's behavior of always
-        # re-setting the release name on every upload.
+        # Publish the built Node archive to the node-${NODE_VERSION}-release release.
+        # This is the first uploader in the pipeline; build-node-packages and
+        # build-node-fibers attach additional artifacts to the same release later.
+        #
+        # Matrix concurrency: both matrix arms (linux-x64, linux-arm64) hit this step
+        # in parallel. On the first run for a new NODE_VERSION the release does not
+        # yet exist, so both arms race to create it. The view-or-create guard with
+        # the trailing `|| gh release view` tolerates "already exists" from the
+        # losing arm (as long as the release now exists); any other create failure
+        # propagates through that second view.
+        #
+        # `--clobber` makes re-uploads idempotent on asset name collisions: an
+        # existing asset with the same name is deleted before the new one uploads.
+        # Acceptable here because the -LATEST assets are always reproducible from
+        # the build inputs; if the upload fails after the delete, just re-run the
+        # job.
+        #
+        # `gh release edit --title` after upload keeps the release title
+        # deterministically derived from NODE_VERSION even if someone renames the
+        # release in the GitHub UI.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

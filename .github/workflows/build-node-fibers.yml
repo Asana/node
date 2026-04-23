@@ -79,13 +79,24 @@ jobs:
           tar -czf "$ARCHIVE_NAME" -C "$(dirname "$FIBERS_DIR")" "$(basename "$FIBERS_DIR")"
 
       - name: Upload archive to release
-        # Use `gh release upload` (first-party GitHub CLI, pre-installed on runners)
-        # instead of softprops/action-gh-release (one-maintainer third-party action).
-        # The view-or-create guard is race-safe under the matrix and also handles the
-        # workflow_dispatch case where the release may not yet exist. `--clobber`
-        # overwrites an existing asset with the same name, matching softprops's
-        # default. `gh release edit --title` preserves softprops's behavior of always
-        # re-setting the release name on every upload.
+        # Attach the built node-fibers archive to the same node-${NODE_VERSION}-release
+        # release that hosts the corresponding Node binaries.
+        #
+        # Normally this workflow runs after Build Node via workflow_run, so the
+        # release already exists by the time we get here. But workflow_dispatch can
+        # fire it independently (release may not yet exist), and the matrix still
+        # runs both arms (linux-x64, linux-arm64) in parallel — so both arms can
+        # race to create the release. The view-or-create guard with the trailing
+        # `|| gh release view` tolerates "already exists" from a losing racer and
+        # propagates any other create failure through the final view.
+        #
+        # `--clobber` makes re-uploads idempotent on asset name collisions by
+        # deleting the existing asset before uploading. If the new upload fails
+        # after the delete, just re-run the job to rebuild.
+        #
+        # `gh release edit --title` after upload keeps the release title
+        # deterministically derived from NODE_VERSION, overriding any manual rename
+        # in the GitHub UI.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
