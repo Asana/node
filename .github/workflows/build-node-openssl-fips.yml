@@ -28,6 +28,11 @@ on:
         required: true
         default: 'main'
         type: string
+      DOCKER_FILE:
+        description: 'Dockerfile to use for building Node.js'
+        required: true
+        default: 'Dockerfile.Node20fips'
+        type: string
 
 jobs:
   build-node:
@@ -53,7 +58,7 @@ jobs:
         with:
           repository: Asana/node
           path: node
-          ref: ${{ BUILD_REF }}
+          ref: ${{ inputs.BUILD_REF }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract Node Version
@@ -79,51 +84,62 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y python3 g++ make curl tar xz-utils
-          
-      - name: Configure OpenSSL for fips
-        id: openssl-is-fips
-        if: inputs.enableFips
-        run: |
-          ./configure --openssl-is-fips
 
-      - name: Dynamically link OpenSSL in Node.js
-        id: openssl-dynamic-link
-        if: inputs.dynamicLink
-        run: |
-          ./configure --shared-openssl
+      # - name: Configure OpenSSL for fips
+      #   id: openssl-is-fips
+      #   if: inputs.enableFips
+      #   run: |
+      #     ./configure --openssl-is-fips
 
-      - name: Define headers for OpenSSL
-        id: openssl-dynamic-link-headers
-        if: ${{ !empty(inputs.sharedOpenSSLIncludes) }}
-        run: |
-          ./configure --shared-openssl-includes ${{inputs.sharedOpenSSLIncludes}}
+      # - name: Dynamically link OpenSSL in Node.js
+      #   id: openssl-dynamic-link
+      #   if: inputs.dynamicLink
+      #   run: |
+      #     ./configure --shared-openssl
 
-      - name: alternative libname for openssl
-        id: openssl-dynamic-link-libname
-        if: ${{ !empty(inputs.sharedOpenSSLLibname) }}
-        run: |
-          ./configure --shared-openssl-libname ${{inputs.sharedOpenSSLLibname}}
+      # - name: Define headers for OpenSSL
+      #   id: openssl-dynamic-link-headers
+      #   if: ${{ !empty(inputs.sharedOpenSSLIncludes) }}
+      #   run: |
+      #     ./configure --shared-openssl-includes ${{inputs.sharedOpenSSLIncludes}}
 
-      - name: Define headers for OpenSSL
-        id: openssl-dynamic-link-libpath
-        if: ${{ !empty(inputs.sharedOpenSSLLibpath) }}
-        run: |
-          ./configure --shared-openssl-includes ${{inputs.sharedOpenSSLLibpath}}
+      # - name: alternative libname for openssl
+      #   id: openssl-dynamic-link-libname
+      #   if: ${{ !empty(inputs.sharedOpenSSLLibname) }}
+      #   run: |
+      #     ./configure --shared-openssl-libname ${{inputs.sharedOpenSSLLibname}}
+
+      # - name: Define headers for OpenSSL
+      #   id: openssl-dynamic-link-libpath
+      #   if: ${{ !empty(inputs.sharedOpenSSLLibpath) }}
+      #   run: |
+      #     ./configure --shared-openssl-includes ${{inputs.sharedOpenSSLLibpath}}
 
 
-      - name: Build Node (linux)
+      # - name: Build Node (linux)
+      #   working-directory: node
+      #   if: matrix.platform == 'linux'
+      #   run: |
+      #     ./configure --experimental-enable-pointer-compression
+      #     make -j4 install DESTDIR=$GITHUB_WORKSPACE/node-install
+
+      # - name: Build Node (darwin)
+      #   working-directory: node
+      #   if: matrix.platform == 'darwin'
+      #   run: |
+      #     ./configure --experimental-enable-pointer-compression --without-snapshot
+      #     make -j2 install DESTDIR=$GITHUB_WORKSPACE/node-install
+
+      - name: Execute the Dockerfile
         working-directory: node
-        if: matrix.platform == 'linux'
         run: |
-          ./configure --experimental-enable-pointer-compression
-          make -j4 install DESTDIR=$GITHUB_WORKSPACE/node-install
+          docker build -t node20_build -f ./${{inputs.DOCKER_FILE}} . --build-arg ENABLE_FIPS=true --build-arg DYNAMIC_LINK=true
 
-      - name: Build Node (darwin)
-        working-directory: node
-        if: matrix.platform == 'darwin'
+      - name: Extract resources
         run: |
-          ./configure --experimental-enable-pointer-compression --without-snapshot
-          make -j2 install DESTDIR=$GITHUB_WORKSPACE/node-install
+          docker create --name temp_node_extract node20_build
+          docker cp temp_node_extract:/usr/src/node/node-install $GITHUB_WORKSPACE/node-install
+          docker rm temp_node_extract
 
       - name: Archive Node
         run: |
