@@ -26,6 +26,7 @@ jobs:
     env:
       S3_BUCKET: your-bucket-name
       AWS_REGION: us-east-1
+      REPO: ${{ github.repository }}
 
     steps:
       - name: Checkout Node fork
@@ -97,10 +98,24 @@ jobs:
           path: artifacts/${{ env.NODE_ARCHIVE_LATEST }}
 
       - name: Upload Node archive to release
-        uses: softprops/action-gh-release@v1
-        with:
-          name: node-${{ env.NODE_VERSION }}-LATEST
-          tag_name: node-${{ env.NODE_VERSION }}-release
-          files: ./artifacts/${{ env.NODE_ARCHIVE_LATEST }}
+        # Use `gh release upload` (first-party GitHub CLI, pre-installed on runners)
+        # instead of softprops/action-gh-release (one-maintainer third-party action).
+        # The view-or-create guard is race-safe under the matrix: if the sibling
+        # job creates the release first, `gh release create` fails and the second
+        # `gh release view` confirms the release now exists. `--clobber` overwrites
+        # an existing asset with the same name, matching softprops's default. The
+        # final `gh release edit --title` preserves softprops's behavior of always
+        # re-setting the release name on every upload.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="node-${NODE_VERSION}-release"
+          RELEASE_NAME="node-${NODE_VERSION}-LATEST"
+          FILE="./artifacts/${NODE_ARCHIVE_LATEST}"
+          if ! gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            gh release create "$TAG" --title "$RELEASE_NAME" --notes "" --repo "$REPO" \
+              || gh release view "$TAG" --repo "$REPO" >/dev/null
+          fi
+          gh release upload "$TAG" "$FILE" --clobber --repo "$REPO"
+          gh release edit "$TAG" --title "$RELEASE_NAME" --repo "$REPO"

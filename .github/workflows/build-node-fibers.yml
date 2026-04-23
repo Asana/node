@@ -22,6 +22,7 @@ jobs:
 
     env:
       NODE_VERSION: v20.18.3
+      REPO: ${{ github.repository }}
 
     steps:
       - name: Debug Matrix Values
@@ -78,10 +79,22 @@ jobs:
           tar -czf "$ARCHIVE_NAME" -C "$(dirname "$FIBERS_DIR")" "$(basename "$FIBERS_DIR")"
 
       - name: Upload archive to release
-        uses: softprops/action-gh-release@v1
-        with:
-          name: node-${{ env.NODE_VERSION }}-LATEST
-          tag_name: node-${{ env.NODE_VERSION }}-release
-          files: ${{ env.ARCHIVE_NAME }}
+        # Use `gh release upload` (first-party GitHub CLI, pre-installed on runners)
+        # instead of softprops/action-gh-release (one-maintainer third-party action).
+        # The view-or-create guard is race-safe under the matrix and also handles the
+        # workflow_dispatch case where the release may not yet exist. `--clobber`
+        # overwrites an existing asset with the same name, matching softprops's
+        # default. `gh release edit --title` preserves softprops's behavior of always
+        # re-setting the release name on every upload.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="node-${NODE_VERSION}-release"
+          RELEASE_NAME="node-${NODE_VERSION}-LATEST"
+          if ! gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            gh release create "$TAG" --title "$RELEASE_NAME" --notes "" --repo "$REPO" \
+              || gh release view "$TAG" --repo "$REPO" >/dev/null
+          fi
+          gh release upload "$TAG" "$ARCHIVE_NAME" --clobber --repo "$REPO"
+          gh release edit "$TAG" --title "$RELEASE_NAME" --repo "$REPO"
