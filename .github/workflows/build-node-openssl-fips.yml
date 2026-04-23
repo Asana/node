@@ -28,6 +28,9 @@ jobs:
             runs_on: ubuntu-22.04-arm
     runs-on: ${{ matrix.runs_on }}
 
+    env:
+      REPO: ${{ github.repository }}
+
     steps:
       - name: Checkout Node fork
         uses: actions/checkout@v3
@@ -89,10 +92,35 @@ jobs:
           path: artifacts/${{ env.NODE_ARCHIVE_LATEST }}
 
       - name: Upload Node archive to release
-        uses: softprops/action-gh-release@v1
-        with:
-          name: node-${{ env.NODE_VERSION }}-fips-LATEST
-          tag_name: node-${{ env.NODE_VERSION }}-fips-release
-          files: ./artifacts/${{ env.NODE_ARCHIVE_LATEST }}
+        # Publish the FIPS Node build to its own release tag
+        # (node-${NODE_VERSION}-fips-release), separate from the default Node
+        # release so consumers can select the FIPS variant explicitly rather than
+        # relying on filename conventions inside a shared release.
+        #
+        # This workflow is workflow_dispatch-only, and the matrix has two arms
+        # (linux-x64, linux-arm64) running in parallel — on the first invocation
+        # for a new NODE_VERSION both arms race to create the release. The
+        # view-or-create guard with the trailing `|| gh release view` tolerates
+        # "already exists" from the losing racer and propagates any other create
+        # failure through the final view.
+        #
+        # `--clobber` makes re-uploads idempotent on asset name collisions by
+        # deleting the existing asset before uploading. If the new upload fails
+        # after the delete, just re-run the job.
+        #
+        # `gh release edit --title` after upload keeps the release title
+        # deterministically derived from NODE_VERSION, overriding any manual
+        # rename in the GitHub UI.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="node-${NODE_VERSION}-fips-release"
+          RELEASE_NAME="node-${NODE_VERSION}-fips-LATEST"
+          FILE="./artifacts/${NODE_ARCHIVE_LATEST}"
+          if ! gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            gh release create "$TAG" --title "$RELEASE_NAME" --notes "" --repo "$REPO" \
+              || gh release view "$TAG" --repo "$REPO" >/dev/null
+          fi
+          gh release upload "$TAG" "$FILE" --clobber --repo "$REPO"
+          gh release edit "$TAG" --title "$RELEASE_NAME" --repo "$REPO"
