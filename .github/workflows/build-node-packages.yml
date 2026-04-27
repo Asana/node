@@ -21,6 +21,7 @@ jobs:
 
     env:
       NODE_VERSION: v24.13.0
+      REPO: ${{ github.repository }}
 
     steps:
       - name: Debug Matrix Values
@@ -68,10 +69,33 @@ jobs:
           tar --hard-dereference -cvzf packages_${{matrix.arch}}.tar.gz bcrypt@5.1.0 cld@2.9.1 unix-dgram@2.0.6
 
       - name: Upload archive to release
-        uses: softprops/action-gh-release@v1
-        with:
-          name: node-${{ env.NODE_VERSION }}-LATEST
-          tag_name: node-${{ env.NODE_VERSION }}-release
-          files: packages_${{matrix.arch}}.tar.gz
+        # Attach the built gyp-package bundle to the same node-${NODE_VERSION}-release
+        # release that hosts the corresponding Node binaries.
+        #
+        # This workflow is fired by `push` to v24.13.0 and by workflow_dispatch — it
+        # is not chained off Build Node, so the release may not yet exist. The
+        # matrix runs both arms (linux-x64, linux-arm64) in parallel, so both can
+        # race to create the release. The view-or-create guard with the trailing
+        # `|| gh release view` tolerates "already exists" from a losing racer and
+        # propagates any other create failure through the final view.
+        #
+        # `--clobber` makes re-uploads idempotent on asset name collisions by
+        # deleting the existing asset before uploading. If the new upload fails
+        # after the delete, just re-run the job.
+        #
+        # `gh release edit --title` after upload keeps the release title
+        # deterministically derived from NODE_VERSION, overriding any manual rename
+        # in the GitHub UI.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="node-${NODE_VERSION}-release"
+          RELEASE_NAME="node-${NODE_VERSION}-LATEST"
+          FILE="packages_${{matrix.arch}}.tar.gz"
+          if ! gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            gh release create "$TAG" --title "$RELEASE_NAME" --notes "" --repo "$REPO" \
+              || gh release view "$TAG" --repo "$REPO" >/dev/null
+          fi
+          gh release upload "$TAG" "$FILE" --clobber --repo "$REPO"
+          gh release edit "$TAG" --title "$RELEASE_NAME" --repo "$REPO"
