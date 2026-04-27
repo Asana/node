@@ -26,6 +26,7 @@ jobs:
     env:
       S3_BUCKET: your-bucket-name
       AWS_REGION: us-east-1
+      REPO: ${{ github.repository }}
 
     steps:
       - name: Checkout Node fork
@@ -97,10 +98,36 @@ jobs:
           path: artifacts/${{ env.NODE_ARCHIVE_LATEST }}
 
       - name: Upload Node archive to release
-        uses: softprops/action-gh-release@v1
-        with:
-          name: node-${{ env.NODE_VERSION }}-LATEST
-          tag_name: node-${{ env.NODE_VERSION }}-release
-          files: ./artifacts/${{ env.NODE_ARCHIVE_LATEST }}
+        # Publish the built Node archive to the node-${NODE_VERSION}-release release.
+        # This is the first uploader in the pipeline; build-node-packages and
+        # build-node-fibers attach additional artifacts to the same release later.
+        #
+        # Matrix concurrency: both matrix arms (linux-x64, linux-arm64) hit this step
+        # in parallel. On the first run for a new NODE_VERSION the release does not
+        # yet exist, so both arms race to create it. The view-or-create guard with
+        # the trailing `|| gh release view` tolerates "already exists" from the
+        # losing arm (as long as the release now exists); any other create failure
+        # propagates through that second view.
+        #
+        # `--clobber` makes re-uploads idempotent on asset name collisions: an
+        # existing asset with the same name is deleted before the new one uploads.
+        # Acceptable here because the -LATEST assets are always reproducible from
+        # the build inputs; if the upload fails after the delete, just re-run the
+        # job.
+        #
+        # `gh release edit --title` after upload keeps the release title
+        # deterministically derived from NODE_VERSION even if someone renames the
+        # release in the GitHub UI.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="node-$NODE_VERSION-release"
+          RELEASE_NAME="node-$NODE_VERSION-LATEST"
+          FILE="./artifacts/$NODE_ARCHIVE_LATEST"
+          if ! gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            gh release create "$TAG" --title "$RELEASE_NAME" --notes "" --repo "$REPO" \
+              || gh release view "$TAG" --repo "$REPO" >/dev/null
+          fi
+          gh release upload "$TAG" "$FILE" --clobber --repo "$REPO"
+          gh release edit "$TAG" --title "$RELEASE_NAME" --repo "$REPO"
