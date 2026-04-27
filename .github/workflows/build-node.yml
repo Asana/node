@@ -122,9 +122,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          TAG="node-${NODE_VERSION}-release"
-          RELEASE_NAME="node-${NODE_VERSION}-LATEST"
-          FILE="./artifacts/${NODE_ARCHIVE_LATEST}"
+          TAG="node-$NODE_VERSION-release"
+          RELEASE_NAME="node-$NODE_VERSION-LATEST"
+          FILE="./artifacts/$NODE_ARCHIVE_LATEST"
           if ! gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
             gh release create "$TAG" --title "$RELEASE_NAME" --notes "" --repo "$REPO" \
               || gh release view "$TAG" --repo "$REPO" >/dev/null
