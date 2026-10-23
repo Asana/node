@@ -82,6 +82,9 @@ jobs:
           path: artifacts/${{ env.NODE_ARCHIVE_LATEST }}
 
       - name: Upload Node archive to release
+        # Keep branch builds in run-scoped artifacts so they cannot replace the
+        # shared release used by fibers and native-package builds.
+        if: github.ref == 'refs/heads/v22.21.1'
         uses: softprops/action-gh-release@v1
         with:
           name: node-${{ env.NODE_VERSION }}-LATEST
