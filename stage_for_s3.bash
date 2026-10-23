@@ -10,17 +10,17 @@ TIMESTAMP=$(date '+%Y%m%d.%H%M')
 echo "Current timestamp is $TIMESTAMP"
 
 # Download packages and move to codez
-gh release download -R Asana/node node-v22.21.1-release -p "packages_*.gz"
+gh release download -R Asana/node node-v22.23.4-release -p "packages_*.gz"
 echo "Moving packages to $CODEZ/node/gyp"
 mv packages_arm64.tar.gz $CODEZ/node/gyp/packages_arm64_node22.tar.gz
 mv packages_x64.tar.gz $CODEZ/node/gyp/packages_amd64_node22.tar.gz
 
 # Download fibers binaries and node tarballs (standard build)
-gh release download -R Asana/node node-v22.21.1-release -p "linux-*.gz"
-gh release download -R Asana/node node-v22.21.1-release -p "*.xz"
+gh release download -R Asana/node node-v22.23.4-release -p "linux-*.gz"
+gh release download -R Asana/node node-v22.23.4-release -p "*.xz"
 
 # Download FIPS node tarballs
-gh release download -R Asana/node node-v22.21.1-fips-release -p "*.xz"
+gh release download -R Asana/node node-v22.23.4-fips-release -p "*.xz"
 
 # Download fibers base package via CloudFront (public S3 access was disabled)
 curl "https://asana-oss-cache.asana.biz/node-fibers/fibers-5.0.4-pc-20250515.1411-960a.tgz" --output fibers-5.0.4.tar.gz
@@ -125,10 +125,10 @@ echo ""
 echo "Computing SHA256 hashes..."
 STAGE_DIR="node-${UNIQUE}"
 
-SHA_LINUX_ARM64=$(shasum -a 256 "${STAGE_DIR}/node-v22.21.1-linux-arm64-${UNIQUE}.tar.xz" | cut -d' ' -f1)
-SHA_LINUX_X64=$(shasum -a 256 "${STAGE_DIR}/node-v22.21.1-linux-x64-${UNIQUE}.tar.xz" | cut -d' ' -f1)
-SHA_FIPS_LINUX_ARM64=$(shasum -a 256 "${STAGE_DIR}/node-v22.21.1-fips-linux-arm64-${UNIQUE}.tar.xz" | cut -d' ' -f1)
-SHA_FIPS_LINUX_X64=$(shasum -a 256 "${STAGE_DIR}/node-v22.21.1-fips-linux-x64-${UNIQUE}.tar.xz" | cut -d' ' -f1)
+SHA_LINUX_ARM64=$(shasum -a 256 "${STAGE_DIR}/node-v22.23.4-linux-arm64-${UNIQUE}.tar.xz" | cut -d' ' -f1)
+SHA_LINUX_X64=$(shasum -a 256 "${STAGE_DIR}/node-v22.23.4-linux-x64-${UNIQUE}.tar.xz" | cut -d' ' -f1)
+SHA_FIPS_LINUX_ARM64=$(shasum -a 256 "${STAGE_DIR}/node-v22.23.4-fips-linux-arm64-${UNIQUE}.tar.xz" | cut -d' ' -f1)
+SHA_FIPS_LINUX_X64=$(shasum -a 256 "${STAGE_DIR}/node-v22.23.4-fips-linux-x64-${UNIQUE}.tar.xz" | cut -d' ' -f1)
 
 echo "  Standard linux-arm64: $SHA_LINUX_ARM64"
 echo "  Standard linux-x64:   $SHA_LINUX_X64"
@@ -190,20 +190,20 @@ cat > "$TEMP_BLOCKS" << EOF
 
     nodejs_register_toolchains(
         name = "nodejs22pc",
-        node_version = "22.21.1",
+        node_version = "22.23.4",
         node_repositories = {
-            "22.21.1-linux_arm64": ("node-v22.21.1-linux-arm64-${UNIQUE}.tar.xz", "node-v22.21.1-linux-arm64", "${SHA_LINUX_ARM64}"),
-            "22.21.1-linux_amd64": ("node-v22.21.1-linux-x64-${UNIQUE}.tar.xz", "node-v22.21.1-linux-x64", "${SHA_LINUX_X64}"),
+            "22.23.4-linux_arm64": ("node-v22.23.4-linux-arm64-${UNIQUE}.tar.xz", "node-v22.23.4-linux-arm64", "${SHA_LINUX_ARM64}"),
+            "22.23.4-linux_amd64": ("node-v22.23.4-linux-x64-${UNIQUE}.tar.xz", "node-v22.23.4-linux-x64", "${SHA_LINUX_X64}"),
         },
         node_urls = NODE_FORK_URLS,
     )
 
     nodejs_register_toolchains(
         name = "nodejs22fips",
-        node_version = "22.21.1",
+        node_version = "22.23.4",
         node_repositories = {
-            "22.21.1-linux_arm64": ("node-v22.21.1-fips-linux-arm64-${UNIQUE}.tar.xz", "node-v22.21.1-fips-linux-arm64", "${SHA_FIPS_LINUX_ARM64}"),
-            "22.21.1-linux_amd64": ("node-v22.21.1-fips-linux-x64-${UNIQUE}.tar.xz", "node-v22.21.1-fips-linux-x64", "${SHA_FIPS_LINUX_X64}"),
+            "22.23.4-linux_arm64": ("node-v22.23.4-fips-linux-arm64-${UNIQUE}.tar.xz", "node-v22.23.4-fips-linux-arm64", "${SHA_FIPS_LINUX_ARM64}"),
+            "22.23.4-linux_amd64": ("node-v22.23.4-fips-linux-x64-${UNIQUE}.tar.xz", "node-v22.23.4-fips-linux-x64", "${SHA_FIPS_LINUX_X64}"),
         },
         node_urls = NODE_FIPS_URLS,
     )
