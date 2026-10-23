@@ -78,6 +78,23 @@ static void GetParentProcessId(Local<Name> property,
   info.GetReturnValue().Set(uv_os_getppid());
 }
 
+static void SetVersions(Isolate* isolate, Local<Object> versions) {
+  Local<Context> context = isolate->GetCurrentContext();
+
+  // Node.js version is always on the top
+  READONLY_STRING_PROPERTY(
+      versions, "node", per_process::metadata.versions.node);
+
+  for (const auto& version : per_process::metadata.versions.pairs()) {
+    versions
+        ->DefineOwnProperty(context,
+                            OneByteString(isolate, version.first),
+                            OneByteString(isolate, version.second),
+                            v8::ReadOnly)
+        .Check();
+  }
+}
+
 MaybeLocal<Object> CreateProcessObject(Realm* realm) {
   Isolate* isolate = realm->isolate();
   EscapableHandleScope scope(isolate);
@@ -105,41 +122,9 @@ MaybeLocal<Object> CreateProcessObject(Realm* realm) {
   READONLY_PROPERTY(
       process, "version", FIXED_ONE_BYTE_STRING(isolate, NODE_VERSION));
 
-  Local<Object> versions = Object::New(isolate);
-  // Node.js version is always on the top
-  READONLY_STRING_PROPERTY(
-      versions, "node", per_process::metadata.versions.node);
-
-#define V(key) +1
-  std::pair<std::string_view, std::string_view>
-      versions_array[NODE_VERSIONS_KEYS(V)];
-#undef V
-  auto* slot = &versions_array[0];
-
-#define V(key)                                                                 \
-  do {                                                                         \
-    *slot++ = std::pair<std::string_view, std::string_view>(                   \
-        #key, per_process::metadata.versions.key);                             \
-  } while (0);
-  NODE_VERSIONS_KEYS(V)
-#undef V
-
-  std::sort(&versions_array[0],
-            &versions_array[arraysize(versions_array)],
-            [](auto& a, auto& b) { return a.first < b.first; });
-
-  for (const auto& version : versions_array) {
-    versions
-        ->DefineOwnProperty(
-            context,
-            OneByteString(isolate, version.first.data(), version.first.size()),
-            OneByteString(
-                isolate, version.second.data(), version.second.size()),
-            v8::ReadOnly)
-        .Check();
-  }
-
   // process.versions
+  Local<Object> versions = Object::New(isolate);
+  SetVersions(isolate, versions);
   READONLY_PROPERTY(process, "versions", versions);
 
   // process.arch
@@ -241,6 +226,11 @@ void PatchProcessObject(const FunctionCallbackInfo<Value>& args) {
                           env->owns_process_state() ? DebugPortSetter : nullptr,
                           Local<Value>())
             .FromJust());
+
+  // process.versions
+  Local<Object> versions = Object::New(isolate);
+  SetVersions(isolate, versions);
+  READONLY_PROPERTY(process, "versions", versions);
 }
 
 void RegisterProcessExternalReferences(ExternalReferenceRegistry* registry) {

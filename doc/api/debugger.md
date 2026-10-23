@@ -16,7 +16,7 @@ script to debug.
 ```console
 $ node inspect myscript.js
 < Debugger listening on ws://127.0.0.1:9229/621111f9-ffcb-4e82-b718-48a145fa5db8
-< For help, see: https://nodejs.org/en/docs/inspector
+< For help, see: https://nodejs.org/learn/getting-started/debugging
 <
 connecting to 127.0.0.1:9229 ... ok
 < Debugger attached.
@@ -45,7 +45,7 @@ setTimeout(() => {
 console.log('hello');
 $ NODE_INSPECT_RESUME_ON_START=1 node inspect myscript.js
 < Debugger listening on ws://127.0.0.1:9229/f1ed133e-7876-495b-83ae-c32c6fc319c2
-< For help, see: https://nodejs.org/en/docs/inspector
+< For help, see: https://nodejs.org/learn/getting-started/debugging
 <
 connecting to 127.0.0.1:9229 ... ok
 < Debugger attached.
@@ -131,7 +131,7 @@ is not loaded yet:
 ```console
 $ node inspect main.js
 < Debugger listening on ws://127.0.0.1:9229/48a5b28a-550c-471b-b5e1-d13dd7165df9
-< For help, see: https://nodejs.org/en/docs/inspector
+< For help, see: https://nodejs.org/learn/getting-started/debugging
 <
 connecting to 127.0.0.1:9229 ... ok
 < Debugger attached.
@@ -158,7 +158,7 @@ given expression evaluates to `true`:
 ```console
 $ node inspect main.js
 < Debugger listening on ws://127.0.0.1:9229/ce24daa8-3816-44d4-b8ab-8273c8a66d35
-< For help, see: https://nodejs.org/en/docs/inspector
+< For help, see: https://nodejs.org/learn/getting-started/debugging
 <
 connecting to 127.0.0.1:9229 ... ok
 < Debugger attached.
@@ -234,13 +234,26 @@ V8 Inspector can be enabled by passing the `--inspect` flag when starting a
 Node.js application. It is also possible to supply a custom port with that flag,
 e.g. `--inspect=9222` will accept DevTools connections on port 9222.
 
-To break on the first line of the application code, pass the `--inspect-brk`
-flag instead of `--inspect`.
+Using the `--inspect` flag will execute the code immediately before debugger is connected.
+This means that the code will start running before you can start debugging, which might
+not be ideal if you want to debug from the very beginning.
+
+In such cases, you have two alternatives:
+
+1. `--inspect-wait` flag: This flag will wait for debugger to be attached before executing the code.
+   This allows you to start debugging right from the beginning of the execution.
+2. `--inspect-brk` flag: Unlike `--inspect`, this flag will break on the first line of the code
+   as soon as debugger is attached. This is useful when you want to debug the code step by step
+   from the very beginning, without any code execution prior to debugging.
+
+So, when deciding between `--inspect`, `--inspect-wait`, and `--inspect-brk`, consider whether you want
+the code to start executing immediately, wait for debugger to be attached before execution,
+or break on the first line for step-by-step debugging.
 
 ```console
 $ node --inspect index.js
 Debugger listening on ws://127.0.0.1:9229/dc9010dd-f8b8-4ac5-a510-c1a114ec7d29
-For help, see: https://nodejs.org/en/docs/inspector
+For help, see: https://nodejs.org/learn/getting-started/debugging
 ```
 
 (In the example above, the UUID dc9010dd-f8b8-4ac5-a510-c1a114ec7d29

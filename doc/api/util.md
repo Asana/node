@@ -10,7 +10,11 @@ The `node:util` module supports the needs of Node.js internal APIs. Many of the
 utilities are useful for application and module developers as well. To access
 it:
 
-```js
+```mjs
+import util from 'node:util';
+```
+
+```cjs
 const util = require('node:util');
 ```
 
@@ -29,13 +33,27 @@ an `(err, value) => ...` callback as the last argument. In the callback, the
 first argument will be the rejection reason (or `null` if the `Promise`
 resolved), and the second argument will be the resolved value.
 
-```js
-const util = require('node:util');
+```mjs
+import { callbackify } from 'node:util';
 
 async function fn() {
   return 'hello world';
 }
-const callbackFunction = util.callbackify(fn);
+const callbackFunction = callbackify(fn);
+
+callbackFunction((err, ret) => {
+  if (err) throw err;
+  console.log(ret);
+});
+```
+
+```cjs
+const { callbackify } = require('node:util');
+
+async function fn() {
+  return 'hello world';
+}
+const callbackFunction = callbackify(fn);
 
 callbackFunction((err, ret) => {
   if (err) throw err;
@@ -89,11 +107,18 @@ environment variable. If the `section` name appears within the value of that
 environment variable, then the returned function operates similar to
 [`console.error()`][]. If not, then the returned function is a no-op.
 
-```js
-const util = require('node:util');
-const debuglog = util.debuglog('foo');
+```mjs
+import { debuglog } from 'node:util';
+const log = debuglog('foo');
 
-debuglog('hello from foo [%d]', 123);
+log('hello from foo [%d]', 123);
+```
+
+```cjs
+const { debuglog } = require('node:util');
+const log = debuglog('foo');
+
+log('hello from foo [%d]', 123);
 ```
 
 If this program is run with `NODE_DEBUG=foo` in the environment, then
@@ -108,11 +133,18 @@ environment variable set, then it will not print anything.
 
 The `section` supports wildcard also:
 
-```js
-const util = require('node:util');
-const debuglog = util.debuglog('foo-bar');
+```mjs
+import { debuglog } from 'node:util';
+const log = debuglog('foo-bar');
 
-debuglog('hi there, it\'s foo-bar [%d]', 2333);
+log('hi there, it\'s foo-bar [%d]', 2333);
+```
+
+```cjs
+const { debuglog } = require('node:util');
+const log = debuglog('foo-bar');
+
+log('hi there, it\'s foo-bar [%d]', 2333);
 ```
 
 if it is run with `NODE_DEBUG=foo*` in the environment, then it will output
@@ -129,12 +161,21 @@ The optional `callback` argument can be used to replace the logging function
 with a different function that doesn't have any initialization or
 unnecessary wrapping.
 
-```js
-const util = require('node:util');
-let debuglog = util.debuglog('internals', (debug) => {
+```mjs
+import { debuglog } from 'node:util';
+let log = debuglog('internals', (debug) => {
   // Replace with a logging function that optimizes out
   // testing if the section is enabled
-  debuglog = debug;
+  log = debug;
+});
+```
+
+```cjs
+const { debuglog } = require('node:util');
+let log = debuglog('internals', (debug) => {
+  // Replace with a logging function that optimizes out
+  // testing if the section is enabled
+  log = debug;
 });
 ```
 
@@ -144,7 +185,7 @@ let debuglog = util.debuglog('internals', (debug) => {
 added: v14.9.0
 -->
 
-* {boolean}
+* Type: {boolean}
 
 The `util.debuglog().enabled` getter is used to create a test that can be used
 in conditionals based on the existence of the `NODE_DEBUG` environment variable.
@@ -152,9 +193,17 @@ If the `section` name appears within the value of that environment variable,
 then the returned value will be `true`. If not, then the returned value will be
 `false`.
 
-```js
-const util = require('node:util');
-const enabled = util.debuglog('foo').enabled;
+```mjs
+import { debuglog } from 'node:util';
+const enabled = debuglog('foo').enabled;
+if (enabled) {
+  console.log('hello from foo [%d]', 123);
+}
+```
+
+```cjs
+const { debuglog } = require('node:util');
+const enabled = debuglog('foo').enabled;
 if (enabled) {
   console.log('hello from foo [%d]', 123);
 }
@@ -196,10 +245,18 @@ changes:
 The `util.deprecate()` method wraps `fn` (which may be a function or class) in
 such a way that it is marked as deprecated.
 
-```js
-const util = require('node:util');
+```mjs
+import { deprecate } from 'node:util';
 
-exports.obsoleteFunction = util.deprecate(() => {
+export const obsoleteFunction = deprecate(() => {
+  // Do something here.
+}, 'obsoleteFunction() is deprecated. Use newShinyFunction() instead.');
+```
+
+```cjs
+const { deprecate } = require('node:util');
+
+exports.obsoleteFunction = deprecate(() => {
   // Do something here.
 }, 'obsoleteFunction() is deprecated. Use newShinyFunction() instead.');
 ```
@@ -213,11 +270,40 @@ emitting a warning.
 If the same optional `code` is supplied in multiple calls to `util.deprecate()`,
 the warning will be emitted only once for that `code`.
 
-```js
-const util = require('node:util');
+```mjs
+import { deprecate } from 'node:util';
 
-const fn1 = util.deprecate(someFunction, someMessage, 'DEP0001');
-const fn2 = util.deprecate(someOtherFunction, someOtherMessage, 'DEP0001');
+const fn1 = deprecate(
+  () => 'a value',
+  'deprecation message',
+  'DEP0001',
+);
+const fn2 = deprecate(
+  () => 'a  different value',
+  'other dep message',
+  'DEP0001',
+);
+fn1(); // Emits a deprecation warning with code DEP0001
+fn2(); // Does not emit a deprecation warning because it has the same code
+```
+
+```cjs
+const { deprecate } = require('node:util');
+
+const fn1 = deprecate(
+  function() {
+    return 'a value';
+  },
+  'deprecation message',
+  'DEP0001',
+);
+const fn2 = deprecate(
+  function() {
+    return 'a  different value';
+  },
+  'other dep message',
+  'DEP0001',
+);
 fn1(); // Emits a deprecation warning with code DEP0001
 fn2(); // Does not emit a deprecation warning because it has the same code
 ```
@@ -238,6 +324,70 @@ thrown when the deprecated function is called.
 The `--throw-deprecation` command-line flag and `process.throwDeprecation`
 property take precedence over `--trace-deprecation` and
 `process.traceDeprecation`.
+
+## `util.diff(actual, expected)`
+
+<!-- YAML
+added: v22.15.0
+-->
+
+> Stability: 1 - Experimental
+
+* `actual` {Array|string} The first value to compare
+
+* `expected` {Array|string} The second value to compare
+
+* Returns: {Array} An array of difference entries. Each entry is an array with two elements:
+  * `0` {number} Operation code: `-1` for delete, `0` for no-op/unchanged, `1` for insert
+  * `1` {string} The value associated with the operation
+
+* Algorithm complexity: O(N\*D), where:
+
+* N is the total length of the two sequences combined (N = actual.length + expected.length)
+
+* D is the edit distance (the minimum number of operations required to transform one sequence into the other).
+
+[`util.diff()`][] compares two string or array values and returns an array of difference entries.
+It uses the Myers diff algorithm to compute minimal differences, which is the same algorithm
+used internally by assertion error messages.
+
+If the values are equal, an empty array is returned.
+
+```js
+const { diff } = require('node:util');
+
+// Comparing strings
+const actualString = '12345678';
+const expectedString = '12!!5!7!';
+console.log(diff(actualString, expectedString));
+// [
+//   [0, '1'],
+//   [0, '2'],
+//   [1, '3'],
+//   [1, '4'],
+//   [-1, '!'],
+//   [-1, '!'],
+//   [0, '5'],
+//   [1, '6'],
+//   [-1, '!'],
+//   [0, '7'],
+//   [1, '8'],
+//   [-1, '!'],
+// ]
+// Comparing arrays
+const actualArray = ['1', '2', '3'];
+const expectedArray = ['1', '3', '4'];
+console.log(diff(actualArray, expectedArray));
+// [
+//   [0, '1'],
+//   [1, '2'],
+//   [0, '3'],
+//   [-1, '4'],
+// ]
+// Equal values return empty array
+console.log(diff('same', 'same'));
+// []
+```
 
 ## `util.format(format[, ...args])`
 
@@ -286,7 +436,7 @@ corresponding argument. Supported specifiers are:
 
 * `%s`: `String` will be used to convert all values except `BigInt`, `Object`
   and `-0`. `BigInt` values will be represented with an `n` and Objects that
-  have no user defined `toString` function are inspected using `util.inspect()`
+  have neither a user defined `toString` function nor `Symbol.toPrimitive` function are inspected using `util.inspect()`
   with options `{ depth: 0, colors: false, compact: 3 }`.
 * `%d`: `Number` will be used to convert all values except `BigInt` and
   `Symbol`.
@@ -364,6 +514,162 @@ util.formatWithOptions({ colors: true }, 'See object %O', { foo: 42 });
 // when printed to a terminal.
 ```
 
+## `util.getCallSites([frameCount][, options])`
+
+<!-- YAML
+added: v22.9.0
+changes:
+  - version: v22.14.0
+    pr-url: https://github.com/nodejs/node/pull/56584
+    description: Property `column` is deprecated in favor of `columnNumber`.
+  - version: v22.14.0
+    pr-url: https://github.com/nodejs/node/pull/56551
+    description: Property `CallSite.scriptId` is exposed.
+  - version: v22.12.0
+    pr-url: https://github.com/nodejs/node/pull/55626
+    description: The API is renamed from `util.getCallSite` to `util.getCallSites()`.
+-->
+
+> Stability: 1.1 - Active development
+
+* `frameCount` {number} Optional number of frames to capture as call site objects.
+  **Default:** `10`. Allowable range is between 1 and 200.
+* `options` {Object} Optional
+  * `sourceMap` {boolean} Reconstruct the original location in the stacktrace from the source-map.
+    Enabled by default with the flag `--enable-source-maps`.
+* Returns: {Object\[]} An array of call site objects
+  * `functionName` {string} Returns the name of the function associated with this call site.
+  * `scriptName` {string} Returns the name of the resource that contains the script for the
+    function for this call site.
+  * `scriptId` {string} Returns the unique id of the script, as in Chrome DevTools protocol [`Runtime.ScriptId`][].
+  * `lineNumber` {number} Returns the JavaScript script line number (1-based).
+  * `columnNumber` {number} Returns the JavaScript script column number (1-based).
+
+Returns an array of call site objects containing the stack of
+the caller function.
+
+Unlike accessing an `error.stack`, the result returned from this API is not
+interfered with `Error.prepareStackTrace`.
+
+```mjs
+import { getCallSites } from 'node:util';
+
+function exampleFunction() {
+  const callSites = getCallSites();
+
+  console.log('Call Sites:');
+  callSites.forEach((callSite, index) => {
+    console.log(`CallSite ${index + 1}:`);
+    console.log(`Function Name: ${callSite.functionName}`);
+    console.log(`Script Name: ${callSite.scriptName}`);
+    console.log(`Line Number: ${callSite.lineNumber}`);
+    console.log(`Column Number: ${callSite.columnNumber}`);
+  });
+  // CallSite 1:
+  // Function Name: exampleFunction
+  // Script Name: /home/example.js
+  // Line Number: 5
+  // Column Number: 26
+
+  // CallSite 2:
+  // Function Name: anotherFunction
+  // Script Name: /home/example.js
+  // Line Number: 22
+  // Column Number: 3
+
+  // ...
+}
+
+// A function to simulate another stack layer
+function anotherFunction() {
+  exampleFunction();
+}
+
+anotherFunction();
+```
+
+```cjs
+const { getCallSites } = require('node:util');
+
+function exampleFunction() {
+  const callSites = getCallSites();
+
+  console.log('Call Sites:');
+  callSites.forEach((callSite, index) => {
+    console.log(`CallSite ${index + 1}:`);
+    console.log(`Function Name: ${callSite.functionName}`);
+    console.log(`Script Name: ${callSite.scriptName}`);
+    console.log(`Line Number: ${callSite.lineNumber}`);
+    console.log(`Column Number: ${callSite.columnNumber}`);
+  });
+  // CallSite 1:
+  // Function Name: exampleFunction
+  // Script Name: /home/example.js
+  // Line Number: 5
+  // Column Number: 26
+
+  // CallSite 2:
+  // Function Name: anotherFunction
+  // Script Name: /home/example.js
+  // Line Number: 22
+  // Column Number: 3
+
+  // ...
+}
+
+// A function to simulate another stack layer
+function anotherFunction() {
+  exampleFunction();
+}
+
+anotherFunction();
+```
+
+It is possible to reconstruct the original locations by setting the option `sourceMap` to `true`.
+If the source map is not available, the original location will be the same as the current location.
+When the `--enable-source-maps` flag is enabled, for example when using `--experimental-transform-types`,
+`sourceMap` will be true by default.
+
+```ts
+import { getCallSites } from 'node:util';
+
+interface Foo {
+  foo: string;
+}
+
+const callSites = getCallSites({ sourceMap: true });
+
+// With sourceMap:
+// Function Name: ''
+// Script Name: example.js
+// Line Number: 7
+// Column Number: 26
+
+// Without sourceMap:
+// Function Name: ''
+// Script Name: example.js
+// Line Number: 2
+// Column Number: 26
+```
+
+```cjs
+const { getCallSites } = require('node:util');
+
+const callSites = getCallSites({ sourceMap: true });
+
+// With sourceMap:
+// Function Name: ''
+// Script Name: example.js
+// Line Number: 7
+// Column Number: 26
+
+// Without sourceMap:
+// Function Name: ''
+// Script Name: example.js
+// Line Number: 2
+// Column Number: 26
+```
+
 ## `util.getSystemErrorName(err)`
 
 <!-- YAML
@@ -405,6 +711,36 @@ fs.access('file/that/does/not/exist', (err) => {
   console.error(name);  // ENOENT
 });
 ```
+
+## `util.getSystemErrorMessage(err)`
+
+<!-- YAML
+added: v22.12.0
+-->
+
+* `err` {number}
+* Returns: {string}
+
+Returns the string message for a numeric error code that comes from a Node.js
+API.
+The mapping between error codes and string messages is platform-dependent.
+
+```js
+fs.access('file/that/does/not/exist', (err) => {
+  const message = util.getSystemErrorMessage(err.errno);
+  console.error(message);  // No such file or directory
+});
+```
+
+## `util.setTraceSigInt(enable)`
+
+<!-- YAML
+added: v22.19.0
+-->
+
+* `enable` {boolean}
+
+Enable or disable printing a stack trace on `SIGINT`. The API is only available on the main thread.
 
 ## `util.inherits(constructor, superConstructor)`
 
@@ -461,7 +797,24 @@ stream.write('It works!'); // Received data: "It works!"
 
 ES6 example using `class` and `extends`:
 
-```js
+```mjs
+import EventEmitter from 'node:events';
+
+class MyStream extends EventEmitter {
+  write(data) {
+    this.emit('data', data);
+  }
+}
+
+const stream = new MyStream();
+
+stream.on('data', (data) => {
+  console.log(`Received data: "${data}"`);
+});
+stream.write('With ES6');
+```
+
+```cjs
 const EventEmitter = require('node:events');
 
 class MyStream extends EventEmitter {
@@ -573,8 +926,8 @@ changes:
 * `object` {any} Any JavaScript primitive or `Object`.
 * `options` {Object}
   * `showHidden` {boolean} If `true`, `object`'s non-enumerable symbols and
-    properties are included in the formatted result. [`WeakMap`][] and
-    [`WeakSet`][] entries are also included as well as user defined prototype
+    properties are included in the formatted result. {WeakMap} and
+    {WeakSet} entries are also included as well as user defined prototype
     properties (excluding method properties). **Default:** `false`.
   * `depth` {number} Specifies the number of times to recurse while formatting
     `object`. This is useful for inspecting large objects. To recurse up to
@@ -589,8 +942,7 @@ changes:
   * `showProxy` {boolean} If `true`, `Proxy` inspection includes
     the [`target` and `handler`][] objects. **Default:** `false`.
   * `maxArrayLength` {integer} Specifies the maximum number of `Array`,
-    [`TypedArray`][], [`Map`][], [`Set`][], [`WeakMap`][],
-    and [`WeakSet`][] elements to include when formatting.
+    {TypedArray}, {Map}, {WeakMap}, and {WeakSet} elements to include when formatting.
     Set to `null` or `Infinity` to show all elements. Set to `0` or
     negative to show no elements. **Default:** `100`.
   * `maxStringLength` {integer} Specifies the maximum number of characters to
@@ -624,8 +976,8 @@ The `util.inspect()` method returns a string representation of `object` that is
 intended for debugging. The output of `util.inspect` may change at any time
 and should not be depended upon programmatically. Additional `options` may be
 passed that alter the result.
-`util.inspect()` will use the constructor's name and/or `@@toStringTag` to make
-an identifiable tag for an inspected value.
+`util.inspect()` will use the constructor's name and/or `Symbol.toStringTag`
+property to make an identifiable tag for an inspected value.
 
 ```js
 class Foo {
@@ -645,7 +997,23 @@ util.inspect(baz);       // '[foo] {}'
 
 Circular references point to their anchor by using a reference index:
 
-```js
+```mjs
+import { inspect } from 'node:util';
+
+const obj = {};
+obj.a = [obj];
+obj.b = {};
+obj.b.inner = obj.b;
+obj.b.obj = obj;
+
+console.log(inspect(obj));
+// <ref *1> {
+//   a: [ [Circular *1] ],
+//   b: <ref *2> { inner: [Circular *2], obj: [Circular *1] }
+// }
+```
+
+```cjs
 const { inspect } = require('node:util');
 
 const obj = {};
@@ -663,7 +1031,13 @@ console.log(inspect(obj));
 
 The following example inspects all properties of the `util` object:
 
-```js
+```mjs
+import util from 'node:util';
+
+console.log(util.inspect(util, { showHidden: true, depth: null }));
+```
+
+```cjs
 const util = require('node:util');
 
 console.log(util.inspect(util, { showHidden: true, depth: null }));
@@ -671,8 +1045,8 @@ console.log(util.inspect(util, { showHidden: true, depth: null }));
 
 The following example highlights the effect of the `compact` option:
 
-```js
-const util = require('node:util');
+```mjs
+import { inspect } from 'node:util';
 
 const o = {
   a: [1, 2, [[
@@ -682,7 +1056,7 @@ const o = {
     'foo']], 4],
   b: new Map([['za', 1], ['zb', 'test']]),
 };
-console.log(util.inspect(o, { compact: true, depth: 5, breakLength: 80 }));
+console.log(inspect(o, { compact: true, depth: 5, breakLength: 80 }));
 
 // { a:
 //   [ 1,
@@ -694,7 +1068,7 @@ console.log(util.inspect(o, { compact: true, depth: 5, breakLength: 80 }));
 //   b: Map(2) { 'za' => 1, 'zb' => 'test' } }
 
 // Setting `compact` to false or an integer creates more reader friendly output.
-console.log(util.inspect(o, { compact: false, depth: 5, breakLength: 80 }));
+console.log(inspect(o, { compact: false, depth: 5, breakLength: 80 }));
 
 // {
 //   a: [
@@ -721,13 +1095,74 @@ console.log(util.inspect(o, { compact: false, depth: 5, breakLength: 80 }));
 // single line.
 ```
 
-The `showHidden` option allows [`WeakMap`][] and [`WeakSet`][] entries to be
+```cjs
+const { inspect } = require('node:util');
+
+const o = {
+  a: [1, 2, [[
+    'Lorem ipsum dolor sit amet,\nconsectetur adipiscing elit, sed do ' +
+      'eiusmod \ntempor incididunt ut labore et dolore magna aliqua.',
+    'test',
+    'foo']], 4],
+  b: new Map([['za', 1], ['zb', 'test']]),
+};
+console.log(inspect(o, { compact: true, depth: 5, breakLength: 80 }));
+
+// { a:
+//   [ 1,
+//     2,
+//     [ [ 'Lorem ipsum dolor sit amet,\nconsectetur [...]', // A long line
+//           'test',
+//           'foo' ] ],
+//     4 ],
+//   b: Map(2) { 'za' => 1, 'zb' => 'test' } }
+
+// Setting `compact` to false or an integer creates more reader friendly output.
+console.log(inspect(o, { compact: false, depth: 5, breakLength: 80 }));
+
+// {
+//   a: [
+//     1,
+//     2,
+//     [
+//       [
+//         'Lorem ipsum dolor sit amet,\n' +
+//           'consectetur adipiscing elit, sed do eiusmod \n' +
+//           'tempor incididunt ut labore et dolore magna aliqua.',
+//         'test',
+//         'foo'
+//       ]
+//     ],
+//     4
+//   ],
+//   b: Map(2) {
+//     'za' => 1,
+//     'zb' => 'test'
+//   }
+// }
+
+// Setting `breakLength` to e.g. 150 will print the "Lorem ipsum" text in a
+// single line.
+```
+
+The `showHidden` option allows {WeakMap} and {WeakSet} entries to be
 inspected. If there are more entries than `maxArrayLength`, there is no
 guarantee which entries are displayed. That means retrieving the same
-[`WeakSet`][] entries twice may result in different output. Furthermore, entries
+{WeakSet} entries twice may result in different output. Furthermore, entries
 with no remaining strong references may be garbage collected at any time.
 
-```js
+```mjs
+import { inspect } from 'node:util';
+
+const obj = { a: 1 };
+const obj2 = { b: 2 };
+const weakSet = new WeakSet([obj, obj2]);
+
+console.log(inspect(weakSet, { showHidden: true }));
+// WeakSet { { a: 1 }, { b: 2 } }
+```
+
+```cjs
 const { inspect } = require('node:util');
 
 const obj = { a: 1 };
@@ -741,7 +1176,32 @@ console.log(inspect(weakSet, { showHidden: true }));
 The `sorted` option ensures that an object's property insertion order does not
 impact the result of `util.inspect()`.
 
-```js
+```mjs
+import { inspect } from 'node:util';
+import assert from 'node:assert';
+
+const o1 = {
+  b: [2, 3, 1],
+  a: '`a` comes before `b`',
+  c: new Set([2, 3, 1]),
+};
+console.log(inspect(o1, { sorted: true }));
+// { a: '`a` comes before `b`', b: [ 2, 3, 1 ], c: Set(3) { 1, 2, 3 } }
+console.log(inspect(o1, { sorted: (a, b) => b.localeCompare(a) }));
+// { c: Set(3) { 3, 2, 1 }, b: [ 2, 3, 1 ], a: '`a` comes before `b`' }
+
+const o2 = {
+  c: new Set([2, 1, 3]),
+  a: '`a` comes before `b`',
+  b: [2, 3, 1],
+};
+assert.strict.equal(
+  inspect(o1, { sorted: true }),
+  inspect(o2, { sorted: true }),
+);
+```
+
+```cjs
 const { inspect } = require('node:util');
 const assert = require('node:assert');
 
@@ -769,13 +1229,31 @@ assert.strict.equal(
 The `numericSeparator` option adds an underscore every three digits to all
 numbers.
 
-```js
+```mjs
+import { inspect } from 'node:util';
+
+const thousand = 1000;
+const million = 1000000;
+const bigNumber = 123456789n;
+const bigDecimal = 1234.12345;
+
+console.log(inspect(thousand, { numericSeparator: true }));
+// 1_000
+console.log(inspect(million, { numericSeparator: true }));
+// 1_000_000
+console.log(inspect(bigNumber, { numericSeparator: true }));
+// 123_456_789n
+console.log(inspect(bigDecimal, { numericSeparator: true }));
+// 1_234.123_45
+```
+
+```cjs
 const { inspect } = require('node:util');
 
-const thousand = 1_000;
-const million = 1_000_000;
-const bigNumber = 123_456_789n;
-const bigDecimal = 1_234.123_45;
+const thousand = 1000;
+const million = 1000000;
+const bigNumber = 123456789n;
+const bigDecimal = 1234.12345;
 
 console.log(inspect(thousand, { numericSeparator: true }));
 // 1_000
@@ -830,19 +1308,19 @@ ignored, if not supported.
 * `reset` - Resets all (color) modifiers to their defaults
 * **bold** - Make text bold
 * _italic_ - Make text italic
-* <span style="border-bottom: 1px;">underline</span> - Make text underlined
+* <span style="border-bottom: 1px solid;">underline</span> - Make text underlined
 * ~~strikethrough~~ - Puts a horizontal line through the center of the text
   (Alias: `strikeThrough`, `crossedout`, `crossedOut`)
 * `hidden` - Prints the text, but makes it invisible (Alias: conceal)
 * <span style="opacity: 0.5;">dim</span> - Decreased color intensity (Alias:
   `faint`)
-* <span style="border-top: 1px">overlined</span> - Make text overlined
+* <span style="border-top: 1px solid;">overlined</span> - Make text overlined
 * blink - Hides and shows the text in an interval
-* <span style="filter: invert(100%)">inverse</span> - Swap foreground and
+* <span style="filter: invert(100%);">inverse</span> - Swap foreground and
   background colors (Alias: `swapcolors`, `swapColors`)
 * <span style="border-bottom: 1px double;">doubleunderline</span> - Make text
   double underlined (Alias: `doubleUnderline`)
-* <span style="border: 1px">framed</span> - Draw a frame around the text
+* <span style="border: 1px solid;">framed</span> - Draw a frame around the text
 
 #### Foreground colors
 
@@ -901,15 +1379,15 @@ Objects may also define their own
 which `util.inspect()` will invoke and use the result of when inspecting
 the object.
 
-```js
-const util = require('node:util');
+```mjs
+import { inspect } from 'node:util';
 
 class Box {
   constructor(value) {
     this.value = value;
   }
 
-  [util.inspect.custom](depth, options, inspect) {
+  [inspect.custom](depth, options, inspect) {
     if (depth < 0) {
       return options.stylize('[Box]', 'special');
     }
@@ -928,24 +1406,67 @@ class Box {
 
 const box = new Box(true);
 
-util.inspect(box);
-// Returns: "Box< true >"
+console.log(inspect(box));
+// "Box< true >"
+```
+
+```cjs
+const { inspect } = require('node:util');
+
+class Box {
+  constructor(value) {
+    this.value = value;
+  }
+
+  [inspect.custom](depth, options, inspect) {
+    if (depth < 0) {
+      return options.stylize('[Box]', 'special');
+    }
+
+    const newOptions = Object.assign({}, options, {
+      depth: options.depth === null ? null : options.depth - 1,
+    });
+
+    // Five space padding because that's the size of "Box< ".
+    const padding = ' '.repeat(5);
+    const inner = inspect(this.value, newOptions)
+                  .replace(/\n/g, `\n${padding}`);
+    return `${options.stylize('Box', 'special')}< ${inner} >`;
+  }
+}
+
+const box = new Box(true);
+
+console.log(inspect(box));
+// "Box< true >"
 ```
 
 Custom `[util.inspect.custom](depth, opts, inspect)` functions typically return
 a string but may return a value of any type that will be formatted accordingly
 by `util.inspect()`.
 
-```js
-const util = require('node:util');
+```mjs
+import { inspect } from 'node:util';
 
 const obj = { foo: 'this will not show up in the inspect() output' };
-obj[util.inspect.custom] = (depth) => {
+obj[inspect.custom] = (depth) => {
   return { bar: 'baz' };
 };
 
-util.inspect(obj);
-// Returns: "{ bar: 'baz' }"
+console.log(inspect(obj));
+// "{ bar: 'baz' }"
+```
+
+```cjs
+const { inspect } = require('node:util');
+
+const obj = { foo: 'this will not show up in the inspect() output' };
+obj[inspect.custom] = (depth) => {
+  return { bar: 'baz' };
+};
+
+console.log(inspect(obj));
+// "{ bar: 'baz' }"
 ```
 
 ### `util.inspect.custom`
@@ -958,7 +1479,7 @@ changes:
     description: This is now defined as a shared symbol.
 -->
 
-* {symbol} that can be used to declare custom inspect functions.
+* Type: {symbol} that can be used to declare custom inspect functions.
 
 In addition to being accessible through `util.inspect.custom`, this
 symbol is [registered globally][global symbol registry] and can be
@@ -1005,12 +1526,21 @@ The `defaultOptions` value allows customization of the default options used by
 object containing one or more valid [`util.inspect()`][] options. Setting
 option properties directly is also supported.
 
-```js
-const util = require('node:util');
-const arr = Array(101).fill(0);
+```mjs
+import { inspect } from 'node:util';
+const arr = Array(156).fill(0);
 
 console.log(arr); // Logs the truncated array
-util.inspect.defaultOptions.maxArrayLength = null;
+inspect.defaultOptions.maxArrayLength = null;
+console.log(arr); // logs the full array
+```
+
+```cjs
+const { inspect } = require('node:util');
+const arr = Array(156).fill(0);
+
+console.log(arr); // Logs the truncated array
+inspect.defaultOptions.maxArrayLength = null;
 console.log(arr); // logs the full array
 ```
 
@@ -1036,9 +1566,11 @@ equality.
 added:
   - v19.1.0
   - v18.13.0
+changes:
+ - version: v22.15.0
+   pr-url: https://github.com/nodejs/node/pull/57510
+   description: Marking the API stable.
 -->
-
-> Stability: 1 - Experimental
 
 An implementation of [the MIMEType class](https://bmeck.github.io/node-proposal-mime-api/).
 
@@ -1050,7 +1582,7 @@ A MIME string is a structured string containing multiple meaningful
 components. When parsed, a `MIMEType` object is returned containing
 properties for each of these components.
 
-### Constructor: `new MIMEType(input)`
+### `new MIMEType(input)`
 
 * `input` {string} The input MIME to parse
 
@@ -1088,7 +1620,7 @@ console.log(String(myMIME));
 
 ### `mime.type`
 
-* {string}
+* Type: {string}
 
 Gets and sets the type portion of the MIME.
 
@@ -1120,7 +1652,7 @@ console.log(String(myMIME));
 
 ### `mime.subtype`
 
-* {string}
+* Type: {string}
 
 Gets and sets the subtype portion of the MIME.
 
@@ -1152,7 +1684,7 @@ console.log(String(myMIME));
 
 ### `mime.essence`
 
-* {string}
+* Type: {string}
 
 Gets the essence of the MIME. This property is read only.
 Use `mime.type` or `mime.subtype` to alter the MIME.
@@ -1185,7 +1717,7 @@ console.log(String(myMIME));
 
 ### `mime.params`
 
-* {MIMEParams}
+* Type: {MIMEParams}
 
 Gets the [`MIMEParams`][] object representing the
 parameters of the MIME. This property is read-only. See
@@ -1242,7 +1774,7 @@ added:
 The `MIMEParams` API provides read and write access to the parameters of a
 `MIMEType`.
 
-### Constructor: `new MIMEParams()`
+### `new MIMEParams()`
 
 Creates a new `MIMEParams` object by with empty parameters
 
@@ -1275,8 +1807,8 @@ is the `name`, the second item of the array is the `value`.
 ### `mimeParams.get(name)`
 
 * `name` {string}
-* Returns: {string} or `null` if there is no name-value pair with the given
-  `name`.
+* Returns: {string | null} A string or `null` if there is no name-value pair
+  with the given `name`.
 
 Returns the value of the first name-value pair whose name is `name`. If there
 are no such pairs, `null` is returned.
@@ -1353,7 +1885,7 @@ console.log(params.toString());
 
 Returns an iterator over the values of each name-value pair.
 
-### `mimeParams[@@iterator]()`
+### `mimeParams[Symbol.iterator]()`
 
 * Returns: {Iterator}
 
@@ -1390,6 +1922,9 @@ added:
   - v18.3.0
   - v16.17.0
 changes:
+  - version: v22.4.0
+    pr-url: https://github.com/nodejs/node/pull/53107
+    description: add support for allowing negative options in input `config`.
   - version:
     - v20.0.0
     pr-url: https://github.com/nodejs/node/pull/46718
@@ -1419,9 +1954,12 @@ changes:
       times. If `true`, all values will be collected in an array. If
       `false`, values for the option are last-wins. **Default:** `false`.
     * `short` {string} A single character alias for the option.
-    * `default` {string | boolean | string\[] | boolean\[]} The default option
-      value when it is not set by args. It must be of the same type as the
-      `type` property. When `multiple` is `true`, it must be an array.
+    * `default` {string | boolean | string\[] | boolean\[]} The value to assign to
+      the option if it does not appear in the arguments to be parsed. The value
+      must match the type specified by the `type` property. If `multiple` is
+      `true`, it must be an array. No default value is applied when the option
+      does appear in the arguments to be parsed, even if the provided value
+      is falsy.
   * `strict` {boolean} Should an error be thrown when unknown arguments
     are encountered, or when arguments are passed that do not match the
     `type` configured in `options`.
@@ -1429,6 +1967,9 @@ changes:
   * `allowPositionals` {boolean} Whether this command accepts positional
     arguments.
     **Default:** `false` if `strict` is `true`, otherwise `true`.
+  * `allowNegative` {boolean} If `true`, allows explicitly setting boolean
+    options to `false` by prefixing the option name with `--no-`.
+    **Default:** `false`.
   * `tokens` {boolean} Return the parsed tokens. This is useful for extending
     the built-in behavior, from adding additional checks through to reprocessing
     the tokens in different ways.
@@ -1511,9 +2052,9 @@ that appear more than once in args produce a token for each use. Short option
 groups like `-xy` expand to a token for each option. So `-xxx` produces
 three tokens.
 
-For example to use the returned tokens to add support for a negated option
-like `--no-color`, the tokens can be reprocessed to change the value stored
-for the negated option.
+For example, to add support for a negated option like `--no-color` (which
+`allowNegative` supports when the option is of `boolean` type), the returned
+tokens can be reprocessed to change the value stored for the negated option.
 
 ```mjs
 import { parseArgs } from 'node:util';
@@ -1593,6 +2134,40 @@ $ node negate.js --no-logfile --logfile=test.log --color --no-color
 { logfile: 'test.log', color: false }
 ```
 
+## `util.parseEnv(content)`
+
+<!-- YAML
+added:
+  - v21.7.0
+  - v20.12.0
+changes:
+  - version: v22.21.0
+    pr-url: https://github.com/nodejs/node/pull/59925
+    description: This API is no longer experimental.
+-->
+
+* `content` {string}
+
+The raw contents of a `.env` file.
+
+* Returns: {Object}
+
+Given an example `.env` file:
+
+```cjs
+const { parseEnv } = require('node:util');
+
+parseEnv('HELLO=world\nHELLO=oh my\n');
+// Returns: { HELLO: 'oh my' }
+```
+
+```mjs
+import { parseEnv } from 'node:util';
+
+parseEnv('HELLO=world\nHELLO=oh my\n');
+// Returns: { HELLO: 'oh my' }
+```
+
 ## `util.promisify(original)`
 
 <!-- YAML
@@ -1611,12 +2186,24 @@ Takes a function following the common error-first callback style, i.e. taking
 an `(err, value) => ...` callback as the last argument, and returns a version
 that returns promises.
 
-```js
-const util = require('node:util');
-const fs = require('node:fs');
+```mjs
+import { promisify } from 'node:util';
+import { stat } from 'node:fs';
 
-const stat = util.promisify(fs.stat);
-stat('.').then((stats) => {
+const promisifiedStat = promisify(stat);
+promisifiedStat('.').then((stats) => {
+  // Do something with `stats`
+}).catch((error) => {
+  // Handle the error.
+});
+```
+
+```cjs
+const { promisify } = require('node:util');
+const { stat } = require('node:fs');
+
+const promisifiedStat = promisify(stat);
+promisifiedStat('.').then((stats) => {
   // Do something with `stats`
 }).catch((error) => {
   // Handle the error.
@@ -1625,14 +2212,28 @@ stat('.').then((stats) => {
 
 Or, equivalently using `async function`s:
 
-```js
-const util = require('node:util');
-const fs = require('node:fs');
+```mjs
+import { promisify } from 'node:util';
+import { stat } from 'node:fs';
 
-const stat = util.promisify(fs.stat);
+const promisifiedStat = promisify(stat);
 
 async function callStat() {
-  const stats = await stat('.');
+  const stats = await promisifiedStat('.');
+  console.log(`This directory is owned by ${stats.uid}`);
+}
+
+callStat();
+```
+
+```cjs
+const { promisify } = require('node:util');
+const { stat } = require('node:fs');
+
+const promisifiedStat = promisify(stat);
+
+async function callStat() {
+  const stats = await promisifiedStat('.');
   console.log(`This directory is owned by ${stats.uid}`);
 }
 
@@ -1651,8 +2252,8 @@ callback as its last argument.
 Using `promisify()` on class methods or other methods that use `this` may not
 work as expected unless handled specially:
 
-```js
-const util = require('node:util');
+```mjs
+import { promisify } from 'node:util';
 
 class Foo {
   constructor() {
@@ -1666,8 +2267,33 @@ class Foo {
 
 const foo = new Foo();
 
-const naiveBar = util.promisify(foo.bar);
-// TypeError: Cannot read property 'a' of undefined
+const naiveBar = promisify(foo.bar);
+// TypeError: Cannot read properties of undefined (reading 'a')
+// naiveBar().then(a => console.log(a));
+
+naiveBar.call(foo).then((a) => console.log(a)); // '42'
+
+const bindBar = naiveBar.bind(foo);
+bindBar().then((a) => console.log(a)); // '42'
+```
+
+```cjs
+const { promisify } = require('node:util');
+
+class Foo {
+  constructor() {
+    this.a = 42;
+  }
+
+  bar(callback) {
+    callback(null, this.a);
+  }
+}
+
+const foo = new Foo();
+
+const naiveBar = promisify(foo.bar);
+// TypeError: Cannot read properties of undefined (reading 'a')
 // naiveBar().then(a => console.log(a));
 
 naiveBar.call(foo).then((a) => console.log(a)); // '42'
@@ -1681,19 +2307,35 @@ bindBar().then((a) => console.log(a)); // '42'
 Using the `util.promisify.custom` symbol one can override the return value of
 [`util.promisify()`][]:
 
-```js
-const util = require('node:util');
+```mjs
+import { promisify } from 'node:util';
 
 function doSomething(foo, callback) {
   // ...
 }
 
-doSomething[util.promisify.custom] = (foo) => {
+doSomething[promisify.custom] = (foo) => {
   return getPromiseSomehow();
 };
 
-const promisified = util.promisify(doSomething);
-console.log(promisified === doSomething[util.promisify.custom]);
+const promisified = promisify(doSomething);
+console.log(promisified === doSomething[promisify.custom]);
+// prints 'true'
+```
+
+```cjs
+const { promisify } = require('node:util');
+
+function doSomething(foo, callback) {
+  // ...
+}
+
+doSomething[promisify.custom] = (foo) => {
+  return getPromiseSomehow();
+};
+
+const promisified = promisify(doSomething);
+console.log(promisified === doSomething[promisify.custom]);
 // prints 'true'
 ```
 
@@ -1726,7 +2368,7 @@ changes:
     description: This is now defined as a shared symbol.
 -->
 
-* {symbol} that can be used to declare custom promisified variants of functions,
+* Type: {symbol} that can be used to declare custom promisified variants of functions,
   see [Custom promisified functions][].
 
 In addition to being accessible through `util.promisify.custom`, this
@@ -1762,10 +2404,101 @@ console.log(util.stripVTControlCharacters('\u001B[4mvalue\u001B[0m'));
 // Prints "value"
 ```
 
+## `util.styleText(format, text[, options])`
+
+<!-- YAML
+added:
+  - v21.7.0
+  - v20.12.0
+changes:
+  - version: v22.17.0
+    pr-url: https://github.com/nodejs/node/pull/58437
+    description: Added the `'none'` format as a non-op format.
+  - version: v22.13.0
+    pr-url: https://github.com/nodejs/node/pull/56265
+    description: styleText is now stable.
+  - version:
+    - v22.8.0
+    - v20.18.0
+    pr-url: https://github.com/nodejs/node/pull/54389
+    description: Respect isTTY and environment variables
+      such as NO_COLOR, NODE_DISABLE_COLORS, and FORCE_COLOR.
+-->
+
+* `format` {string | Array} A text format or an Array
+  of text formats defined in `util.inspect.colors`.
+* `text` {string} The text to to be formatted.
+* `options` {Object}
+  * `validateStream` {boolean} When true, `stream` is checked to see if it can handle colors. **Default:** `true`.
+  * `stream` {Stream} A stream that will be validated if it can be colored. **Default:** `process.stdout`.
+
+This function returns a formatted text considering the `format` passed
+for printing in a terminal. It is aware of the terminal's capabilities
+and acts according to the configuration set via `NO_COLOR`,
+`NODE_DISABLE_COLORS` and `FORCE_COLOR` environment variables.
+
+```mjs
+import { styleText } from 'node:util';
+import { stderr } from 'node:process';
+
+const successMessage = styleText('green', 'Success!');
+console.log(successMessage);
+
+const errorMessage = styleText(
+  'red',
+  'Error! Error!',
+  // Validate if process.stderr has TTY
+  { stream: stderr },
+);
+console.error(errorMessage);
+```
+
+```cjs
+const { styleText } = require('node:util');
+const { stderr } = require('node:process');
+
+const successMessage = styleText('green', 'Success!');
+console.log(successMessage);
+
+const errorMessage = styleText(
+  'red',
+  'Error! Error!',
+  // Validate if process.stderr has TTY
+  { stream: stderr },
+);
+console.error(errorMessage);
+```
+
+`util.inspect.colors` also provides text formats such as `italic`, and
+`underline` and you can combine both:
+
+```cjs
+console.log(
+  util.styleText(['underline', 'italic'], 'My italic underlined message'),
+);
+```
+
+When passing an array of formats, the order of the format applied
+is left to right so the following style might overwrite the previous one.
+
+```cjs
+console.log(
+  util.styleText(['red', 'green'], 'text'), // green
+);
+```
+
+The special format value `none` applies no additional styling to the text.
+
+The full list of formats can be found in [modifiers][].
+
 ## Class: `util.TextDecoder`
 
 <!-- YAML
 added: v8.3.0
+changes:
+  - version: v11.0.0
+    pr-url: https://github.com/nodejs/node/pull/22281
+    description: The class is now available on the global object.
 -->
 
 An implementation of the [WHATWG Encoding Standard][] `TextDecoder` API.
@@ -1844,14 +2577,6 @@ is not supported.
 
 ### `new TextDecoder([encoding[, options]])`
 
-<!-- YAML
-added: v8.3.0
-changes:
-  - version: v11.0.0
-    pr-url: https://github.com/nodejs/node/pull/22281
-    description: The class is now available on the global object.
--->
-
 * `encoding` {string} Identifies the `encoding` that this `TextDecoder` instance
   supports. **Default:** `'utf-8'`.
 * `options` {Object}
@@ -1886,20 +2611,20 @@ If `textDecoder.fatal` is `true`, decoding errors that occur will result in a
 
 ### `textDecoder.encoding`
 
-* {string}
+* Type: {string}
 
 The encoding supported by the `TextDecoder` instance.
 
 ### `textDecoder.fatal`
 
-* {boolean}
+* Type: {boolean}
 
 The value will be `true` if decoding errors result in a `TypeError` being
 thrown.
 
 ### `textDecoder.ignoreBOM`
 
-* {boolean}
+* Type: {boolean}
 
 The value will be `true` if the decoding result will include the byte order
 mark.
@@ -1934,6 +2659,10 @@ encoded bytes.
 
 ### `textEncoder.encodeInto(src, dest)`
 
+<!-- YAML
+added: v12.11.0
+-->
+
 * `src` {string} The text to encode.
 * `dest` {Uint8Array} The array to hold the encode result.
 * Returns: {Object}
@@ -1952,7 +2681,7 @@ const { read, written } = encoder.encodeInto(src, dest);
 
 ### `textEncoder.encoding`
 
-* {string}
+* Type: {string}
 
 The encoding supported by the `TextEncoder` instance. Always set to `'utf-8'`.
 
@@ -1974,9 +2703,11 @@ Unicode "replacement character" U+FFFD.
 
 <!-- YAML
 added: v18.11.0
+changes:
+ - version: v22.15.0
+   pr-url: https://github.com/nodejs/node/pull/57510
+   description: Marking the API stable.
 -->
-
-> Stability: 1 - Experimental
 
 Creates and returns an {AbortController} instance whose {AbortSignal} is marked
 as transferable and can be used with `structuredClone()` or `postMessage()`.
@@ -1985,9 +2716,11 @@ as transferable and can be used with `structuredClone()` or `postMessage()`.
 
 <!-- YAML
 added: v18.11.0
+changes:
+ - version: v22.15.0
+   pr-url: https://github.com/nodejs/node/pull/57510
+   description: Marking the API stable.
 -->
-
-> Stability: 1 - Experimental
 
 * `signal` {AbortSignal}
 * Returns: {AbortSignal}
@@ -2007,44 +2740,62 @@ channel.port2.postMessage(signal, [signal]);
 added:
  - v19.7.0
  - v18.16.0
+changes:
+ - version: v22.16.0
+   pr-url: https://github.com/nodejs/node/pull/57765
+   description: Change stability index for this feature from Experimental to Stable.
 -->
 
-> Stability: 1 - Experimental
-
 * `signal` {AbortSignal}
-* `resource` {Object} Any non-null entity, reference to which is held weakly.
+* `resource` {Object} Any non-null object tied to the abortable operation and held weakly.
+  If `resource` is garbage collected before the `signal` aborts, the promise remains pending,
+  allowing Node.js to stop tracking it.
+  This helps prevent memory leaks in long-running or non-cancelable operations.
 * Returns: {Promise}
 
-Listens to abort event on the provided `signal` and
-returns a promise that is fulfilled when the `signal` is
-aborted. If the passed `resource` is garbage collected before the `signal` is
-aborted, the returned promise shall remain pending indefinitely.
+Listens to abort event on the provided `signal` and returns a promise that resolves when the `signal` is aborted.
+If `resource` is provided, it weakly references the operation's associated object,
+so if `resource` is garbage collected before the `signal` aborts,
+then returned promise shall remain pending.
+This prevents memory leaks in long-running or non-cancelable operations.
 
 ```cjs
 const { aborted } = require('node:util');
 
+// Obtain an object with an abortable signal, like a custom resource or operation.
 const dependent = obtainSomethingAbortable();
 
+// Pass `dependent` as the resource, indicating the promise should only resolve
+// if `dependent` is still in memory when the signal is aborted.
 aborted(dependent.signal, dependent).then(() => {
-  // Do something when dependent is aborted.
+
+  // This code runs when `dependent` is aborted.
+  console.log('Dependent resource was aborted.');
 });
 
+// Simulate an event that triggers the abort.
 dependent.on('event', () => {
-  dependent.abort();
+  dependent.abort(); // This will cause the `aborted` promise to resolve.
 });
 ```
 
 ```mjs
 import { aborted } from 'node:util';
 
+// Obtain an object with an abortable signal, like a custom resource or operation.
 const dependent = obtainSomethingAbortable();
 
+// Pass `dependent` as the resource, indicating the promise should only resolve
+// if `dependent` is still in memory when the signal is aborted.
 aborted(dependent.signal, dependent).then(() => {
-  // Do something when dependent is aborted.
+
+  // This code runs when `dependent` is aborted.
+  console.log('Dependent resource was aborted.');
 });
 
+// Simulate an event that triggers the abort.
 dependent.on('event', () => {
-  dependent.abort();
+  dependent.abort(); // This will cause the `aborted` promise to resolve.
 });
 ```
 
@@ -2078,8 +2829,8 @@ added: v10.0.0
 * `value` {any}
 * Returns: {boolean}
 
-Returns `true` if the value is a built-in [`ArrayBuffer`][] or
-[`SharedArrayBuffer`][] instance.
+Returns `true` if the value is a built-in {ArrayBuffer} or
+{SharedArrayBuffer} instance.
 
 See also [`util.types.isArrayBuffer()`][] and
 [`util.types.isSharedArrayBuffer()`][].
@@ -2098,8 +2849,8 @@ added: v10.0.0
 * `value` {any}
 * Returns: {boolean}
 
-Returns `true` if the value is an instance of one of the [`ArrayBuffer`][]
-views, such as typed array objects or [`DataView`][]. Equivalent to
+Returns `true` if the value is an instance of one of the {ArrayBuffer}
+views, such as typed array objects or {DataView}. Equivalent to
 [`ArrayBuffer.isView()`][].
 
 ```js
@@ -2137,8 +2888,8 @@ added: v10.0.0
 * `value` {any}
 * Returns: {boolean}
 
-Returns `true` if the value is a built-in [`ArrayBuffer`][] instance.
-This does _not_ include [`SharedArrayBuffer`][] instances. Usually, it is
+Returns `true` if the value is a built-in {ArrayBuffer} instance.
+This does _not_ include {SharedArrayBuffer} instances. Usually, it is
 desirable to test for both; See [`util.types.isAnyArrayBuffer()`][] for that.
 
 ```js
@@ -2179,6 +2930,24 @@ Returns `true` if the value is a `BigInt64Array` instance.
 ```js
 util.types.isBigInt64Array(new BigInt64Array());   // Returns true
 util.types.isBigInt64Array(new BigUint64Array());  // Returns false
+```
+
+### `util.types.isBigIntObject(value)`
+
+<!-- YAML
+added: v10.4.0
+-->
+
+* `value` {any}
+* Returns: {boolean}
+
+Returns `true` if the value is a BigInt object, e.g. created
+by `Object(BigInt(123))`.
+
+```js
+util.types.isBigIntObject(Object(BigInt(123)));   // Returns true
+util.types.isBigIntObject(BigInt(123));   // Returns false
+util.types.isBigIntObject(123);  // Returns false
 ```
 
 ### `util.types.isBigUint64Array(value)`
@@ -2260,7 +3029,7 @@ added: v10.0.0
 * `value` {any}
 * Returns: {boolean}
 
-Returns `true` if the value is a built-in [`DataView`][] instance.
+Returns `true` if the value is a built-in {DataView} instance.
 
 ```js
 const ab = new ArrayBuffer(20);
@@ -2279,7 +3048,7 @@ added: v10.0.0
 * `value` {any}
 * Returns: {boolean}
 
-Returns `true` if the value is a built-in [`Date`][] instance.
+Returns `true` if the value is a built-in {Date} instance.
 
 ```js
 util.types.isDate(new Date());  // Returns true
@@ -2320,16 +3089,45 @@ DECLARE_NAPI_PROPERTY("myNapi", MyNapi)
 ...
 ```
 
-```js
-const native = require('napi_addon.node');
+```mjs
+import native from 'napi_addon.node';
+import { types } from 'node:util';
+
 const data = native.myNapi();
-util.types.isExternal(data); // returns true
-util.types.isExternal(0); // returns false
-util.types.isExternal(new String('foo')); // returns false
+types.isExternal(data); // returns true
+types.isExternal(0); // returns false
+types.isExternal(new String('foo')); // returns false
+```
+
+```cjs
+const native = require('napi_addon.node');
+const { types } = require('node:util');
+
+const data = native.myNapi();
+types.isExternal(data); // returns true
+types.isExternal(0); // returns false
+types.isExternal(new String('foo')); // returns false
 ```
 
 For further information on `napi_create_external`, refer to
 [`napi_create_external()`][].
+
+### `util.types.isFloat16Array(value)`
+
+<!-- YAML
+added: v22.16.0
+-->
+
+* `value` {any}
+* Returns: {boolean}
+
+Returns `true` if the value is a built-in {Float16Array} instance.
+
+```js
+util.types.isFloat16Array(new ArrayBuffer());  // Returns false
+util.types.isFloat16Array(new Float16Array());  // Returns true
+util.types.isFloat16Array(new Float32Array());  // Returns false
+```
 
 ### `util.types.isFloat32Array(value)`
 
@@ -2340,7 +3138,7 @@ added: v10.0.0
 * `value` {any}
 * Returns: {boolean}
 
-Returns `true` if the value is a built-in [`Float32Array`][] instance.
+Returns `true` if the value is a built-in {Float32Array} instance.
 
 ```js
 util.types.isFloat32Array(new ArrayBuffer());  // Returns false
@@ -2357,7 +3155,7 @@ added: v10.0.0
 * `value` {any}
 * Returns: {boolean}
 
-Returns `true` if the value is a built-in [`Float64Array`][] instance.
+Returns `true` if the value is a built-in {Float64Array} instance.
 
 ```js
 util.types.isFloat64Array(new ArrayBuffer());  // Returns false
@@ -2414,7 +3212,7 @@ added: v10.0.0
 * `value` {any}
 * Returns: {boolean}
 
-Returns `true` if the value is a built-in [`Int8Array`][] instance.
+Returns `true` if the value is a built-in {Int8Array} instance.
 
 ```js
 util.types.isInt8Array(new ArrayBuffer());  // Returns false
@@ -2431,7 +3229,7 @@ added: v10.0.0
 * `value` {any}
 * Returns: {boolean}
 
-Returns `true` if the value is a built-in [`Int16Array`][] instance.
+Returns `true` if the value is a built-in {Int16Array} instance.
 
 ```js
 util.types.isInt16Array(new ArrayBuffer());  // Returns false
@@ -2448,7 +3246,7 @@ added: v10.0.0
 * `value` {any}
 * Returns: {boolean}
 
-Returns `true` if the value is a built-in [`Int32Array`][] instance.
+Returns `true` if the value is a built-in {Int32Array} instance.
 
 ```js
 util.types.isInt32Array(new ArrayBuffer());  // Returns false
@@ -2476,7 +3274,7 @@ added: v10.0.0
 * `value` {any}
 * Returns: {boolean}
 
-Returns `true` if the value is a built-in [`Map`][] instance.
+Returns `true` if the value is a built-in {Map} instance.
 
 ```js
 util.types.isMap(new Map());  // Returns true
@@ -2492,7 +3290,7 @@ added: v10.0.0
 * Returns: {boolean}
 
 Returns `true` if the value is an iterator returned for a built-in
-[`Map`][] instance.
+{Map} instance.
 
 ```js
 const map = new Map();
@@ -2549,11 +3347,23 @@ returning `true` for that value. `isNativeError()` returns `true` for errors
 which come from a different [realm][] while `instanceof Error` returns `false`
 for these errors:
 
-```js
-const vm = require('node:vm');
-const context = vm.createContext({});
-const myError = vm.runInContext('new Error()', context);
-console.log(util.types.isNativeError(myError)); // true
+```mjs
+import { createContext, runInContext } from 'node:vm';
+import { types } from 'node:util';
+
+const context = createContext({});
+const myError = runInContext('new Error()', context);
+console.log(types.isNativeError(myError)); // true
+console.log(myError instanceof Error); // false
+```
+
+```cjs
+const { createContext, runInContext } = require('node:vm');
+const { types } = require('node:util');
+
+const context = createContext({});
+const myError = runInContext('new Error()', context);
+console.log(types.isNativeError(myError)); // true
 console.log(myError instanceof Error); // false
 ```
 
@@ -2593,7 +3403,7 @@ added: v10.0.0
 * `value` {any}
 * Returns: {boolean}
 
-Returns `true` if the value is a built-in [`Promise`][].
+Returns `true` if the value is a built-in {Promise}.
 
 ```js
 util.types.isPromise(Promise.resolve(42));  // Returns true
@@ -2608,7 +3418,7 @@ added: v10.0.0
 * `value` {any}
 * Returns: {boolean}
 
-Returns `true` if the value is a [`Proxy`][] instance.
+Returns `true` if the value is a {Proxy} instance.
 
 ```js
 const target = {};
@@ -2642,7 +3452,7 @@ added: v10.0.0
 * `value` {any}
 * Returns: {boolean}
 
-Returns `true` if the value is a built-in [`Set`][] instance.
+Returns `true` if the value is a built-in {Set} instance.
 
 ```js
 util.types.isSet(new Set());  // Returns true
@@ -2658,7 +3468,7 @@ added: v10.0.0
 * Returns: {boolean}
 
 Returns `true` if the value is an iterator returned for a built-in
-[`Set`][] instance.
+{Set} instance.
 
 ```js
 const set = new Set();
@@ -2677,8 +3487,8 @@ added: v10.0.0
 * `value` {any}
 * Returns: {boolean}
 
-Returns `true` if the value is a built-in [`SharedArrayBuffer`][] instance.
-This does _not_ include [`ArrayBuffer`][] instances. Usually, it is
+Returns `true` if the value is a built-in {SharedArrayBuffer} instance.
+This does _not_ include {ArrayBuffer} instances. Usually, it is
 desirable to test for both; See [`util.types.isAnyArrayBuffer()`][] for that.
 
 ```js
@@ -2730,7 +3540,7 @@ added: v10.0.0
 * `value` {any}
 * Returns: {boolean}
 
-Returns `true` if the value is a built-in [`TypedArray`][] instance.
+Returns `true` if the value is a built-in {TypedArray} instance.
 
 ```js
 util.types.isTypedArray(new ArrayBuffer());  // Returns false
@@ -2749,7 +3559,7 @@ added: v10.0.0
 * `value` {any}
 * Returns: {boolean}
 
-Returns `true` if the value is a built-in [`Uint8Array`][] instance.
+Returns `true` if the value is a built-in {Uint8Array} instance.
 
 ```js
 util.types.isUint8Array(new ArrayBuffer());  // Returns false
@@ -2766,7 +3576,7 @@ added: v10.0.0
 * `value` {any}
 * Returns: {boolean}
 
-Returns `true` if the value is a built-in [`Uint8ClampedArray`][] instance.
+Returns `true` if the value is a built-in {Uint8ClampedArray} instance.
 
 ```js
 util.types.isUint8ClampedArray(new ArrayBuffer());  // Returns false
@@ -2783,7 +3593,7 @@ added: v10.0.0
 * `value` {any}
 * Returns: {boolean}
 
-Returns `true` if the value is a built-in [`Uint16Array`][] instance.
+Returns `true` if the value is a built-in {Uint16Array} instance.
 
 ```js
 util.types.isUint16Array(new ArrayBuffer());  // Returns false
@@ -2800,7 +3610,7 @@ added: v10.0.0
 * `value` {any}
 * Returns: {boolean}
 
-Returns `true` if the value is a built-in [`Uint32Array`][] instance.
+Returns `true` if the value is a built-in {Uint32Array} instance.
 
 ```js
 util.types.isUint32Array(new ArrayBuffer());  // Returns false
@@ -2817,7 +3627,7 @@ added: v10.0.0
 * `value` {any}
 * Returns: {boolean}
 
-Returns `true` if the value is a built-in [`WeakMap`][] instance.
+Returns `true` if the value is a built-in {WeakMap} instance.
 
 ```js
 util.types.isWeakMap(new WeakMap());  // Returns true
@@ -2832,29 +3642,10 @@ added: v10.0.0
 * `value` {any}
 * Returns: {boolean}
 
-Returns `true` if the value is a built-in [`WeakSet`][] instance.
+Returns `true` if the value is a built-in {WeakSet} instance.
 
 ```js
 util.types.isWeakSet(new WeakSet());  // Returns true
-```
-
-### `util.types.isWebAssemblyCompiledModule(value)`
-
-<!-- YAML
-added: v10.0.0
-deprecated: v14.0.0
--->
-
-> Stability: 0 - Deprecated: Use `value instanceof WebAssembly.Module` instead.
-
-* `value` {any}
-* Returns: {boolean}
-
-Returns `true` if the value is a built-in [`WebAssembly.Module`][] instance.
-
-```js
-const module = new WebAssembly.Module(wasmBuffer);
-util.types.isWebAssemblyCompiledModule(module);  // Returns true
 ```
 
 ## Deprecated APIs
@@ -2994,7 +3785,7 @@ deprecated: v4.0.0
 * `object` {any}
 * Returns: {boolean}
 
-Returns `true` if the given `object` is an [`Error`][]. Otherwise, returns
+Returns `true` if the given `object` is an {Error}. Otherwise, returns
 `false`.
 
 ```js
@@ -3336,40 +4127,20 @@ util.log('Timestamped message.');
 [`'warning'`]: process.md#event-warning
 [`Array.isArray()`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/isArray
 [`ArrayBuffer.isView()`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer/isView
-[`ArrayBuffer`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer
 [`Buffer.isBuffer()`]: buffer.md#static-method-bufferisbufferobj
-[`DataView`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/DataView
-[`Date`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date
-[`Error`]: errors.md#class-error
-[`Float32Array`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Float32Array
-[`Float64Array`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Float64Array
-[`Int16Array`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Int16Array
-[`Int32Array`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Int32Array
-[`Int8Array`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Int8Array
 [`JSON.stringify()`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify
 [`MIMEparams`]: #class-utilmimeparams
-[`Map`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map
 [`Object.assign()`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/assign
 [`Object.freeze()`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/freeze
-[`Promise`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise
-[`Proxy`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy
-[`Set`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set
-[`SharedArrayBuffer`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer
-[`TypedArray`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypedArray
-[`Uint16Array`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint16Array
-[`Uint32Array`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint32Array
-[`Uint8Array`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array
-[`Uint8ClampedArray`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8ClampedArray
-[`WeakMap`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WeakMap
-[`WeakSet`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WeakSet
-[`WebAssembly.Module`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Module
+[`Runtime.ScriptId`]: https://chromedevtools.github.io/devtools-protocol/1-3/Runtime/#type-ScriptId
 [`assert.deepStrictEqual()`]: assert.md#assertdeepstrictequalactual-expected-message
 [`console.error()`]: console.md#consoleerrordata-args
 [`mime.toString()`]: #mimetostring
 [`mimeParams.entries()`]: #mimeparamsentries
 [`napi_create_external()`]: n-api.md#napi_create_external
-[`target` and `handler`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy#Terminology
+[`target` and `handler`]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy#terminology
 [`tty.hasColors()`]: tty.md#writestreamhascolorscount-env
+[`util.diff()`]: #utildiffactual-expected
 [`util.format()`]: #utilformatformat-args
 [`util.inspect()`]: #utilinspectobject-options
 [`util.promisify()`]: #utilpromisifyoriginal
@@ -3380,11 +4151,12 @@ util.log('Timestamped message.');
 [`util.types.isSharedArrayBuffer()`]: #utiltypesissharedarraybuffervalue
 [async function]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function
 [built-in `Error` type]: https://tc39.es/ecma262/#sec-error-objects
-[compare function]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort#Parameters
+[compare function]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort#parameters
 [constructor]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/constructor
 [default sort]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort
 [global symbol registry]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol/for
 [list of deprecated APIS]: deprecations.md#list-of-deprecated-apis
+[modifiers]: #modifiers
 [realm]: https://tc39.es/ecma262/#realm
 [semantically incompatible]: https://github.com/nodejs/node/issues/4179
 [util.inspect.custom]: #utilinspectcustom

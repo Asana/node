@@ -1,4 +1,3 @@
-// Flags: --expose-internals
 'use strict';
 const common = require('../common');
 if (!common.hasCrypto)
@@ -7,8 +6,7 @@ if (!common.hasCrypto)
 const assert = require('assert');
 const crypto = require('crypto');
 
-const { internalBinding } = require('internal/test/binding');
-if (typeof internalBinding('crypto').ScryptJob !== 'function')
+if (typeof crypto.scrypt !== 'function' || typeof crypto.scryptSync !== 'function')
   common.skip('no scrypt support');
 
 const good = [
@@ -178,7 +176,8 @@ for (const options of bad) {
 
 for (const options of toobig) {
   const expected = {
-    message: /Invalid scrypt param/
+    message: /Invalid scrypt params:.*memory limit exceeded/,
+    code: 'ERR_CRYPTO_INVALID_SCRYPT_PARAMS',
   };
   assert.throws(() => crypto.scrypt('pass', 'salt', 1, options, () => {}),
                 expected);

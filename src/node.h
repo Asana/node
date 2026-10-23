@@ -67,7 +67,8 @@
 #endif
 
 #ifdef _WIN32
-# define SIGKILL 9
+#define SIGQUIT 3
+#define SIGKILL 9
 #endif
 
 #include "v8.h"  // NOLINT(build/include_order)
@@ -75,7 +76,6 @@
 #include "v8-platform.h"  // NOLINT(build/include_order)
 #include "node_version.h"  // NODE_MODULE_VERSION
 
-#define NAPI_EXPERIMENTAL
 #include "node_api.h"
 
 #include <functional>
@@ -349,7 +349,7 @@ NODE_DEPRECATED("Use InitializeOncePerProcess() instead",
 // including the arguments split into argv/exec_argv, a list of potential
 // errors encountered during initialization, and a potential suggested
 // exit code.
-NODE_EXTERN std::unique_ptr<InitializationResult> InitializeOncePerProcess(
+NODE_EXTERN std::shared_ptr<InitializationResult> InitializeOncePerProcess(
     const std::vector<std::string>& args,
     ProcessInitializationFlags::Flags flags =
         ProcessInitializationFlags::kNoFlags);
@@ -358,7 +358,7 @@ NODE_EXTERN std::unique_ptr<InitializationResult> InitializeOncePerProcess(
 NODE_EXTERN void TearDownOncePerProcess();
 // Convenience overload for specifying multiple flags without having
 // to worry about casts.
-inline std::unique_ptr<InitializationResult> InitializeOncePerProcess(
+inline std::shared_ptr<InitializationResult> InitializeOncePerProcess(
     const std::vector<std::string>& args,
     std::initializer_list<ProcessInitializationFlags::Flags> list) {
   uint64_t flags_accum = ProcessInitializationFlags::kNoFlags;
@@ -483,6 +483,7 @@ struct IsolateSettings {
   v8::Isolate::AbortOnUncaughtExceptionCallback
       should_abort_on_uncaught_exception_callback = nullptr;
   v8::FatalErrorCallback fatal_error_callback = nullptr;
+  v8::OOMErrorCallback oom_error_callback = nullptr;
   v8::PrepareStackTraceCallback prepare_stack_trace_callback = nullptr;
 
   // Miscellaneous callbacks
@@ -537,6 +538,7 @@ class EmbedderSnapshotData {
   // If the snapshot is invalid, this returns an empty pointer.
   static Pointer FromFile(FILE* in);
   static Pointer FromBlob(const std::vector<char>& in);
+  static Pointer FromBlob(std::string_view in);
 
   // Write this EmbedderSnapshotData object to an output file.
   // Calling this method will not close the FILE* handle.
@@ -656,7 +658,15 @@ enum Flags : uint64_t {
   // This control is needed by embedders who may not want to initialize the V8
   // inspector in situations where one has already been created,
   // e.g. Blink's in Chromium.
-  kNoCreateInspector = 1 << 9
+  kNoCreateInspector = 1 << 9,
+  // Controls whether or not the InspectorAgent for this Environment should
+  // call StartDebugSignalHandler. This control is needed by embedders who may
+  // not want to allow other processes to start the V8 inspector.
+  kNoStartDebugSignalHandler = 1 << 10,
+  // Controls whether the InspectorAgent created for this Environment waits for
+  // Inspector frontend events during the Environment creation. It's used to
+  // call node::Stop(env) on a Worker thread that is waiting for the events.
+  kNoWaitForInspectorFrontend = 1 << 11
 };
 }  // namespace EnvironmentFlags
 
@@ -705,6 +715,16 @@ NODE_EXTERN Environment* CreateEnvironment(
     ThreadId thread_id = {} /* allocates a thread id automatically */,
     std::unique_ptr<InspectorParentHandle> inspector_parent_handle = {});
 
+NODE_EXTERN Environment* CreateEnvironment(
+    IsolateData* isolate_data,
+    v8::Local<v8::Context> context,
+    const std::vector<std::string>& args,
+    const std::vector<std::string>& exec_args,
+    EnvironmentFlags::Flags flags,
+    ThreadId thread_id,
+    std::unique_ptr<InspectorParentHandle> inspector_parent_handle,
+    std::string_view thread_name);
+
 // Returns a handle that can be passed to `LoadEnvironment()`, making the
 // child Environment accessible to the inspector as if it were a Node.js Worker.
 // `child_thread_id` can be created using `AllocateEnvironmentThreadId()`
@@ -723,6 +743,12 @@ NODE_EXTERN std::unique_ptr<InspectorParentHandle> GetInspectorParentHandle(
     const char* child_url,
     const char* name);
 
+NODE_EXTERN std::unique_ptr<InspectorParentHandle> GetInspectorParentHandle(
+    Environment* parent_env,
+    ThreadId child_thread_id,
+    std::string_view child_url,
+    std::string_view name);
+
 struct StartExecutionCallbackInfo {
   v8::Local<v8::Object> process_object;
   v8::Local<v8::Function> native_require;
@@ -731,12 +757,33 @@ struct StartExecutionCallbackInfo {
 
 using StartExecutionCallback =
     std::function<v8::MaybeLocal<v8::Value>(const StartExecutionCallbackInfo&)>;
+using EmbedderPreloadCallback =
+    std::function<void(Environment* env,
+                       v8::Local<v8::Value> process,
+                       v8::Local<v8::Value> require)>;
 
+// Run initialization for the environment.
+//
+// The |preload| function, usually used by embedders to inject scripts,
+// will be run by Node.js before Node.js executes the entry point.
+// The function is guaranteed to run before the user land module loader running
+// any user code, so it is safe to assume that at this point, no user code has
+// been run yet.
+// The function will be executed with preload(process, require), and the passed
+// require function has access to internal Node.js modules. There is no
+// stability guarantee about the internals exposed to the internal require
+// function. Expect breakages when updating Node.js versions if the embedder
+// imports internal modules with the internal require function.
+// Worker threads created in the environment will also respect The |preload|
+// function, so make sure the function is thread-safe.
 NODE_EXTERN v8::MaybeLocal<v8::Value> LoadEnvironment(
     Environment* env,
-    StartExecutionCallback cb);
+    StartExecutionCallback cb,
+    EmbedderPreloadCallback preload = nullptr);
 NODE_EXTERN v8::MaybeLocal<v8::Value> LoadEnvironment(
-    Environment* env, std::string_view main_script_source_utf8);
+    Environment* env,
+    std::string_view main_script_source_utf8,
+    EmbedderPreloadCallback preload = nullptr);
 NODE_EXTERN void FreeEnvironment(Environment* env);
 
 // Set a callback that is called when process.exit() is called from JS,
@@ -993,44 +1040,38 @@ NODE_DEPRECATED("Use v8::Date::ValueOf() directly",
 })
 #define NODE_V8_UNIXTIME node::NODE_V8_UNIXTIME
 
-#define NODE_DEFINE_CONSTANT(target, constant)                                \
-  do {                                                                        \
-    v8::Isolate* isolate = target->GetIsolate();                              \
-    v8::Local<v8::Context> context = isolate->GetCurrentContext();            \
-    v8::Local<v8::String> constant_name =                                     \
-        v8::String::NewFromUtf8(isolate, #constant,                           \
-            v8::NewStringType::kInternalized).ToLocalChecked();               \
-    v8::Local<v8::Number> constant_value =                                    \
-        v8::Number::New(isolate, static_cast<double>(constant));              \
-    v8::PropertyAttribute constant_attributes =                               \
-        static_cast<v8::PropertyAttribute>(v8::ReadOnly | v8::DontDelete);    \
-    (target)->DefineOwnProperty(context,                                      \
-                                constant_name,                                \
-                                constant_value,                               \
-                                constant_attributes).Check();                 \
-  }                                                                           \
-  while (0)
+#define NODE_DEFINE_CONSTANT(target, constant)                                 \
+  do {                                                                         \
+    v8::Isolate* isolate = target->GetIsolate();                               \
+    v8::Local<v8::Context> context = isolate->GetCurrentContext();             \
+    v8::Local<v8::String> constant_name = v8::String::NewFromUtf8Literal(      \
+        isolate, #constant, v8::NewStringType::kInternalized);                 \
+    v8::Local<v8::Number> constant_value =                                     \
+        v8::Number::New(isolate, static_cast<double>(constant));               \
+    v8::PropertyAttribute constant_attributes =                                \
+        static_cast<v8::PropertyAttribute>(v8::ReadOnly | v8::DontDelete);     \
+    (target)                                                                   \
+        ->DefineOwnProperty(                                                   \
+            context, constant_name, constant_value, constant_attributes)       \
+        .Check();                                                              \
+  } while (0)
 
-#define NODE_DEFINE_HIDDEN_CONSTANT(target, constant)                         \
-  do {                                                                        \
-    v8::Isolate* isolate = target->GetIsolate();                              \
-    v8::Local<v8::Context> context = isolate->GetCurrentContext();            \
-    v8::Local<v8::String> constant_name =                                     \
-        v8::String::NewFromUtf8(isolate, #constant,                           \
-                                v8::NewStringType::kInternalized)             \
-                                  .ToLocalChecked();                          \
-    v8::Local<v8::Number> constant_value =                                    \
-        v8::Number::New(isolate, static_cast<double>(constant));              \
-    v8::PropertyAttribute constant_attributes =                               \
-        static_cast<v8::PropertyAttribute>(v8::ReadOnly |                     \
-                                           v8::DontDelete |                   \
-                                           v8::DontEnum);                     \
-    (target)->DefineOwnProperty(context,                                      \
-                                constant_name,                                \
-                                constant_value,                               \
-                                constant_attributes).Check();                 \
-  }                                                                           \
-  while (0)
+#define NODE_DEFINE_HIDDEN_CONSTANT(target, constant)                          \
+  do {                                                                         \
+    v8::Isolate* isolate = target->GetIsolate();                               \
+    v8::Local<v8::Context> context = isolate->GetCurrentContext();             \
+    v8::Local<v8::String> constant_name = v8::String::NewFromUtf8Literal(      \
+        isolate, #constant, v8::NewStringType::kInternalized);                 \
+    v8::Local<v8::Number> constant_value =                                     \
+        v8::Number::New(isolate, static_cast<double>(constant));               \
+    v8::PropertyAttribute constant_attributes =                                \
+        static_cast<v8::PropertyAttribute>(v8::ReadOnly | v8::DontDelete |     \
+                                           v8::DontEnum);                      \
+    (target)                                                                   \
+        ->DefineOwnProperty(                                                   \
+            context, constant_name, constant_value, constant_attributes)       \
+        .Check();                                                              \
+  } while (0)
 
 // Used to be a macro, hence the uppercase name.
 inline void NODE_SET_METHOD(v8::Local<v8::Template> recv,
@@ -1360,6 +1401,12 @@ NODE_EXTERN void RequestInterrupt(Environment* env,
  * zero then no execution has been set. This will happen if the user handles
  * I/O from native code. */
 NODE_EXTERN async_id AsyncHooksGetExecutionAsyncId(v8::Isolate* isolate);
+
+/* Returns the id of the current execution context. If the return value is
+ * zero then no execution has been set. This will happen if the user handles
+ * I/O from native code. */
+NODE_EXTERN async_id
+AsyncHooksGetExecutionAsyncId(v8::Local<v8::Context> context);
 
 /* Return same value as async_hooks.triggerAsyncId(); */
 NODE_EXTERN async_id AsyncHooksGetTriggerAsyncId(v8::Isolate* isolate);

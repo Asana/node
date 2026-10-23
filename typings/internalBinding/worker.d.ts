@@ -11,10 +11,14 @@ declare namespace InternalWorkerBinding {
     );
     startThread(): void;
     stopThread(): void;
+    hasRef(): boolean;
     ref(): void;
     unref(): void;
     getResourceLimits(): Float64Array;
     takeHeapSnapshot(): object;
+    getHeapStatistics(): Promise<object>;
+    cpuUsage(): Promise<object>;
+    startCpuProfile(name): Promise<object>;
     loopIdleTime(): number;
     loopStartTime(): number;
   }
@@ -24,7 +28,9 @@ export interface WorkerBinding {
   Worker: typeof InternalWorkerBinding.Worker;
   getEnvMessagePort(): InternalMessagingBinding.MessagePort;
   threadId: number;
+  threadName: string;
   isMainThread: boolean;
+  isInternalThread: boolean;
   ownsProcessState: boolean;
   resourceLimits?: Float64Array;
   kMaxYoungGenerationSizeMb: number;

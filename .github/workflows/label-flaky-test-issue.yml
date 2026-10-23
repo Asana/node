@@ -2,7 +2,7 @@ name: Label Flaky Test Issues
 
 on:
   issues:
-    types: [opened, labeled]
+    types: [labeled]
 
 permissions:
   contents: read
@@ -10,7 +10,7 @@ permissions:
 jobs:
   label:
     if: github.event.label.name == 'flaky-test'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     permissions:
       issues: write
     steps:

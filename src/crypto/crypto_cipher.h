@@ -10,6 +10,7 @@
 #include "memory_tracker.h"
 #include "v8.h"
 
+#include <climits>
 #include <string>
 
 namespace node {
@@ -44,7 +45,7 @@ class CipherBase : public BaseObject {
   static const unsigned kNoAuthTagLength = static_cast<unsigned>(-1);
 
   void CommonInit(const char* cipher_type,
-                  const EVP_CIPHER* cipher,
+                  const ncrypto::Cipher& cipher,
                   const unsigned char* key,
                   int key_len,
                   const unsigned char* iv,
@@ -85,7 +86,7 @@ class CipherBase : public BaseObject {
   CipherBase(Environment* env, v8::Local<v8::Object> wrap, CipherKind kind);
 
  private:
-  DeleteFnPtr<EVP_CIPHER_CTX, EVP_CIPHER_CTX_free> ctx_;
+  ncrypto::CipherCtxPointer ctx_;
   const CipherKind kind_;
   AuthTagState auth_tag_state_;
   unsigned int auth_tag_len_;
@@ -110,7 +111,7 @@ class PublicKeyCipher {
             EVP_PKEY_cipher_init_t EVP_PKEY_cipher_init,
             EVP_PKEY_cipher_t EVP_PKEY_cipher>
   static bool Cipher(Environment* env,
-                     const ManagedEVPPKey& pkey,
+                     const ncrypto::EVPKeyPointer& pkey,
                      int padding,
                      const EVP_MD* digest,
                      const ArrayBufferOrViewContents<unsigned char>& oaep_label,
@@ -133,6 +134,18 @@ enum class WebCryptoCipherStatus {
   INVALID_KEY_TYPE,
   FAILED
 };
+
+inline bool TryGetIntCipherOutputLength(size_t input_len,
+                                        size_t output_overhead,
+                                        int* output_len) {
+  static constexpr size_t kMaxLength = INT_MAX;
+  if (output_overhead > kMaxLength ||
+      input_len > kMaxLength - output_overhead) {
+    return false;
+  }
+  *output_len = static_cast<int>(input_len + output_overhead);
+  return true;
+}
 
 // CipherJob is a base implementation class for implementations of
 // one-shot sync and async ciphers. It has been added primarily to
@@ -195,27 +208,23 @@ class CipherJob final : public CryptoJob<CipherTraits> {
     CryptoJob<CipherTraits>::RegisterExternalReferences(New, registry);
   }
 
-  CipherJob(
-      Environment* env,
-      v8::Local<v8::Object> object,
-      CryptoJobMode mode,
-      KeyObjectHandle* key,
-      WebCryptoCipherMode cipher_mode,
-      const ArrayBufferOrViewContents<char>& data,
-      AdditionalParams&& params)
-      : CryptoJob<CipherTraits>(
-            env,
-            object,
-            AsyncWrap::PROVIDER_CIPHERREQUEST,
-            mode,
-            std::move(params)),
-        key_(key->Data()),
+  CipherJob(Environment* env,
+            v8::Local<v8::Object> object,
+            CryptoJobMode mode,
+            KeyObjectHandle* key,
+            WebCryptoCipherMode cipher_mode,
+            const ArrayBufferOrViewContents<char>& data,
+            AdditionalParams&& params)
+      : CryptoJob<CipherTraits>(env,
+                                object,
+                                AsyncWrap::PROVIDER_CIPHERREQUEST,
+                                mode,
+                                std::move(params)),
+        key_(key->Data().addRef()),
         cipher_mode_(cipher_mode),
-        in_(mode == kCryptoJobAsync
-            ? data.ToCopy()
-            : data.ToByteSource()) {}
+        in_(mode == kCryptoJobAsync ? data.ToCopy() : data.ToByteSource()) {}
 
-  std::shared_ptr<KeyObjectData> key() const { return key_; }
+  const KeyObjectData& key() const { return key_; }
 
   WebCryptoCipherMode cipher_mode() const { return cipher_mode_; }
 
@@ -249,9 +258,8 @@ class CipherJob final : public CryptoJob<CipherTraits> {
     }
   }
 
-  v8::Maybe<bool> ToResult(
-      v8::Local<v8::Value>* err,
-      v8::Local<v8::Value>* result) override {
+  v8::Maybe<void> ToResult(v8::Local<v8::Value>* err,
+                           v8::Local<v8::Value>* result) override {
     Environment* env = AsyncWrap::env();
     CryptoErrorStore* errors = CryptoJob<CipherTraits>::errors();
 
@@ -262,11 +270,18 @@ class CipherJob final : public CryptoJob<CipherTraits> {
       CHECK(errors->Empty());
       *err = v8::Undefined(env->isolate());
       *result = out_.ToArrayBuffer(env);
-      return v8::Just(!result->IsEmpty());
+      if (result->IsEmpty()) {
+        return v8::Nothing<void>();
+      }
+    } else {
+      *result = v8::Undefined(env->isolate());
+      if (!errors->ToException(env).ToLocal(err)) {
+        return v8::Nothing<void>();
+      }
     }
-
-    *result = v8::Undefined(env->isolate());
-    return v8::Just(errors->ToException(env).ToLocal(err));
+    CHECK(!result->IsEmpty());
+    CHECK(!err->IsEmpty());
+    return v8::JustVoid();
   }
 
   SET_SELF_SIZE(CipherJob)
@@ -278,7 +293,7 @@ class CipherJob final : public CryptoJob<CipherTraits> {
   }
 
  private:
-  std::shared_ptr<KeyObjectData> key_;
+  KeyObjectData key_;
   WebCryptoCipherMode cipher_mode_;
   ByteSource in_;
   ByteSource out_;

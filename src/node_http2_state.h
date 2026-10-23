@@ -58,6 +58,9 @@ namespace http2 {
     IDX_OPTIONS_MAX_OUTSTANDING_SETTINGS,
     IDX_OPTIONS_MAX_SESSION_MEMORY,
     IDX_OPTIONS_MAX_SETTINGS,
+    IDX_OPTIONS_STREAM_RESET_RATE,
+    IDX_OPTIONS_STREAM_RESET_BURST,
+    IDX_OPTIONS_STRICT_HTTP_FIELD_WHITESPACE_VALIDATION,
     IDX_OPTIONS_FLAGS
   };
 
@@ -140,7 +143,7 @@ class Http2State : public BaseObject {
     double session_stats_buffer[IDX_SESSION_STATS_COUNT];
     uint32_t options_buffer[IDX_OPTIONS_FLAGS + 1];
     // first + 1: number of actual nghttp2 supported settings
-    // second + 1: number of additional settings not suppoted by nghttp2
+    // second + 1: number of additional settings not supported by nghttp2
     // 2 * MAX_ADDITIONAL_SETTINGS: settings id and value for each
     // additional setting
     uint32_t settings_buffer[IDX_SETTINGS_COUNT + 1 + 1 +

@@ -128,14 +128,14 @@ struct Stream::Impl {
     std::shared_ptr<DataQueue> dataqueue;
     if (GetDataQueueFromSource(env, args[0]).To(&dataqueue)) {
       Stream* stream;
-      ASSIGN_OR_RETURN_UNWRAP(&stream, args.Holder());
+      ASSIGN_OR_RETURN_UNWRAP(&stream, args.This());
       stream->set_outbound(std::move(dataqueue));
     }
   }
 
   static void Destroy(const FunctionCallbackInfo<Value>& args) {
     Stream* stream;
-    ASSIGN_OR_RETURN_UNWRAP(&stream, args.Holder());
+    ASSIGN_OR_RETURN_UNWRAP(&stream, args.This());
     if (args.Length() > 1) {
       CHECK(args[0]->IsBigInt());
       bool unused = false;
@@ -148,7 +148,7 @@ struct Stream::Impl {
 
   static void SendHeaders(const FunctionCallbackInfo<Value>& args) {
     Stream* stream;
-    ASSIGN_OR_RETURN_UNWRAP(&stream, args.Holder());
+    ASSIGN_OR_RETURN_UNWRAP(&stream, args.This());
     CHECK(args[0]->IsUint32());  // Kind
     CHECK(args[1]->IsArray());   // Headers
     CHECK(args[2]->IsUint32());  // Flags
@@ -169,7 +169,7 @@ struct Stream::Impl {
   // that has already been received is still readable.
   static void StopSending(const FunctionCallbackInfo<Value>& args) {
     Stream* stream;
-    ASSIGN_OR_RETURN_UNWRAP(&stream, args.Holder());
+    ASSIGN_OR_RETURN_UNWRAP(&stream, args.This());
     uint64_t code = NGTCP2_APP_NOERROR;
     CHECK_IMPLIES(!args[0]->IsUndefined(), args[0]->IsBigInt());
     if (!args[0]->IsUndefined()) {
@@ -189,7 +189,7 @@ struct Stream::Impl {
   // outbound queue will be dropped. The stream may still be readable.
   static void ResetStream(const FunctionCallbackInfo<Value>& args) {
     Stream* stream;
-    ASSIGN_OR_RETURN_UNWRAP(&stream, args.Holder());
+    ASSIGN_OR_RETURN_UNWRAP(&stream, args.This());
     uint64_t code = NGTCP2_APP_NOERROR;
     CHECK_IMPLIES(!args[0]->IsUndefined(), args[0]->IsBigInt());
     if (!args[0]->IsUndefined()) {
@@ -210,7 +210,7 @@ struct Stream::Impl {
 
   static void SetPriority(const FunctionCallbackInfo<Value>& args) {
     Stream* stream;
-    ASSIGN_OR_RETURN_UNWRAP(&stream, args.Holder());
+    ASSIGN_OR_RETURN_UNWRAP(&stream, args.This());
     CHECK(args[0]->IsUint32());  // Priority
     CHECK(args[1]->IsUint32());  // Priority flag
 
@@ -224,14 +224,14 @@ struct Stream::Impl {
 
   static void GetPriority(const FunctionCallbackInfo<Value>& args) {
     Stream* stream;
-    ASSIGN_OR_RETURN_UNWRAP(&stream, args.Holder());
+    ASSIGN_OR_RETURN_UNWRAP(&stream, args.This());
     auto priority = stream->session().application().GetStreamPriority(*stream);
     args.GetReturnValue().Set(static_cast<uint32_t>(priority));
   }
 
   static void GetReader(const FunctionCallbackInfo<Value>& args) {
     Stream* stream;
-    ASSIGN_OR_RETURN_UNWRAP(&stream, args.Holder());
+    ASSIGN_OR_RETURN_UNWRAP(&stream, args.This());
     BaseObjectPtr<Blob::Reader> reader = stream->get_reader();
     if (reader) return args.GetReturnValue().Set(reader->object());
     THROW_ERR_INVALID_STATE(Environment::GetCurrent(args),
@@ -851,6 +851,10 @@ void Stream::BeginHeaders(HeadersKind kind) {
   if (is_destroyed()) return;
   headers_length_ = 0;
   headers_.clear();
+  set_headers_kind(kind);
+}
+
+void Stream::set_headers_kind(HeadersKind kind) {
   headers_kind_ = kind;
 }
 
@@ -867,7 +871,9 @@ bool Stream::AddHeader(const Header& header) {
 
   const auto push = [&](auto raw) {
     Local<Value> value;
-    if (UNLIKELY(!raw.ToLocal(&value))) return false;
+    if (!raw.ToLocal(&value)) [[unlikely]] {
+      return false;
+    }
     headers_.push_back(value);
     return true;
   };
@@ -910,6 +916,8 @@ void Stream::EndReadable(std::optional<uint64_t> maybe_final_size) {
 
 void Stream::Destroy(QuicError error) {
   if (is_destroyed()) return;
+  DCHECK_NOT_NULL(session_.get());
+  Debug(this, "Stream %" PRIi64 " being destroyed with error %s", id(), error);
 
   // End the writable before marking as destroyed.
   EndWritable();
@@ -928,7 +936,10 @@ void Stream::Destroy(QuicError error) {
   // the JavaScript side could still have a reader on the inbound DataQueue,
   // which may keep that data alive a bit longer.
   inbound_->removeBackpressureListener(this);
+
   inbound_.reset();
+
+  CHECK_NOT_NULL(session_.get());
 
   // Finally, remove the stream from the session and clear our reference
   // to the session.

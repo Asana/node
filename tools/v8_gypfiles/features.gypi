@@ -73,7 +73,7 @@
       }, {
         'v8_enable_etw_stack_walking': 0,
       }],
-      ['OS=="linux"', {
+      ['OS=="linux" or OS=="openharmony"', {
         # Sets -dV8_ENABLE_PRIVATE_MAPPING_FORK_OPTIMIZATION.
         #
         # This flag speeds up the performance of fork/execve on Linux systems for
@@ -88,7 +88,6 @@
         'v8_enable_private_mapping_fork_optimization': 0,
       }],
     ],
-    'is_debug%': 0,
 
     # Variables from BUILD.gn
 
@@ -194,6 +193,9 @@
     # Use Siphash as added protection against hash flooding attacks.
     'v8_use_siphash%': 0,
 
+    # Enable seeded array index hash.
+    'v8_enable_seeded_array_index_hash%': 1,
+
     # Use Perfetto (https://perfetto.dev) as the default TracingController. Not
     # currently implemented.
     'v8_use_perfetto%': 0,
@@ -220,7 +222,7 @@
     # Enable third party HEAP library
     'v8_enable_third_party_heap%': 0,
 
-    # Libaries used by third party heap
+    # Libraries used by third party heap
     'v8_third_party_heap_libs%': [],
 
     # Source code used by third party heap
@@ -253,6 +255,11 @@
     # Sets -DV8_ENABLE_SANDBOX.
     'v8_enable_sandbox%': 0,
 
+    # Enable support for external code range relative to the pointer compression
+    # cage.
+    # Sets -DV8_EXTERNAL_CODE_SPACE.
+    'v8_enable_external_code_space%': 0,
+
     # Experimental feature for collecting per-class zone memory stats.
     # Requires use_rtti = true
     'v8_enable_precise_zone_stats%': 0,
@@ -269,6 +276,9 @@
 
     # Allow for JS promise hooks (instead of just C++).
     'v8_enable_javascript_promise_hooks%': 0,
+
+    # Allow for JS promise hooks (instead of just C++).
+    'v8_enable_continuation_preserved_embedder_data%': 1,
 
     # Enable allocation folding globally (sets -dV8_ALLOCATION_FOLDING).
     # When it's disabled, the --turbo-allocation-folding runtime flag will be ignored.
@@ -289,6 +299,10 @@
     # Compile V8 using zlib as dependency.
     # Sets -DV8_USE_ZLIB
     'v8_use_zlib%': 1,
+
+    # Enable Sparkplug
+    # Sets -DV8_ENABLE_SPARKPLUG.
+    'v8_enable_sparkplug%': 1,
 
     # Whether custom embedder snapshots may extend (= allocate new objects in)
     # ReadOnlySpace.
@@ -322,7 +336,10 @@
 
     # Enable advanced BigInt algorithms, costing about 10-30 KiB binary size
     # depending on platform.
-    'v8_advanced_bigint_algorithms%': 1
+    'v8_advanced_bigint_algorithms%': 1,
+
+    # Enable 256-bit long vector re-vectorization pass in WASM compilation pipeline.
+    'v8_enable_wasm_simd256_revec%' : 0
   },
 
   'target_defaults': {
@@ -360,9 +377,6 @@
       ['v8_enable_pointer_compression_shared_cage==1', {
         'defines': ['V8_COMPRESS_POINTERS_IN_SHARED_CAGE'],
       }],
-      ['v8_enable_pointer_compression==1 and v8_enable_pointer_compression_shared_cage==0', {
-        'defines': ['V8_COMPRESS_POINTERS_IN_ISOLATE_CAGE'],
-      }],
       ['v8_enable_pointer_compression==1 or v8_enable_31bit_smis_on_64bit_arch==1', {
         'defines': ['V8_31BIT_SMIS_ON_64BIT_ARCH',],
       }],
@@ -374,6 +388,9 @@
       }],
       ['v8_enable_sandbox==1', {
         'defines': ['V8_ENABLE_SANDBOX',],
+      }],
+      ['v8_enable_external_code_space==1', {
+        'defines': ['V8_EXTERNAL_CODE_SPACE',],
       }],
       ['v8_enable_object_print==1', {
         'defines': ['OBJECT_PRINT',],
@@ -440,11 +457,16 @@
       ['v8_use_siphash==1', {
         'defines': ['V8_USE_SIPHASH',],
       }],
+      ['v8_enable_seeded_array_index_hash==1', {
+        'defines': ['V8_ENABLE_SEEDED_ARRAY_INDEX_HASH',],
+      }],
       ['v8_enable_shared_ro_heap==1', {
         'defines': ['V8_SHARED_RO_HEAP',],
       }],
       ['dcheck_always_on!=0', {
         'defines': ['DEBUG',],
+      }, {
+        'defines': ['NDEBUG',],
       }],
       ['v8_enable_verify_csa==1', {
         'defines': ['ENABLE_VERIFY_CSA',],
@@ -491,6 +513,9 @@
       ['v8_enable_precise_zone_stats==1', {
         'defines': ['V8_ENABLE_PRECISE_ZONE_STATS',],
       }],
+      ['v8_enable_sparkplug==1', {
+        'defines': ['V8_ENABLE_SPARKPLUG',],
+      }],
       ['v8_enable_maglev==1', {
         'defines': ['V8_ENABLE_MAGLEV',],
       }],
@@ -515,6 +540,9 @@
       ['v8_enable_javascript_promise_hooks==1', {
         'defines': ['V8_ENABLE_JAVASCRIPT_PROMISE_HOOKS',],
       }],
+      ['v8_enable_continuation_preserved_embedder_data==1', {
+        'defines': ['V8_ENABLE_CONTINUATION_PRESERVED_EMBEDDER_DATA',],
+      }],
       ['v8_enable_allocation_folding==1', {
         'defines': ['V8_ALLOCATION_FOLDING',],
       }],
@@ -526,6 +554,9 @@
       }],
       ['v8_advanced_bigint_algorithms==1', {
         'defines': ['V8_ADVANCED_BIGINT_ALGORITHMS',],
+      }],
+      ['v8_enable_wasm_simd256_revec==1', {
+        'defines': ['V8_ENABLE_WASM_SIMD256_REVEC',],
       }],
     ],  # conditions
     'defines': [

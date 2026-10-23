@@ -68,16 +68,22 @@ class SimpleTestCase(test.TestCase):
       # is currently when Node is configured --without-ssl and the tests should
       # still be runnable but skip any tests that require ssl (which includes the
       # inspector related tests). Also, if there is no ssl support the options
-      # '--use-bundled-ca' and '--use-openssl-ca' will also cause a similar
-      # failure so such tests are also skipped.
+      # '--use-bundled-ca', '--use-system-ca' and '--use-openssl-ca' will also
+      # cause a similar failure so such tests are also skipped.
       if (any(flag.startswith('--inspect') for flag in flags) and
           not self.context.v8_enable_inspector):
         print(': Skipping as node was compiled without inspector support')
       elif (('--use-bundled-ca' in flags or
           '--use-openssl-ca' in flags or
+          '--use-system-ca' in flags or
+          '--no-use-bundled-ca' in flags or
+          '--no-use-openssl-ca' in flags or
+          '--no-use-system-ca' in flags or
           '--tls-v1.0' in flags or
           '--tls-v1.1' in flags) and
           not self.context.node_has_crypto):
+        # TODO(joyeecheung): add this to the status file variables so that we can
+        # list the crypto dependency in the status files explicitly instead.
         print(': Skipping as node was compiled without crypto support')
       else:
         result += flags
@@ -141,9 +147,7 @@ class AddonTestConfiguration(SimpleTestConfiguration):
     result = []
     for subpath in os.listdir(path):
       if os.path.isdir(os.path.join(path, subpath)):
-        for f in os.listdir(os.path.join(path, subpath)):
-          if SelectTest(f):
-            result.append([subpath, f[:-3]])
+        result.extend([subpath, f[:-3]] for f in os.listdir(os.path.join(path, subpath)) if SelectTest(f))
     return result
 
   def ListTests(self, current_path, path, arch, mode):
@@ -166,4 +170,16 @@ class AbortTestConfiguration(SimpleTestConfiguration):
          current_path, path, arch, mode)
     for tst in result:
       tst.disable_core_files = True
+    return result
+
+class WasmAllocationTestConfiguration(SimpleTestConfiguration):
+  def __init__(self, context, root, section, additional=None):
+    super(WasmAllocationTestConfiguration, self).__init__(context, root, section,
+                                                          additional)
+
+  def ListTests(self, current_path, path, arch, mode):
+    result = super(WasmAllocationTestConfiguration, self).ListTests(
+         current_path, path, arch, mode)
+    for tst in result:
+      tst.max_virtual_memory = 5 * 1024 * 1024 * 1024 # 5GB
     return result

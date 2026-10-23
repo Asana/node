@@ -1,10 +1,12 @@
-const { resolve, relative, sep } = require('path')
-const relativePrefix = `.${sep}`
-const { EOL } = require('os')
-
+const { resolve, relative, sep } = require('node:path')
 const archy = require('archy')
 const { breadth } = require('treeverse')
 const npa = require('npm-package-arg')
+const { output } = require('proc-log')
+const ArboristWorkspaceCmd = require('../arborist-cmd.js')
+const localeCompare = require('@isaacs/string-locale-compare')('en')
+
+const relativePrefix = `.${sep}`
 
 const _depth = Symbol('depth')
 const _dedupe = Symbol('dedupe')
@@ -17,8 +19,6 @@ const _parent = Symbol('parent')
 const _problems = Symbol('problems')
 const _required = Symbol('required')
 const _type = Symbol('type')
-const ArboristWorkspaceCmd = require('../arborist-cmd.js')
-const localeCompare = require('@isaacs/string-locale-compare')('en')
 
 class LS extends ArboristWorkspaceCmd {
   static description = 'List installed packages'
@@ -42,7 +42,7 @@ class LS extends ArboristWorkspaceCmd {
   // TODO
   /* istanbul ignore next */
   static async completion (opts, npm) {
-    const completion = require('../utils/completion/installed-deep.js')
+    const completion = require('../utils/installed-deep.js')
     return completion(npm, opts)
   }
 
@@ -59,6 +59,7 @@ class LS extends ArboristWorkspaceCmd {
     const unicode = this.npm.config.get('unicode')
     const packageLockOnly = this.npm.config.get('package-lock-only')
     const workspacesEnabled = this.npm.flatOptions.workspacesEnabled
+    const installStrategy = this.npm.flatOptions.installStrategy
 
     const path = global ? resolve(this.npm.globalDir, '..') : this.npm.prefix
 
@@ -138,6 +139,9 @@ class LS extends ArboristWorkspaceCmd {
               link,
               omit,
             }) : () => true)
+            .filter(installStrategy === 'linked'
+              ? filterLinkedStrategyEdges({ node, currentDepth })
+              : () => true)
             .map(mapEdgesToNodes({ seenPaths }))
             .concat(appendExtraneousChildren({ node, seenPaths }))
             .sort(sortAlphabetically)
@@ -177,11 +181,14 @@ class LS extends ArboristWorkspaceCmd {
     const [rootError] = tree.errors.filter(e =>
       e.code === 'EJSONPARSE' && e.path === resolve(path, 'package.json'))
 
-    this.npm.outputBuffer(
-      json ? jsonOutput({ path, problems, result, rootError, seenItems }) :
-      parseable ? parseableOutput({ seenNodes, global, long }) :
-      humanOutput({ chalk, result, seenItems, unicode })
-    )
+    if (json) {
+      output.buffer(jsonOutput({ path, problems, result, rootError, seenItems }))
+    } else {
+      output.standard(parseable
+        ? parseableOutput({ seenNodes, global, long })
+        : humanOutput({ chalk, result, seenItems, unicode })
+      )
+    }
 
     // if filtering items, should exit with error code on no results
     if (result && !result[_include] && args.length) {
@@ -200,7 +207,7 @@ class LS extends ArboristWorkspaceCmd {
 
     if (shouldThrow) {
       throw Object.assign(
-        new Error([...problems].join(EOL)),
+        new Error([...problems].join('\n')),
         { code: 'ELSPROBLEMS' }
       )
     }
@@ -219,6 +226,7 @@ class LS extends ArboristWorkspaceCmd {
     return tree
   }
 }
+
 module.exports = LS
 
 const isGitNode = (node) => {
@@ -280,7 +288,7 @@ const augmentItemWithIncludeMetadata = (node, item) => {
 
 const getHumanOutputItem = (node, { args, chalk, global, long }) => {
   const { pkgid, path } = node
-  const workspacePkgId = chalk.green(pkgid)
+  const workspacePkgId = chalk.blueBright(pkgid)
   let printable = node.isWorkspace ? workspacePkgId : pkgid
 
   // special formatting for top-level package name
@@ -289,14 +297,16 @@ const getHumanOutputItem = (node, { args, chalk, global, long }) => {
     if (hasNoPackageJson || global) {
       printable = path
     } else {
-      printable += `${long ? EOL : ' '}${path}`
+      printable += `${long ? '\n' : ' '}${path}`
     }
   }
 
+  // TODO there is a LOT of overlap with lib/utils/explain-dep.js here
+
   const highlightDepName = args.length && node[_filteredBy]
   const missingColor = isOptional(node)
-    ? chalk.yellow.bgBlack
-    : chalk.red.bgBlack
+    ? chalk.yellow
+    : chalk.red
   const missingMsg = `UNMET ${isOptional(node) ? 'OPTIONAL ' : ''}DEPENDENCY`
   const targetLocation = node.root
     ? relative(node.root.realpath, node.realpath)
@@ -310,30 +320,30 @@ const getHumanOutputItem = (node, { args, chalk, global, long }) => {
         ? missingColor(missingMsg) + ' '
         : ''
     ) +
-    `${highlightDepName ? chalk.yellow.bgBlack(printable) : printable}` +
+    `${highlightDepName ? chalk.yellow(printable) : printable}` +
     (
       node[_dedupe]
-        ? ' ' + chalk.gray('deduped')
+        ? ' ' + chalk.dim('deduped')
         : ''
     ) +
     (
       invalid
-        ? ' ' + chalk.red.bgBlack(invalid)
+        ? ' ' + chalk.red(invalid)
         : ''
     ) +
     (
       isExtraneous(node, { global })
-        ? ' ' + chalk.green.bgBlack('extraneous')
+        ? ' ' + chalk.red('extraneous')
         : ''
     ) +
     (
       node.overridden
-        ? ' ' + chalk.gray('overridden')
+        ? ' ' + chalk.dim('overridden')
         : ''
     ) +
     (isGitNode(node) ? ` (${node.resolved})` : '') +
     (node.isLink ? ` -> ${relativePrefix}${targetLocation}` : '') +
-    (long ? `${EOL}${node.package.description || ''}` : '')
+    (long ? `\n${node.package.description || ''}` : '')
 
   return augmentItemWithIncludeMetadata(node, { label, nodes: [] })
 }
@@ -397,6 +407,34 @@ const getJsonOutputItem = (node, { global, long }) => {
   }
 
   return augmentItemWithIncludeMetadata(node, item)
+}
+
+// In linked strategy, two types of edges produce false UNMET DEPENDENCYs:
+// 1. Workspace edges for undeclared workspaces: the lockfile records edges from root to ALL workspaces, but only declared workspaces are hoisted to root/node_modules in linked mode.  Undeclared ones are intentionally absent.
+// 2. Dev edges on non-root packages: store package link targets have no parent in the node tree, so they are treated as "top" nodes and their devDependencies are loaded as edges.  Those devDeps are never installed.
+const filterLinkedStrategyEdges = ({ node, currentDepth }) => {
+  const declaredDeps = new Set(Object.keys(Object.assign({},
+    node.target.package.dependencies,
+    node.target.package.devDependencies,
+    node.target.package.optionalDependencies,
+    node.target.package.peerDependencies
+  )))
+
+  return (edge) => {
+    // Skip workspace edges for undeclared workspaces at root level
+    if (currentDepth === 0 && edge.type === 'workspace' && edge.missing) {
+      if (!declaredDeps.has(edge.name)) {
+        return false
+      }
+    }
+
+    // Skip dev edges for non-root packages (store packages)
+    if (currentDepth > 0 && edge.dev) {
+      return false
+    }
+
+    return true
+  }
 }
 
 const filterByEdgesTypes = ({ link, omit }) => (edge) => {
@@ -551,7 +589,7 @@ const jsonOutput = ({ path, problems, result, rootError, seenItems }) => {
     }
   }
 
-  return JSON.stringify(result, null, 2)
+  return result
 }
 
 const parseableOutput = ({ global, long, seenNodes }) => {
@@ -566,7 +604,7 @@ const parseableOutput = ({ global, long, seenNodes }) => {
         out += node[_invalid] ? ':INVALID' : ''
         out += node.overridden ? ':OVERRIDDEN' : ''
       }
-      out += EOL
+      out += '\n'
     }
   }
   return out.trim()

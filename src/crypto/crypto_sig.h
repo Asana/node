@@ -42,7 +42,7 @@ class SignBase : public BaseObject {
   SET_SELF_SIZE(SignBase)
 
  protected:
-  EVPMDPointer mdctx_;
+  ncrypto::EVPMDCtxPointer mdctx_;
 };
 
 class Sign : public SignBase {
@@ -60,11 +60,10 @@ class Sign : public SignBase {
       : error(err), signature(std::move(sig)) {}
   };
 
-  SignResult SignFinal(
-      const ManagedEVPPKey& pkey,
-      int padding,
-      const v8::Maybe<int>& saltlen,
-      DSASigEnc dsa_sig_enc);
+  SignResult SignFinal(const ncrypto::EVPKeyPointer& pkey,
+                       int padding,
+                       const v8::Maybe<int>& saltlen,
+                       DSASigEnc dsa_sig_enc);
 
   static void SignSync(const v8::FunctionCallbackInfo<v8::Value>& args);
 
@@ -82,7 +81,7 @@ class Verify : public SignBase {
   static void Initialize(Environment* env, v8::Local<v8::Object> target);
   static void RegisterExternalReferences(ExternalReferenceRegistry* registry);
 
-  Error VerifyFinal(const ManagedEVPPKey& key,
+  Error VerifyFinal(const ncrypto::EVPKeyPointer& key,
                     const ByteSource& sig,
                     int padding,
                     const v8::Maybe<int>& saltlen,
@@ -112,7 +111,7 @@ struct SignConfiguration final : public MemoryRetainer {
 
   CryptoJobMode job_mode;
   Mode mode;
-  ManagedEVPPKey key;
+  KeyObjectData key;
   ByteSource data;
   ByteSource signature;
   const EVP_MD* digest = nullptr;
@@ -141,22 +140,20 @@ struct SignTraits final {
   static constexpr AsyncWrap::ProviderType Provider =
       AsyncWrap::PROVIDER_SIGNREQUEST;
 
-  static v8::Maybe<bool> AdditionalConfig(
+  static v8::Maybe<void> AdditionalConfig(
       CryptoJobMode mode,
       const v8::FunctionCallbackInfo<v8::Value>& args,
       unsigned int offset,
       SignConfiguration* params);
 
-  static bool DeriveBits(
-      Environment* env,
-      const SignConfiguration& params,
-      ByteSource* out);
+  static bool DeriveBits(Environment* env,
+                         const SignConfiguration& params,
+                         ByteSource* out,
+                         CryptoJobMode mode);
 
-  static v8::Maybe<bool> EncodeOutput(
-      Environment* env,
-      const SignConfiguration& params,
-      ByteSource* out,
-      v8::Local<v8::Value>* result);
+  static v8::MaybeLocal<v8::Value> EncodeOutput(Environment* env,
+                                                const SignConfiguration& params,
+                                                ByteSource* out);
 };
 
 using SignJob = DeriveBitsJob<SignTraits>;

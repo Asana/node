@@ -151,6 +151,25 @@ is done executing. `Local` handles can only be allocated on the C++ stack.
 Most of the V8 API uses `Local` handles to work with JavaScript values or return
 them from functions.
 
+Additionally, according to [V8 public API documentation][`v8::Local<T>`], local handles
+(`v8::Local<T>`) should **never** be allocated on the heap.
+
+This disallows heap-allocated data structures containing instances of `v8::Local`
+
+For example:
+
+```cpp
+// Don't do this
+std::vector<v8::Local<v8::Value>> v1;
+```
+
+Instead, it is recommended to use `v8::LocalVector<T>` provided by V8
+for such scenarios:
+
+```cpp
+v8::LocalVector<v8::Value> v1(isolate);
+```
+
 Whenever a `Local` handle is created, a `v8::HandleScope` or
 `v8::EscapableHandleScope` object must exist on the stack. The `Local` is then
 added to that scope and deleted along with it.
@@ -418,8 +437,6 @@ Node.js source code.)
 
 `args[n]` is a `Local<Value>` that represents the n-th argument passed to the
 function. `args.This()` is the `this` value inside this function call.
-`args.Holder()` is equivalent to `args.This()` in all use cases inside of
-Node.js.
 
 `args.GetReturnValue()` is a placeholder for the return value of the function,
 and provides a `.Set()` method that can be called with a boolean, integer,
@@ -457,7 +474,7 @@ void Initialize(Local<Object> target,
   SetProtoMethod(isolate, channel_wrap, "queryA", Query<QueryAWrap>);
   // ...
   SetProtoMethod(isolate, channel_wrap, "querySoa", Query<QuerySoaWrap>);
-  SetProtoMethod(isolate, channel_wrap, "getHostByAddr", Query<GetHostByAddrWrap>);
+  SetProtoMethod(isolate, channel_wrap, "getHostByAddr", Query<QueryReverseWrap>);
 
   SetProtoMethodNoSideEffect(isolate, channel_wrap, "getServers", GetServers);
 
@@ -469,10 +486,16 @@ void Initialize(Local<Object> target,
 NODE_BINDING_CONTEXT_AWARE_INTERNAL(cares_wrap, Initialize)
 ```
 
-If the C++ binding is loaded during bootstrap, it needs to be registered
-with the utilities in `node_external_reference.h`, like this:
+#### Registering binding functions used in bootstrap
+
+If the C++ binding is loaded during bootstrap, in addition to registering it
+using `NODE_BINDING_CONTEXT_AWARE_INTERNAL` for `internalBinding()` lookup,
+it also needs to be registered with `NODE_BINDING_EXTERNAL_REFERENCE` so that
+the external references can be resolved from the built-in snapshot, like this:
 
 ```cpp
+#include "node_external_reference.h"
+
 namespace node {
 namespace util {
 void RegisterExternalReferences(ExternalReferenceRegistry* registry) {
@@ -500,7 +523,8 @@ Unknown external reference 0x107769200.
 /bin/sh: line 1:  6963 Illegal instruction: 4  out/Release/node_mksnapshot out/Release/gen/node_snapshot.cc
 ```
 
-You can try using a debugger to symbolicate the external reference. For example,
+You can try using a debugger to symbolicate the external reference in order to find
+out the binding functions that you forget to register. For example,
 with lldb's `image lookup --address` command (with gdb it's `info symbol`):
 
 ```console
@@ -516,7 +540,9 @@ Process 7012 stopped
 ```
 
 Which explains that the unregistered external reference is
-`node::util::GetHiddenValue` defined in `node_util.cc`.
+`node::util::GetHiddenValue` defined in `node_util.cc`, and should be registered
+using `registry->Register()` in a registration function marked by
+`NODE_BINDING_EXTERNAL_REFERENCE`.
 
 <a id="per-binding-state"></a>
 
@@ -579,6 +605,68 @@ void InitializeHttpParser(Local<Object> target,
 
   Local<FunctionTemplate> t = NewFunctionTemplate(realm->isolate(), Parser::New);
   ...
+}
+```
+
+### Argument validation in public APIs vs. internal code
+
+#### Public API argument sanitization
+
+When arguments come directly from user code, Node.js will typically validate them at the
+JavaScript layer and throws user-friendly
+[errors](https://github.com/nodejs/node/blob/main/doc/contributing/using-internal-errors.md)
+(e.g., `ERR_INVALID_*`), if they are invalid. This helps end users
+quickly understand and fix mistakes in their own code.
+
+This approach ensures that the error message pinpoints which argument is wrong
+and how it should be fixed. Additionally, problems in user code do not cause
+mysterious crashes or hard-to-diagnose failures deeper in the engine.
+
+Example from `zlib.js`:
+
+```js
+function crc32(data, value = 0) {
+  if (typeof data !== 'string' && !isArrayBufferView(data)) {
+    throw new ERR_INVALID_ARG_TYPE('data', ['Buffer', 'TypedArray', 'DataView','string'], data);
+  }
+  validateUint32(value, 'value');
+  return crc32Native(data, value);
+}
+```
+
+The corresponding C++ assertion code for the above example from it's binding `node_zlib.cc`:
+
+```cpp
+CHECK(args[0]->IsArrayBufferView() || args[0]->IsString());
+CHECK(args[1]->IsUint32());
+```
+
+#### Internal code and C++ binding checks
+
+Inside Node.js’s internal layers, especially the C++ [binding function][]s
+typically assume their arguments have already been checked and sanitized
+by the upper-level (JavaScript) callers. As a result, internal C++ code
+often just uses `CHECK()` or similar assertions to confirm that the
+types/values passed in are correct. If that assertion fails, Node.js will
+crash or abort with an internal diagnostic message. This is to avoid
+re-validating every internal function argument repeatedly which can slow
+down the system.
+
+However, in a less common case where the API is implemented completely in
+C++, the arguments would be validated directly in C++, with the errors
+thrown using `THROW_ERR_INVALID_*` macros from `src/node_errors.h`.
+
+For example in `worker_threads.moveMessagePortToContext`:
+
+```cpp
+void MessagePort::MoveToContext(const FunctionCallbackInfo<Value>& args) {
+  Environment* env = Environment::GetCurrent(args);
+  if (!args[0]->IsObject() ||
+      !env->message_port_constructor_template()->HasInstance(args[0])) {
+    return THROW_ERR_INVALID_ARG_TYPE(env,
+        "The \"port\" argument must be a MessagePort instance");
+  }
+  // ...
 }
 ```
 
@@ -762,10 +850,19 @@ a `void* hint` argument.
 Inside these cleanup hooks, new asynchronous operations _may_ be started on the
 event loop, although ideally that is avoided as much as possible.
 
-Every [`BaseObject`][] has its own cleanup hook that deletes it. For
-[`ReqWrap`][] and [`HandleWrap`][] instances, cleanup of the associated libuv
-objects is performed automatically, i.e. handles are closed and requests
-are cancelled if possible.
+For every [`ReqWrap`][] and [`HandleWrap`][] instance, the cleanup of the
+associated libuv objects is performed automatically, i.e. handles are closed
+and requests are cancelled if possible.
+
+#### Cleanup realms and BaseObjects
+
+Realm cleanup depends on the realm types. All realms are destroyed when the
+[`Environment`][] is destroyed with the cleanup hook. A [`ShadowRealm`][] can
+also be destroyed by the garbage collection when there is no strong reference
+to it.
+
+Every [`BaseObject`][] is tracked with its creation realm and will be destroyed
+when the realm is tearing down.
 
 #### Closing libuv handles
 
@@ -829,7 +926,7 @@ The JavaScript object can be accessed as a `v8::Local<v8::Object>` by using
 `self->object()`, given a `BaseObject` named `self`.
 
 Accessing a `BaseObject` from a `v8::Local<v8::Object>` (frequently that is
-`args.This()` or `args.Holder()` in a [binding function][]) can be done using
+`args.This()` in a [binding function][]) can be done using
 the `Unwrap<T>(obj)` function, where `T` is a subclass of `BaseObject`.
 A helper for this is the `ASSIGN_OR_RETURN_UNWRAP` macro that returns from the
 current function if unwrapping fails (typically that means that the `BaseObject`
@@ -838,7 +935,7 @@ has been deleted earlier).
 ```cpp
 void Http2Session::Request(const FunctionCallbackInfo<Value>& args) {
   Http2Session* session;
-  ASSIGN_OR_RETURN_UNWRAP(&session, args.Holder());
+  ASSIGN_OR_RETURN_UNWRAP(&session, args.This());
   Environment* env = session->env();
   Local<Context> context = env->context();
   Isolate* isolate = env->isolate();
@@ -1107,6 +1204,7 @@ static void GetUserInfo(const FunctionCallbackInfo<Value>& args) {
 [`v8.h` in Code Search]: https://cs.chromium.org/chromium/src/v8/include/v8.h
 [`v8.h` in Node.js]: https://github.com/nodejs/node/blob/HEAD/deps/v8/include/v8.h
 [`v8.h` in V8]: https://github.com/v8/v8/blob/HEAD/include/v8.h
+[`v8::Local<T>`]: https://v8.github.io/api/head/classv8_1_1Local.html
 [`vm` module]: https://nodejs.org/api/vm.html
 [binding function]: #binding-functions
 [cleanup hooks]: #cleanup-hooks

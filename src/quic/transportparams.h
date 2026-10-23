@@ -13,8 +13,7 @@
 #include "data.h"
 #include "tokens.h"
 
-namespace node {
-namespace quic {
+namespace node::quic {
 
 class Endpoint;
 class Session;
@@ -118,6 +117,8 @@ class TransportParams final {
 
     static v8::Maybe<Options> From(Environment* env,
                                    v8::Local<v8::Value> value);
+
+    std::string ToString() const;
   };
 
   explicit TransportParams();
@@ -158,8 +159,7 @@ class TransportParams final {
   QuicError error_ = QuicError::TRANSPORT_NO_ERROR;
 };
 
-}  // namespace quic
-}  // namespace node
+}  // namespace node::quic
 
 #endif  // HAVE_OPENSSL && NODE_OPENSSL_HAS_QUIC
 #endif  // defined(NODE_WANT_INTERNALS) && NODE_WANT_INTERNALS

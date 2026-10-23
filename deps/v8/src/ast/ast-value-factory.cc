@@ -60,7 +60,7 @@ class OneByteStringStream {
 template <typename IsolateT>
 void AstRawString::Internalize(IsolateT* isolate) {
   DCHECK(!has_string_);
-  if (literal_bytes_.length() == 0) {
+  if (literal_bytes_.empty()) {
     set_string(isolate->factory()->empty_string());
   } else if (is_one_byte()) {
     OneByteStringKey key(raw_hash_field_, literal_bytes_);
@@ -82,7 +82,8 @@ bool AstRawString::AsArrayIndex(uint32_t* index) const {
   // can't be convertible to an array index.
   if (!IsIntegerIndex()) return false;
   if (length() <= Name::kMaxCachedArrayIndexLength) {
-    *index = Name::ArrayIndexValueBits::decode(raw_hash_field_);
+    *index = StringHasher::DecodeArrayIndexFromHashField(
+        raw_hash_field_, HashSeed(ReadOnlyHeap::GetReadOnlyRoots()));
     return true;
   }
   // Might be an index, but too big to cache it. Do the slow conversion. This
@@ -291,7 +292,8 @@ std::forward_list<const AstRawString*> AstConsString::ToRawStrings() const {
   return result;
 }
 
-AstStringConstants::AstStringConstants(Isolate* isolate, uint64_t hash_seed)
+AstStringConstants::AstStringConstants(Isolate* isolate,
+                                       const HashSeed hash_seed)
     : zone_(isolate->allocator(), ZONE_NAME),
       string_table_(),
       hash_seed_(hash_seed) {

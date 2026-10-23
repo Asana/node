@@ -28,7 +28,7 @@ async function test() {
 
   await rejects(
     import(jsModuleDataUrl, { with: { type: 'json', other: 'unsupported' } }),
-    { code: 'ERR_IMPORT_ATTRIBUTE_TYPE_INCOMPATIBLE' }
+    { code: 'ERR_IMPORT_ATTRIBUTE_UNSUPPORTED' }
   );
 
   await rejects(
@@ -48,12 +48,22 @@ async function test() {
 
   await rejects(
     import(jsonModuleDataUrl, { with: { foo: 'bar' } }),
-    { code: 'ERR_IMPORT_ATTRIBUTE_MISSING' }
+    { code: 'ERR_IMPORT_ATTRIBUTE_UNSUPPORTED' }
   );
 
   await rejects(
     import(jsonModuleDataUrl, { with: { type: 'unsupported' } }),
     { code: 'ERR_IMPORT_ATTRIBUTE_UNSUPPORTED' }
+  );
+
+  await rejects(
+    import(jsonModuleDataUrl, { assert: { type: 'json' } }),
+    { code: 'ERR_IMPORT_ATTRIBUTE_MISSING' }
+  );
+
+  await rejects(
+    import(`data:text/javascript,import${JSON.stringify(jsonModuleDataUrl)}assert{type:"json"}`),
+    SyntaxError
   );
 }
 

@@ -180,23 +180,23 @@ void SerializerContext::New(const FunctionCallbackInfo<Value>& args) {
 
 void SerializerContext::WriteHeader(const FunctionCallbackInfo<Value>& args) {
   SerializerContext* ctx;
-  ASSIGN_OR_RETURN_UNWRAP(&ctx, args.Holder());
+  ASSIGN_OR_RETURN_UNWRAP(&ctx, args.This());
   ctx->serializer_.WriteHeader();
 }
 
 void SerializerContext::WriteValue(const FunctionCallbackInfo<Value>& args) {
   SerializerContext* ctx;
-  ASSIGN_OR_RETURN_UNWRAP(&ctx, args.Holder());
-  Maybe<bool> ret =
-      ctx->serializer_.WriteValue(ctx->env()->context(), args[0]);
-
-  if (ret.IsJust()) args.GetReturnValue().Set(ret.FromJust());
+  ASSIGN_OR_RETURN_UNWRAP(&ctx, args.This());
+  bool ret;
+  if (ctx->serializer_.WriteValue(ctx->env()->context(), args[0]).To(&ret)) {
+    args.GetReturnValue().Set(ret);
+  }
 }
 
 void SerializerContext::SetTreatArrayBufferViewsAsHostObjects(
     const FunctionCallbackInfo<Value>& args) {
   SerializerContext* ctx;
-  ASSIGN_OR_RETURN_UNWRAP(&ctx, args.Holder());
+  ASSIGN_OR_RETURN_UNWRAP(&ctx, args.This());
 
   bool value = args[0]->BooleanValue(ctx->env()->isolate());
   ctx->serializer_.SetTreatArrayBufferViewsAsHostObjects(value);
@@ -204,7 +204,7 @@ void SerializerContext::SetTreatArrayBufferViewsAsHostObjects(
 
 void SerializerContext::ReleaseBuffer(const FunctionCallbackInfo<Value>& args) {
   SerializerContext* ctx;
-  ASSIGN_OR_RETURN_UNWRAP(&ctx, args.Holder());
+  ASSIGN_OR_RETURN_UNWRAP(&ctx, args.This());
 
   // Note: Both ValueSerializer and this Buffer::New() variant use malloc()
   // as the underlying allocator.
@@ -221,57 +221,62 @@ void SerializerContext::ReleaseBuffer(const FunctionCallbackInfo<Value>& args) {
 void SerializerContext::TransferArrayBuffer(
     const FunctionCallbackInfo<Value>& args) {
   SerializerContext* ctx;
-  ASSIGN_OR_RETURN_UNWRAP(&ctx, args.Holder());
+  ASSIGN_OR_RETURN_UNWRAP(&ctx, args.This());
 
-  Maybe<uint32_t> id = args[0]->Uint32Value(ctx->env()->context());
-  if (id.IsNothing()) return;
+  uint32_t id;
+  if (!args[0]->Uint32Value(ctx->env()->context()).To(&id)) {
+    return;
+  }
 
-  if (!args[1]->IsArrayBuffer())
+  if (!args[1]->IsArrayBuffer()) {
     return node::THROW_ERR_INVALID_ARG_TYPE(
         ctx->env(), "arrayBuffer must be an ArrayBuffer");
+  }
 
   Local<ArrayBuffer> ab = args[1].As<ArrayBuffer>();
-  ctx->serializer_.TransferArrayBuffer(id.FromJust(), ab);
-  return;
+  ctx->serializer_.TransferArrayBuffer(id, ab);
 }
 
 void SerializerContext::WriteUint32(const FunctionCallbackInfo<Value>& args) {
   SerializerContext* ctx;
-  ASSIGN_OR_RETURN_UNWRAP(&ctx, args.Holder());
+  ASSIGN_OR_RETURN_UNWRAP(&ctx, args.This());
 
-  Maybe<uint32_t> value = args[0]->Uint32Value(ctx->env()->context());
-  if (value.IsNothing()) return;
-
-  ctx->serializer_.WriteUint32(value.FromJust());
+  uint32_t value;
+  if (args[0]->Uint32Value(ctx->env()->context()).To(&value)) {
+    ctx->serializer_.WriteUint32(value);
+  }
 }
 
 void SerializerContext::WriteUint64(const FunctionCallbackInfo<Value>& args) {
   SerializerContext* ctx;
-  ASSIGN_OR_RETURN_UNWRAP(&ctx, args.Holder());
+  ASSIGN_OR_RETURN_UNWRAP(&ctx, args.This());
 
-  Maybe<uint32_t> arg0 = args[0]->Uint32Value(ctx->env()->context());
-  Maybe<uint32_t> arg1 = args[1]->Uint32Value(ctx->env()->context());
-  if (arg0.IsNothing() || arg1.IsNothing())
+  uint32_t hi;
+  uint32_t lo;
+
+  if (!args[0]->Uint32Value(ctx->env()->context()).To(&hi) ||
+      !args[1]->Uint32Value(ctx->env()->context()).To(&lo)) {
     return;
+  }
 
-  uint64_t hi = arg0.FromJust();
-  uint64_t lo = arg1.FromJust();
-  ctx->serializer_.WriteUint64((hi << 32) | lo);
+  uint64_t hiu64 = hi;
+  uint64_t lou64 = lo;
+  ctx->serializer_.WriteUint64((hiu64 << 32) | lou64);
 }
 
 void SerializerContext::WriteDouble(const FunctionCallbackInfo<Value>& args) {
   SerializerContext* ctx;
-  ASSIGN_OR_RETURN_UNWRAP(&ctx, args.Holder());
+  ASSIGN_OR_RETURN_UNWRAP(&ctx, args.This());
 
-  Maybe<double> value = args[0]->NumberValue(ctx->env()->context());
-  if (value.IsNothing()) return;
-
-  ctx->serializer_.WriteDouble(value.FromJust());
+  double value;
+  if (args[0]->NumberValue(ctx->env()->context()).To(&value)) {
+    ctx->serializer_.WriteDouble(value);
+  }
 }
 
 void SerializerContext::WriteRawBytes(const FunctionCallbackInfo<Value>& args) {
   SerializerContext* ctx;
-  ASSIGN_OR_RETURN_UNWRAP(&ctx, args.Holder());
+  ASSIGN_OR_RETURN_UNWRAP(&ctx, args.This());
 
   if (!args[0]->IsArrayBufferView()) {
     return node::THROW_ERR_INVALID_ARG_TYPE(
@@ -339,16 +344,17 @@ void DeserializerContext::New(const FunctionCallbackInfo<Value>& args) {
 
 void DeserializerContext::ReadHeader(const FunctionCallbackInfo<Value>& args) {
   DeserializerContext* ctx;
-  ASSIGN_OR_RETURN_UNWRAP(&ctx, args.Holder());
+  ASSIGN_OR_RETURN_UNWRAP(&ctx, args.This());
 
-  Maybe<bool> ret = ctx->deserializer_.ReadHeader(ctx->env()->context());
-
-  if (ret.IsJust()) args.GetReturnValue().Set(ret.FromJust());
+  bool ret;
+  if (ctx->deserializer_.ReadHeader(ctx->env()->context()).To(&ret)) {
+    args.GetReturnValue().Set(ret);
+  }
 }
 
 void DeserializerContext::ReadValue(const FunctionCallbackInfo<Value>& args) {
   DeserializerContext* ctx;
-  ASSIGN_OR_RETURN_UNWRAP(&ctx, args.Holder());
+  ASSIGN_OR_RETURN_UNWRAP(&ctx, args.This());
 
   MaybeLocal<Value> ret = ctx->deserializer_.ReadValue(ctx->env()->context());
 
@@ -358,20 +364,22 @@ void DeserializerContext::ReadValue(const FunctionCallbackInfo<Value>& args) {
 void DeserializerContext::TransferArrayBuffer(
     const FunctionCallbackInfo<Value>& args) {
   DeserializerContext* ctx;
-  ASSIGN_OR_RETURN_UNWRAP(&ctx, args.Holder());
+  ASSIGN_OR_RETURN_UNWRAP(&ctx, args.This());
 
-  Maybe<uint32_t> id = args[0]->Uint32Value(ctx->env()->context());
-  if (id.IsNothing()) return;
+  uint32_t id;
+  if (!args[0]->Uint32Value(ctx->env()->context()).To(&id)) {
+    return;
+  }
 
   if (args[1]->IsArrayBuffer()) {
     Local<ArrayBuffer> ab = args[1].As<ArrayBuffer>();
-    ctx->deserializer_.TransferArrayBuffer(id.FromJust(), ab);
+    ctx->deserializer_.TransferArrayBuffer(id, ab);
     return;
   }
 
   if (args[1]->IsSharedArrayBuffer()) {
     Local<SharedArrayBuffer> sab = args[1].As<SharedArrayBuffer>();
-    ctx->deserializer_.TransferSharedArrayBuffer(id.FromJust(), sab);
+    ctx->deserializer_.TransferSharedArrayBuffer(id, sab);
     return;
   }
 
@@ -382,14 +390,14 @@ void DeserializerContext::TransferArrayBuffer(
 void DeserializerContext::GetWireFormatVersion(
     const FunctionCallbackInfo<Value>& args) {
   DeserializerContext* ctx;
-  ASSIGN_OR_RETURN_UNWRAP(&ctx, args.Holder());
+  ASSIGN_OR_RETURN_UNWRAP(&ctx, args.This());
 
   args.GetReturnValue().Set(ctx->deserializer_.GetWireFormatVersion());
 }
 
 void DeserializerContext::ReadUint32(const FunctionCallbackInfo<Value>& args) {
   DeserializerContext* ctx;
-  ASSIGN_OR_RETURN_UNWRAP(&ctx, args.Holder());
+  ASSIGN_OR_RETURN_UNWRAP(&ctx, args.This());
 
   uint32_t value;
   bool ok = ctx->deserializer_.ReadUint32(&value);
@@ -399,7 +407,7 @@ void DeserializerContext::ReadUint32(const FunctionCallbackInfo<Value>& args) {
 
 void DeserializerContext::ReadUint64(const FunctionCallbackInfo<Value>& args) {
   DeserializerContext* ctx;
-  ASSIGN_OR_RETURN_UNWRAP(&ctx, args.Holder());
+  ASSIGN_OR_RETURN_UNWRAP(&ctx, args.This());
 
   uint64_t value;
   bool ok = ctx->deserializer_.ReadUint64(&value);
@@ -419,7 +427,7 @@ void DeserializerContext::ReadUint64(const FunctionCallbackInfo<Value>& args) {
 
 void DeserializerContext::ReadDouble(const FunctionCallbackInfo<Value>& args) {
   DeserializerContext* ctx;
-  ASSIGN_OR_RETURN_UNWRAP(&ctx, args.Holder());
+  ASSIGN_OR_RETURN_UNWRAP(&ctx, args.This());
 
   double value;
   bool ok = ctx->deserializer_.ReadDouble(&value);
@@ -430,11 +438,13 @@ void DeserializerContext::ReadDouble(const FunctionCallbackInfo<Value>& args) {
 void DeserializerContext::ReadRawBytes(
     const FunctionCallbackInfo<Value>& args) {
   DeserializerContext* ctx;
-  ASSIGN_OR_RETURN_UNWRAP(&ctx, args.Holder());
+  ASSIGN_OR_RETURN_UNWRAP(&ctx, args.This());
 
-  Maybe<int64_t> length_arg = args[0]->IntegerValue(ctx->env()->context());
-  if (length_arg.IsNothing()) return;
-  size_t length = length_arg.FromJust();
+  int64_t length_arg;
+  if (!args[0]->IntegerValue(ctx->env()->context()).To(&length_arg)) {
+    return;
+  }
+  size_t length = length_arg;
 
   const void* data;
   bool ok = ctx->deserializer_.ReadRawBytes(length, &data);

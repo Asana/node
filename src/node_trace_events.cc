@@ -5,7 +5,9 @@
 #include "node_external_reference.h"
 #include "node_internals.h"
 #include "node_v8_platform-inl.h"
+#include "permission/permission.h"
 #include "tracing/agent.h"
+#include "tracing/node_trace_writer.h"
 #include "util-inl.h"
 
 #include <set>
@@ -16,6 +18,8 @@ namespace node {
 class ExternalReferenceRegistry;
 
 using v8::Array;
+using v8::ArrayBuffer;
+using v8::BackingStore;
 using v8::Context;
 using v8::Function;
 using v8::FunctionCallbackInfo;
@@ -25,6 +29,7 @@ using v8::Local;
 using v8::NewStringType;
 using v8::Object;
 using v8::String;
+using v8::Uint8Array;
 using v8::Value;
 
 class NodeCategorySet : public BaseObject {
@@ -77,10 +82,16 @@ void NodeCategorySet::New(const FunctionCallbackInfo<Value>& args) {
 
 void NodeCategorySet::Enable(const FunctionCallbackInfo<Value>& args) {
   NodeCategorySet* category_set;
-  ASSIGN_OR_RETURN_UNWRAP(&category_set, args.Holder());
+  ASSIGN_OR_RETURN_UNWRAP(&category_set, args.This());
   CHECK_NOT_NULL(category_set);
   const auto& categories = category_set->GetCategories();
   if (!category_set->enabled_ && !categories.empty()) {
+    const std::string filepath = tracing::NodeTraceWriter::GetFilePath(
+        per_process::cli_options->trace_event_file_pattern, 1);
+    THROW_IF_INSUFFICIENT_PERMISSIONS(
+        category_set->env(),
+        permission::PermissionScope::kFileSystemWrite,
+        filepath);
     // Starts the Tracing Agent if it wasn't started already (e.g. through
     // a command line flag.)
     StartTracingAgent();
@@ -91,7 +102,7 @@ void NodeCategorySet::Enable(const FunctionCallbackInfo<Value>& args) {
 
 void NodeCategorySet::Disable(const FunctionCallbackInfo<Value>& args) {
   NodeCategorySet* category_set;
-  ASSIGN_OR_RETURN_UNWRAP(&category_set, args.Holder());
+  ASSIGN_OR_RETURN_UNWRAP(&category_set, args.This());
   CHECK_NOT_NULL(category_set);
   const auto& categories = category_set->GetCategories();
   if (category_set->enabled_ && !categories.empty()) {
@@ -120,6 +131,27 @@ static void SetTraceCategoryStateUpdateHandler(
   env->set_trace_category_state_function(args[0].As<Function>());
 }
 
+static void GetCategoryEnabledBuffer(const FunctionCallbackInfo<Value>& args) {
+  CHECK(args[0]->IsString());
+
+  Isolate* isolate = args.GetIsolate();
+  node::Utf8Value category_name(isolate, args[0]);
+
+  const uint8_t* enabled_pointer =
+      TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(category_name.out());
+  uint8_t* enabled_pointer_cast = const_cast<uint8_t*>(enabled_pointer);
+
+  std::unique_ptr<BackingStore> bs = ArrayBuffer::NewBackingStore(
+      enabled_pointer_cast,
+      sizeof(*enabled_pointer_cast),
+      [](void*, size_t, void*) {},
+      nullptr);
+  auto ab = ArrayBuffer::New(isolate, std::move(bs));
+  v8::Local<Uint8Array> u8 = v8::Uint8Array::New(ab, 0, 1);
+
+  args.GetReturnValue().Set(u8);
+}
+
 void NodeCategorySet::Initialize(Local<Object> target,
                 Local<Value> unused,
                 Local<Context> context,
@@ -132,6 +164,8 @@ void NodeCategorySet::Initialize(Local<Object> target,
             target,
             "setTraceCategoryStateUpdateHandler",
             SetTraceCategoryStateUpdateHandler);
+  SetMethod(
+      context, target, "getCategoryEnabledBuffer", GetCategoryEnabledBuffer);
 
   Local<FunctionTemplate> category_set =
       NewFunctionTemplate(isolate, NodeCategorySet::New);
@@ -160,6 +194,7 @@ void NodeCategorySet::RegisterExternalReferences(
     ExternalReferenceRegistry* registry) {
   registry->Register(GetEnabledCategories);
   registry->Register(SetTraceCategoryStateUpdateHandler);
+  registry->Register(GetCategoryEnabledBuffer);
   registry->Register(NodeCategorySet::New);
   registry->Register(NodeCategorySet::Enable);
   registry->Register(NodeCategorySet::Disable);

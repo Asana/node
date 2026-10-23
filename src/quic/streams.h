@@ -15,8 +15,7 @@
 #include "bindingdata.h"
 #include "data.h"
 
-namespace node {
-namespace quic {
+namespace node::quic {
 
 class Session;
 
@@ -155,9 +154,10 @@ class Stream : public AsyncWrap,
 
   void BeginHeaders(HeadersKind kind);
   // Returns false if the header cannot be added. This will typically happen
-  // if the application does not support headers, a maximimum number of headers
+  // if the application does not support headers, a maximum number of headers
   // have already been added, or the maximum total header length is reached.
   bool AddHeader(const Header& header);
+  void set_headers_kind(HeadersKind kind);
 
   SET_NO_MEMORY_INFO()
   SET_MEMORY_INFO_NAME(Stream)
@@ -169,6 +169,9 @@ class Stream : public AsyncWrap,
   // Notifies the JavaScript side that sending data on the stream has been
   // blocked because of flow control restriction.
   void EmitBlocked();
+
+  // Delivers the set of inbound headers that have been collected.
+  void EmitHeaders();
 
  private:
   struct Impl;
@@ -185,9 +188,6 @@ class Stream : public AsyncWrap,
   // Notifies the JavaScript side that the stream has been destroyed.
   void EmitClose(const QuicError& error);
 
-  // Delivers the set of inbound headers that have been collected.
-  void EmitHeaders();
-
   // Notifies the JavaScript side that the stream has been reset.
   void EmitReset(const QuicError& error);
 
@@ -203,7 +203,7 @@ class Stream : public AsyncWrap,
   std::unique_ptr<Outbound> outbound_;
   std::shared_ptr<DataQueue> inbound_;
 
-  std::vector<v8::Local<v8::Value>> headers_;
+  v8::LocalVector<v8::Value> headers_;
   HeadersKind headers_kind_ = HeadersKind::INITIAL;
   size_t headers_length_ = 0;
 
@@ -226,8 +226,7 @@ class Stream : public AsyncWrap,
   void Unschedule();
 };
 
-}  // namespace quic
-}  // namespace node
+}  // namespace node::quic
 
 #endif  // HAVE_OPENSSL && NODE_OPENSSL_HAS_QUIC
 #endif  // defined(NODE_WANT_INTERNALS) && NODE_WANT_INTERNALS

@@ -3,8 +3,10 @@ import * as fixtures from '../common/fixtures.mjs';
 import { describe, it } from 'node:test';
 import { deepStrictEqual, match, strictEqual } from 'node:assert';
 
-describe('--experimental-default-type=module', { concurrency: true }, () => {
-  describe('should not affect the interpretation of files with unknown extensions', { concurrency: true }, () => {
+describe('--experimental-default-type=module', { concurrency: !process.env.TEST_PARALLEL }, () => {
+  describe('should not affect the interpretation of files with unknown extensions', {
+    concurrency: !process.env.TEST_PARALLEL,
+  }, () => {
     it('should error on an entry point with an unknown extension', async () => {
       const { code, signal, stdout, stderr } = await spawnPromisified(process.execPath, [
         '--experimental-default-type=module',
@@ -34,14 +36,16 @@ describe('--experimental-default-type=module', { concurrency: true }, () => {
     const result = await spawnPromisified(process.execPath, [
       '--experimental-default-type=module',
       fixtures.path('es-modules/package-type-commonjs/echo-require-cache.js'),
-    ]);
-
-    deepStrictEqual(result, {
-      code: 0,
-      stderr: '',
-      stdout: 'undefined\n',
-      signal: null,
+    ], {
+      env: {
+        ...process.env,
+        NODE_DEBUG: 'esm',
+      }
     });
+    match(result.stderr, /Translating CJSModule file.+echo-require-cache\.js/);
+    match(result.stdout, /Object: null prototype/);
+    strictEqual(result.code, 0);
+    strictEqual(result.signal, null);
   });
 
   it('should affect .cjs files that are imported', async () => {
@@ -49,25 +53,34 @@ describe('--experimental-default-type=module', { concurrency: true }, () => {
       '--experimental-default-type=module',
       '-e',
       `import ${JSON.stringify(fixtures.fileURL('es-module-require-cache/echo.cjs'))}`,
-    ]);
-
-    deepStrictEqual(result, {
-      code: 0,
-      stderr: '',
-      stdout: 'undefined\n',
-      signal: null,
+    ], {
+      env: {
+        ...process.env,
+        NODE_DEBUG: 'esm',
+      }
     });
+
+    match(result.stderr, /Translating CJSModule file.+echo\.cjs/);
+    match(result.stdout, /Object: null prototype/);
+    strictEqual(result.code, 0);
+    strictEqual(result.signal, null);
   });
 
   it('should affect entry point .cjs files (with no hooks)', async () => {
-    const { stderr, stdout, code } = await spawnPromisified(process.execPath, [
+    const result = await spawnPromisified(process.execPath, [
       '--experimental-default-type=module',
       fixtures.path('es-module-require-cache/echo.cjs'),
-    ]);
+    ], {
+      env: {
+        ...process.env,
+        NODE_DEBUG: 'esm',
+      }
+    });
 
-    strictEqual(stderr, '');
-    match(stdout, /^undefined\n$/);
-    strictEqual(code, 0);
+    match(result.stderr, /Translating CJSModule file.+echo\.cjs/);
+    match(result.stdout, /Object: null prototype/);
+    strictEqual(result.code, 0);
+    strictEqual(result.signal, null);
   });
 
   it('should affect entry point .cjs files (when any hooks is registered)', async () => {

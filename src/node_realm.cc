@@ -34,7 +34,7 @@ void Realm::MemoryInfo(MemoryTracker* tracker) const {
   PER_REALM_STRONG_PERSISTENT_VALUES(V)
 #undef V
 
-  tracker->TrackField("cleanup_queue", cleanup_queue_);
+  tracker->TrackField("base_object_list", base_object_list_);
   tracker->TrackField("builtins_with_cache", builtins_with_cache);
   tracker->TrackField("builtins_without_cache", builtins_without_cache);
 }
@@ -45,15 +45,14 @@ void Realm::CreateProperties() {
 
   // Store primordials setup by the per-context script in the environment.
   Local<Object> per_context_bindings =
-      GetPerContextExports(ctx).ToLocalChecked();
+      GetPerContextExports(ctx, env_->isolate_data()).ToLocalChecked();
   Local<Value> primordials =
       per_context_bindings->Get(ctx, env_->primordials_string())
           .ToLocalChecked();
   CHECK(primordials->IsObject());
   set_primordials(primordials.As<Object>());
 
-  Local<String> prototype_string =
-      FIXED_ONE_BYTE_STRING(isolate(), "prototype");
+  Local<String> prototype_string = env_->prototype_string();
 
 #define V(EnvPropertyName, PrimordialsPropertyName)                            \
   {                                                                            \
@@ -215,7 +214,7 @@ void Realm::RunCleanup() {
   for (size_t i = 0; i < binding_data_store_.size(); ++i) {
     binding_data_store_[i].reset();
   }
-  cleanup_queue_.Drain();
+  base_object_list_.Cleanup();
 }
 
 void Realm::PrintInfoForSnapshot() {
@@ -273,10 +272,6 @@ void Realm::VerifyNoStrongBaseObjects() {
     fflush(stderr);
     ABORT();
   });
-}
-
-v8::Local<v8::Context> Realm::context() const {
-  return PersistentToLocal::Strong(context_);
 }
 
 // Per-realm strong value accessors. The per-realm values should avoid being

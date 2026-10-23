@@ -20,13 +20,22 @@
 #define NODE_BUILTIN_PROFILER_BINDINGS(V)
 #endif
 
+#ifdef DEBUG
+#define NODE_BUILTIN_DEBUG_BINDINGS(V) V(debug)
+#else
+#define NODE_BUILTIN_DEBUG_BINDINGS(V)
+#endif
+
 // A list of built-in bindings. In order to do binding registration
 // in node::Init(), need to add built-in bindings in the following list.
 // Then in binding::RegisterBuiltinBindings(), it calls bindings' registration
 // function. This helps the built-in bindings are loaded properly when
 // node is built as static library. No need to depend on the
 // __attribute__((constructor)) like mechanism in GCC.
+// The binding IDs that start with 'internal_only' are not exposed to the user
+// land even from internal/test/binding module under --expose-internals.
 #define NODE_BUILTIN_STANDARD_BINDINGS(V)                                      \
+  V(async_context_frame)                                                       \
   V(async_wrap)                                                                \
   V(blob)                                                                      \
   V(block_list)                                                                \
@@ -46,6 +55,7 @@
   V(http2)                                                                     \
   V(http_parser)                                                               \
   V(inspector)                                                                 \
+  V(internal_only_v8)                                                          \
   V(js_stream)                                                                 \
   V(js_udp_wrap)                                                               \
   V(messaging)                                                                 \
@@ -90,7 +100,9 @@
   NODE_BUILTIN_OPENSSL_BINDINGS(V)                                             \
   NODE_BUILTIN_ICU_BINDINGS(V)                                                 \
   NODE_BUILTIN_PROFILER_BINDINGS(V)                                            \
-  NODE_BUILTIN_QUIC_BINDINGS(V)
+  NODE_BUILTIN_DEBUG_BINDINGS(V)                                               \
+  NODE_BUILTIN_QUIC_BINDINGS(V)                                                \
+  NODE_BUILTIN_SQLITE_BINDINGS(V)
 
 // This is used to load built-in bindings. Instead of using
 // __attribute__((constructor)), we call the _register_<modname>
@@ -511,7 +523,7 @@ void DLOpen(const FunctionCallbackInfo<Value>& args) {
       }
     }
 
-    // -1 is used for N-API modules
+    // -1 is used for Node-API modules
     if ((mp->nm_version != -1) && (mp->nm_version != NODE_MODULE_VERSION)) {
       // Even if the module did self-register, it may have done so with the
       // wrong version. We must only give up after having checked to see if it
@@ -670,9 +682,9 @@ void GetLinkedBinding(const FunctionCallbackInfo<Value>& args) {
 
   Local<Object> module = Object::New(env->isolate());
   Local<Object> exports = Object::New(env->isolate());
-  Local<String> exports_prop =
-      String::NewFromUtf8Literal(env->isolate(), "exports");
-  module->Set(env->context(), exports_prop, exports).Check();
+  if (module->Set(env->context(), env->exports_string(), exports).IsNothing()) {
+    return;
+  }
 
   if (mod->nm_context_register_func != nullptr) {
     mod->nm_context_register_func(
@@ -684,10 +696,11 @@ void GetLinkedBinding(const FunctionCallbackInfo<Value>& args) {
         env, "Linked binding has no declared entry point.");
   }
 
-  auto effective_exports =
-      module->Get(env->context(), exports_prop).ToLocalChecked();
-
-  args.GetReturnValue().Set(effective_exports);
+  Local<Value> effective_exports;
+  if (module->Get(env->context(), env->exports_string())
+          .ToLocal(&effective_exports)) {
+    args.GetReturnValue().Set(effective_exports);
+  }
 }
 
 // Call built-in bindings' _register_<module name> function to

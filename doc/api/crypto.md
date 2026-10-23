@@ -570,7 +570,7 @@ added: v1.0.0
 * `options` {Object} [`stream.transform` options][]
   * `plaintextLength` {number}
   * `encoding` {string} The string encoding to use when `buffer` is a string.
-* Returns: {Cipher} for method chaining.
+* Returns: {Cipher} The same `Cipher` instance for method chaining.
 
 When using an authenticated encryption mode (`GCM`, `CCM`, `OCB`, and
 `chacha20-poly1305` are
@@ -590,7 +590,7 @@ added: v0.7.1
 -->
 
 * `autoPadding` {boolean} **Default:** `true`
-* Returns: {Cipher} for method chaining.
+* Returns: {Cipher} The same `Cipher` instance for method chaining.
 
 When using block encryption algorithms, the `Cipher` class will automatically
 add padding to the input data to the appropriate block size. To disable the
@@ -870,7 +870,7 @@ changes:
 * `options` {Object} [`stream.transform` options][]
   * `plaintextLength` {number}
   * `encoding` {string} String encoding to use when `buffer` is a string.
-* Returns: {Decipher} for method chaining.
+* Returns: {Decipher} The same Decipher for method chaining.
 
 When using an authenticated encryption mode (`GCM`, `CCM`, `OCB`, and
 `chacha20-poly1305` are
@@ -891,6 +891,11 @@ When passing a string as the `buffer`, please consider
 <!-- YAML
 added: v1.0.0
 changes:
+  - version: v22.0.0
+    pr-url: https://github.com/nodejs/node/pull/52345
+    description: Using GCM tag lengths other than 128 bits without specifying
+                 the `authTagLength` option when creating `decipher` is
+                 deprecated.
   - version: v15.0.0
     pr-url: https://github.com/nodejs/node/pull/35093
     description: The buffer argument can be a string or ArrayBuffer and is
@@ -905,7 +910,7 @@ changes:
 
 * `buffer` {string|Buffer|ArrayBuffer|TypedArray|DataView}
 * `encoding` {string} String encoding to use when `buffer` is a string.
-* Returns: {Decipher} for method chaining.
+* Returns: {Decipher} The same Decipher for method chaining.
 
 When using an authenticated encryption mode (`GCM`, `CCM`, `OCB`, and
 `chacha20-poly1305` are
@@ -931,7 +936,7 @@ added: v0.7.1
 -->
 
 * `autoPadding` {boolean} **Default:** `true`
-* Returns: {Decipher} for method chaining.
+* Returns: {Decipher} The same Decipher for method chaining.
 
 When data has been encrypted without standard block padding, calling
 `decipher.setAutoPadding(false)` will disable automatic padding to prevent
@@ -972,6 +977,11 @@ is specified, a string using the specified encoding is returned. If no
 The `decipher.update()` method can be called multiple times with new data until
 [`decipher.final()`][] is called. Calling `decipher.update()` after
 [`decipher.final()`][] will result in an error being thrown.
+
+Even if the underlying cipher implements authentication, the authenticity and
+integrity of the plaintext returned from this function may be uncertain at this
+time. For authenticated encryption algorithms, authenticity is generally only
+established when the application calls [`decipher.final()`][].
 
 ## Class: `DiffieHellman`
 
@@ -1983,15 +1993,15 @@ changes:
                  for RSA-PSS keys.
 -->
 
-* {Object}
-  * `modulusLength`: {number} Key size in bits (RSA, DSA).
-  * `publicExponent`: {bigint} Public exponent (RSA).
-  * `hashAlgorithm`: {string} Name of the message digest (RSA-PSS).
-  * `mgf1HashAlgorithm`: {string} Name of the message digest used by
+* Type: {Object}
+  * `modulusLength` {number} Key size in bits (RSA, DSA).
+  * `publicExponent` {bigint} Public exponent (RSA).
+  * `hashAlgorithm` {string} Name of the message digest (RSA-PSS).
+  * `mgf1HashAlgorithm` {string} Name of the message digest used by
     MGF1 (RSA-PSS).
-  * `saltLength`: {number} Minimal salt length in bytes (RSA-PSS).
-  * `divisorLength`: {number} Size of `q` in bits (DSA).
-  * `namedCurve`: {string} Name of the curve (EC).
+  * `saltLength` {number} Minimal salt length in bytes (RSA-PSS).
+  * `divisorLength` {number} Size of `q` in bits (DSA).
+  * `namedCurve` {string} Name of the curve (EC).
 
 This property exists only on asymmetric keys. Depending on the type of the key,
 this object contains information about the key. None of the information obtained
@@ -2029,7 +2039,7 @@ changes:
     description: Added support for `'ed25519'` and `'ed448'`.
 -->
 
-* {string}
+* Type: {string}
 
 For asymmetric keys, this property represents the type of the key. Supported key
 types are:
@@ -2047,6 +2057,22 @@ types are:
 This property is `undefined` for unrecognized `KeyObject` types and symmetric
 keys.
 
+### `keyObject.equals(otherKeyObject)`
+
+<!-- YAML
+added:
+  - v17.7.0
+  - v16.15.0
+-->
+
+* `otherKeyObject` {KeyObject} A `KeyObject` with which to
+  compare `keyObject`.
+* Returns: {boolean}
+
+Returns `true` or `false` depending on whether the keys have exactly the same
+type, value, and parameters. This method is not
+[constant time](https://en.wikipedia.org/wiki/Timing_attack).
+
 ### `keyObject.export([options])`
 
 <!-- YAML
@@ -2057,27 +2083,27 @@ changes:
     description: Added support for `'jwk'` format.
 -->
 
-* `options`: {Object}
+* `options` {Object}
 * Returns: {string | Buffer | Object}
 
 For symmetric keys, the following encoding options can be used:
 
-* `format`: {string} Must be `'buffer'` (default) or `'jwk'`.
+* `format` {string} Must be `'buffer'` (default) or `'jwk'`.
 
 For public keys, the following encoding options can be used:
 
-* `type`: {string} Must be one of `'pkcs1'` (RSA only) or `'spki'`.
-* `format`: {string} Must be `'pem'`, `'der'`, or `'jwk'`.
+* `type` {string} Must be one of `'pkcs1'` (RSA only) or `'spki'`.
+* `format` {string} Must be `'pem'`, `'der'`, or `'jwk'`.
 
 For private keys, the following encoding options can be used:
 
-* `type`: {string} Must be one of `'pkcs1'` (RSA only), `'pkcs8'` or
+* `type` {string} Must be one of `'pkcs1'` (RSA only), `'pkcs8'` or
   `'sec1'` (EC only).
-* `format`: {string} Must be `'pem'`, `'der'`, or `'jwk'`.
-* `cipher`: {string} If specified, the private key will be encrypted with
+* `format` {string} Must be `'pem'`, `'der'`, or `'jwk'`.
+* `cipher` {string} If specified, the private key will be encrypted with
   the given `cipher` and `passphrase` using PKCS#5 v2.0 password based
   encryption.
-* `passphrase`: {string | Buffer} The passphrase to use for encryption, see
+* `passphrase` {string | Buffer} The passphrase to use for encryption, see
   `cipher`.
 
 The result type depends on the selected encoding format, when PEM the
@@ -2097,32 +2123,34 @@ encryption mechanism, PEM-level encryption is not supported when encrypting
 a PKCS#8 key. See [RFC 5208][] for PKCS#8 encryption and [RFC 1421][] for
 PKCS#1 and SEC1 encryption.
 
-### `keyObject.equals(otherKeyObject)`
-
-<!-- YAML
-added:
-  - v17.7.0
-  - v16.15.0
--->
-
-* `otherKeyObject`: {KeyObject} A `KeyObject` with which to
-  compare `keyObject`.
-* Returns: {boolean}
-
-Returns `true` or `false` depending on whether the keys have exactly the same
-type, value, and parameters. This method is not
-[constant time](https://en.wikipedia.org/wiki/Timing_attack).
-
 ### `keyObject.symmetricKeySize`
 
 <!-- YAML
 added: v11.6.0
 -->
 
-* {number}
+* Type: {number}
 
 For secret keys, this property represents the size of the key in bytes. This
 property is `undefined` for asymmetric keys.
+
+### `keyObject.toCryptoKey(algorithm, extractable, keyUsages)`
+
+<!-- YAML
+added: v22.10.0
+-->
+
+<!--lint disable maximum-line-length remark-lint-->
+
+* `algorithm` {string|Algorithm|RsaHashedImportParams|EcKeyImportParams|HmacImportParams}
+
+<!--lint enable maximum-line-length remark-lint-->
+
+* `extractable` {boolean}
+* `keyUsages` {string\[]} See [Key usages][].
+* Returns: {CryptoKey}
+
+Converts a `KeyObject` instance to a `CryptoKey`.
 
 ### `keyObject.type`
 
@@ -2130,7 +2158,7 @@ property is `undefined` for asymmetric keys.
 added: v11.6.0
 -->
 
-* {string}
+* Type: {string}
 
 Depending on the type of this `KeyObject`, this property is either
 `'secret'` for secret (symmetric) keys, `'public'` for public (asymmetric) keys
@@ -2619,7 +2647,23 @@ added: v15.6.0
 * `otherCert` {X509Certificate}
 * Returns: {boolean}
 
-Checks whether this certificate was issued by the given `otherCert`.
+Checks whether this certificate was potentially issued by the given `otherCert`
+by comparing the certificate metadata.
+
+This is useful for pruning a list of possible issuer certificates which have been
+selected using a more rudimentary filtering routine, i.e. just based on subject
+and issuer names.
+
+Finally, to verify that this certificate's signature was produced by a private key
+corresponding to `otherCert`'s public key use [`x509.verify(publicKey)`][]
+with `otherCert`'s public key represented as a [`KeyObject`][]
+like so
+
+```js
+if (!x509.verify(otherCert.publicKey)) {
+  throw new Error('otherCert did not issue x509');
+}
+```
 
 ### `x509.checkPrivateKey(privateKey)`
 
@@ -2724,7 +2768,7 @@ added: v15.9.0
 The issuer certificate or `undefined` if the issuer certificate is not
 available.
 
-### `x509.extKeyUsage`
+### `x509.keyUsage`
 
 <!-- YAML
 added: v15.6.0
@@ -2853,6 +2897,16 @@ added: v15.6.0
 
 The date/time from which this certificate is valid.
 
+### `x509.validFromDate`
+
+<!-- YAML
+added: v22.10.0
+-->
+
+* Type: {Date}
+
+The date/time from which this certificate is valid, encapsulated in a `Date` object.
+
 ### `x509.validTo`
 
 <!-- YAML
@@ -2862,6 +2916,16 @@ added: v15.6.0
 * Type: {string}
 
 The date/time until which this certificate is valid.
+
+### `x509.validToDate`
+
+<!-- YAML
+added: v22.10.0
+-->
+
+* Type: {Date}
+
+The date/time until which this certificate is valid, encapsulated in a `Date` object.
 
 ### `x509.verify(publicKey)`
 
@@ -2876,33 +2940,6 @@ Verifies that this certificate was signed by the given public key.
 Does not perform any other validation checks on the certificate.
 
 ## `node:crypto` module methods and properties
-
-### `crypto.constants`
-
-<!-- YAML
-added: v6.3.0
--->
-
-* {Object}
-
-An object containing commonly used constants for crypto and security related
-operations. The specific constants currently defined are described in
-[Crypto constants][].
-
-### `crypto.fips`
-
-<!-- YAML
-added: v6.0.0
-deprecated: v10.0.0
--->
-
-> Stability: 0 - Deprecated
-
-Property for checking and controlling whether a FIPS compliant crypto provider
-is currently in use. Setting to true requires a FIPS build of Node.js.
-
-This property is deprecated. Please use `crypto.setFips()` and
-`crypto.getFips()` instead.
 
 ### `crypto.checkPrime(candidate[, options], callback)`
 
@@ -2953,6 +2990,18 @@ added: v15.8.0
   probability less than `0.25 ** options.checks`.
 
 Checks the primality of the `candidate`.
+
+### `crypto.constants`
+
+<!-- YAML
+added: v6.3.0
+-->
+
+* Type: {Object}
+
+An object containing commonly used constants for crypto and security related
+operations. The specific constants currently defined are described in
+[Crypto constants][].
 
 ### `crypto.createCipheriv(algorithm, key, iv[, options])`
 
@@ -3359,14 +3408,14 @@ changes:
 <!--lint disable maximum-line-length remark-lint-->
 
 * `key` {Object|string|ArrayBuffer|Buffer|TypedArray|DataView}
-  * `key`: {string|ArrayBuffer|Buffer|TypedArray|DataView|Object} The key
+  * `key` {string|ArrayBuffer|Buffer|TypedArray|DataView|Object} The key
     material, either in PEM, DER, or JWK format.
-  * `format`: {string} Must be `'pem'`, `'der'`, or '`'jwk'`.
+  * `format` {string} Must be `'pem'`, `'der'`, or '`'jwk'`.
     **Default:** `'pem'`.
-  * `type`: {string} Must be `'pkcs1'`, `'pkcs8'` or `'sec1'`. This option is
+  * `type` {string} Must be `'pkcs1'`, `'pkcs8'` or `'sec1'`. This option is
     required only if the `format` is `'der'` and ignored otherwise.
-  * `passphrase`: {string | Buffer} The passphrase to use for decryption.
-  * `encoding`: {string} The string encoding to use when `key` is a string.
+  * `passphrase` {string | Buffer} The passphrase to use for decryption.
+  * `encoding` {string} The string encoding to use when `key` is a string.
 * Returns: {KeyObject}
 
 <!--lint enable maximum-line-length remark-lint-->
@@ -3402,11 +3451,11 @@ changes:
 <!--lint disable maximum-line-length remark-lint-->
 
 * `key` {Object|string|ArrayBuffer|Buffer|TypedArray|DataView}
-  * `key`: {string|ArrayBuffer|Buffer|TypedArray|DataView|Object} The key
+  * `key` {string|ArrayBuffer|Buffer|TypedArray|DataView|Object} The key
     material, either in PEM, DER, or JWK format.
-  * `format`: {string} Must be `'pem'`, `'der'`, or `'jwk'`.
+  * `format` {string} Must be `'pem'`, `'der'`, or `'jwk'`.
     **Default:** `'pem'`.
-  * `type`: {string} Must be `'pkcs1'` or `'spki'`. This option is
+  * `type` {string} Must be `'pkcs1'` or `'spki'`. This option is
     required only if the `format` is `'der'` and ignored otherwise.
   * `encoding` {string} The string encoding to use when `key` is a string.
 * Returns: {KeyObject}
@@ -3508,7 +3557,22 @@ added:
 
 Computes the Diffie-Hellman secret based on a `privateKey` and a `publicKey`.
 Both keys must have the same `asymmetricKeyType`, which must be one of `'dh'`
-(for Diffie-Hellman), `'ec'` (for ECDH), `'x448'`, or `'x25519'` (for ECDH-ES).
+(for Diffie-Hellman), `'ec'`, `'x448'`, or `'x25519'` (for ECDH).
+
+### `crypto.fips`
+
+<!-- YAML
+added: v6.0.0
+deprecated: v10.0.0
+-->
+
+> Stability: 0 - Deprecated
+
+Property for checking and controlling whether a FIPS compliant crypto provider
+is currently in use. Setting to true requires a FIPS build of Node.js.
+
+This property is deprecated. Please use `crypto.setFips()` and
+`crypto.getFips()` instead.
 
 ### `crypto.generateKey(type, options, callback)`
 
@@ -3522,18 +3586,18 @@ changes:
                  `ERR_INVALID_CALLBACK`.
 -->
 
-* `type`: {string} The intended use of the generated secret key. Currently
+* `type` {string} The intended use of the generated secret key. Currently
   accepted values are `'hmac'` and `'aes'`.
-* `options`: {Object}
-  * `length`: {number} The bit length of the key to generate. This must be a
+* `options` {Object}
+  * `length` {number} The bit length of the key to generate. This must be a
     value greater than 0.
     * If `type` is `'hmac'`, the minimum is 8, and the maximum length is
       2<sup>31</sup>-1. If the value is not a multiple of 8, the generated
       key will be truncated to `Math.floor(length / 8)`.
     * If `type` is `'aes'`, the length must be one of `128`, `192`, or `256`.
-* `callback`: {Function}
-  * `err`: {Error}
-  * `key`: {KeyObject}
+* `callback` {Function}
+  * `err` {Error}
+  * `key` {KeyObject}
 
 Asynchronously generates a new random secret key of the given `length`. The
 `type` will determine which validations will be performed on the `length`.
@@ -3597,30 +3661,30 @@ changes:
                  produce key objects if no encoding was specified.
 -->
 
-* `type`: {string} Must be `'rsa'`, `'rsa-pss'`, `'dsa'`, `'ec'`, `'ed25519'`,
+* `type` {string} Must be `'rsa'`, `'rsa-pss'`, `'dsa'`, `'ec'`, `'ed25519'`,
   `'ed448'`, `'x25519'`, `'x448'`, or `'dh'`.
-* `options`: {Object}
-  * `modulusLength`: {number} Key size in bits (RSA, DSA).
-  * `publicExponent`: {number} Public exponent (RSA). **Default:** `0x10001`.
-  * `hashAlgorithm`: {string} Name of the message digest (RSA-PSS).
-  * `mgf1HashAlgorithm`: {string} Name of the message digest used by
+* `options` {Object}
+  * `modulusLength` {number} Key size in bits (RSA, DSA).
+  * `publicExponent` {number} Public exponent (RSA). **Default:** `0x10001`.
+  * `hashAlgorithm` {string} Name of the message digest (RSA-PSS).
+  * `mgf1HashAlgorithm` {string} Name of the message digest used by
     MGF1 (RSA-PSS).
-  * `saltLength`: {number} Minimal salt length in bytes (RSA-PSS).
-  * `divisorLength`: {number} Size of `q` in bits (DSA).
-  * `namedCurve`: {string} Name of the curve to use (EC).
-  * `prime`: {Buffer} The prime parameter (DH).
-  * `primeLength`: {number} Prime length in bits (DH).
-  * `generator`: {number} Custom generator (DH). **Default:** `2`.
-  * `groupName`: {string} Diffie-Hellman group name (DH). See
+  * `saltLength` {number} Minimal salt length in bytes (RSA-PSS).
+  * `divisorLength` {number} Size of `q` in bits (DSA).
+  * `namedCurve` {string} Name of the curve to use (EC).
+  * `prime` {Buffer} The prime parameter (DH).
+  * `primeLength` {number} Prime length in bits (DH).
+  * `generator` {number} Custom generator (DH). **Default:** `2`.
+  * `groupName` {string} Diffie-Hellman group name (DH). See
     [`crypto.getDiffieHellman()`][].
-  * `paramEncoding`: {string} Must be `'named'` or `'explicit'` (EC).
+  * `paramEncoding` {string} Must be `'named'` or `'explicit'` (EC).
     **Default:** `'named'`.
-  * `publicKeyEncoding`: {Object} See [`keyObject.export()`][].
-  * `privateKeyEncoding`: {Object} See [`keyObject.export()`][].
-* `callback`: {Function}
-  * `err`: {Error}
-  * `publicKey`: {string | Buffer | KeyObject}
-  * `privateKey`: {string | Buffer | KeyObject}
+  * `publicKeyEncoding` {Object} See [`keyObject.export()`][].
+  * `privateKeyEncoding` {Object} See [`keyObject.export()`][].
+* `callback` {Function}
+  * `err` {Error}
+  * `publicKey` {string | Buffer | KeyObject}
+  * `privateKey` {string | Buffer | KeyObject}
 
 Generates a new asymmetric key pair of the given `type`. RSA, RSA-PSS, DSA, EC,
 Ed25519, Ed448, X25519, X448, and DH are currently supported.
@@ -3711,29 +3775,29 @@ changes:
                  produce key objects if no encoding was specified.
 -->
 
-* `type`: {string} Must be `'rsa'`, `'rsa-pss'`, `'dsa'`, `'ec'`, `'ed25519'`,
+* `type` {string} Must be `'rsa'`, `'rsa-pss'`, `'dsa'`, `'ec'`, `'ed25519'`,
   `'ed448'`, `'x25519'`, `'x448'`, or `'dh'`.
-* `options`: {Object}
-  * `modulusLength`: {number} Key size in bits (RSA, DSA).
-  * `publicExponent`: {number} Public exponent (RSA). **Default:** `0x10001`.
-  * `hashAlgorithm`: {string} Name of the message digest (RSA-PSS).
-  * `mgf1HashAlgorithm`: {string} Name of the message digest used by
+* `options` {Object}
+  * `modulusLength` {number} Key size in bits (RSA, DSA).
+  * `publicExponent` {number} Public exponent (RSA). **Default:** `0x10001`.
+  * `hashAlgorithm` {string} Name of the message digest (RSA-PSS).
+  * `mgf1HashAlgorithm` {string} Name of the message digest used by
     MGF1 (RSA-PSS).
-  * `saltLength`: {number} Minimal salt length in bytes (RSA-PSS).
-  * `divisorLength`: {number} Size of `q` in bits (DSA).
-  * `namedCurve`: {string} Name of the curve to use (EC).
-  * `prime`: {Buffer} The prime parameter (DH).
-  * `primeLength`: {number} Prime length in bits (DH).
-  * `generator`: {number} Custom generator (DH). **Default:** `2`.
-  * `groupName`: {string} Diffie-Hellman group name (DH). See
+  * `saltLength` {number} Minimal salt length in bytes (RSA-PSS).
+  * `divisorLength` {number} Size of `q` in bits (DSA).
+  * `namedCurve` {string} Name of the curve to use (EC).
+  * `prime` {Buffer} The prime parameter (DH).
+  * `primeLength` {number} Prime length in bits (DH).
+  * `generator` {number} Custom generator (DH). **Default:** `2`.
+  * `groupName` {string} Diffie-Hellman group name (DH). See
     [`crypto.getDiffieHellman()`][].
-  * `paramEncoding`: {string} Must be `'named'` or `'explicit'` (EC).
+  * `paramEncoding` {string} Must be `'named'` or `'explicit'` (EC).
     **Default:** `'named'`.
-  * `publicKeyEncoding`: {Object} See [`keyObject.export()`][].
-  * `privateKeyEncoding`: {Object} See [`keyObject.export()`][].
+  * `publicKeyEncoding` {Object} See [`keyObject.export()`][].
+  * `privateKeyEncoding` {Object} See [`keyObject.export()`][].
 * Returns: {Object}
-  * `publicKey`: {string | Buffer | KeyObject}
-  * `privateKey`: {string | Buffer | KeyObject}
+  * `publicKey` {string | Buffer | KeyObject}
+  * `privateKey` {string | Buffer | KeyObject}
 
 Generates a new asymmetric key pair of the given `type`. RSA, RSA-PSS, DSA, EC,
 Ed25519, Ed448, X25519, X448, and DH are currently supported.
@@ -3802,10 +3866,10 @@ it will be a buffer containing the data encoded as DER.
 added: v15.0.0
 -->
 
-* `type`: {string} The intended use of the generated secret key. Currently
+* `type` {string} The intended use of the generated secret key. Currently
   accepted values are `'hmac'` and `'aes'`.
-* `options`: {Object}
-  * `length`: {number} The bit length of the key to generate.
+* `options` {Object}
+  * `length` {number} The bit length of the key to generate.
     * If `type` is `'hmac'`, the minimum is 8, and the maximum length is
       2<sup>31</sup>-1. If the value is not a multiple of 8, the generated
       key will be truncated to `Math.floor(length / 8)`.
@@ -3836,7 +3900,7 @@ console.log(key.export().toString('hex'));  // e89..........41e
 The size of a generated HMAC key should not exceed the block size of the
 underlying hash function. See [`crypto.createHmac()`][] for more information.
 
-### `crypto.generatePrime(size[, options[, callback]])`
+### `crypto.generatePrime(size[, options], callback)`
 
 <!-- YAML
 added: v15.8.0
@@ -3885,6 +3949,13 @@ By default, the prime is encoded as a big-endian sequence of octets
 in an {ArrayBuffer}. If the `bigint` option is `true`, then a {bigint}
 is provided.
 
+The `size` of the prime will have a direct impact on how long it takes to
+generate the prime. The larger the size, the longer it will take. Because
+we use OpenSSL's `BN_generate_prime_ex` function, which provides only
+minimal control over our ability to interrupt the generation process,
+it is not recommended to generate overly large primes, as doing so may make
+the process unresponsive.
+
 ### `crypto.generatePrimeSync(size[, options])`
 
 <!-- YAML
@@ -3926,16 +3997,23 @@ By default, the prime is encoded as a big-endian sequence of octets
 in an {ArrayBuffer}. If the `bigint` option is `true`, then a {bigint}
 is provided.
 
+The `size` of the prime will have a direct impact on how long it takes to
+generate the prime. The larger the size, the longer it will take. Because
+we use OpenSSL's `BN_generate_prime_ex` function, which provides only
+minimal control over our ability to interrupt the generation process,
+it is not recommended to generate overly large primes, as doing so may make
+the process unresponsive.
+
 ### `crypto.getCipherInfo(nameOrNid[, options])`
 
 <!-- YAML
 added: v15.0.0
 -->
 
-* `nameOrNid`: {string|number} The name or nid of the cipher to query.
-* `options`: {Object}
-  * `keyLength`: {number} A test key length.
-  * `ivLength`: {number} A test IV length.
+* `nameOrNid` {string|number} The name or nid of the cipher to query.
+* `options` {Object}
+  * `keyLength` {number} A test key length.
+  * `ivLength` {number} A test IV length.
 * Returns: {Object}
   * `name` {string} The name of the cipher
   * `nid` {number} The nid of the cipher
@@ -4108,6 +4186,70 @@ added: v17.4.0
 A convenient alias for [`crypto.webcrypto.getRandomValues()`][]. This
 implementation is not compliant with the Web Crypto spec, to write
 web-compatible code use [`crypto.webcrypto.getRandomValues()`][] instead.
+
+### `crypto.hash(algorithm, data[, outputEncoding])`
+
+<!-- YAML
+added:
+ - v21.7.0
+ - v20.12.0
+-->
+
+> Stability: 1.2 - Release candidate
+
+* `algorithm` {string|undefined}
+* `data` {string|Buffer|TypedArray|DataView} When `data` is a
+  string, it will be encoded as UTF-8 before being hashed. If a different
+  input encoding is desired for a string input, user could encode the string
+  into a `TypedArray` using either `TextEncoder` or `Buffer.from()` and passing
+  the encoded `TypedArray` into this API instead.
+* `outputEncoding` {string|undefined}  [Encoding][encoding] used to encode the
+  returned digest. **Default:** `'hex'`.
+* Returns: {string|Buffer}
+
+A utility for creating one-shot hash digests of data. It can be faster than
+the object-based `crypto.createHash()` when hashing a smaller amount of data
+(<= 5MB) that's readily available. If the data can be big or if it is streamed,
+it's still recommended to use `crypto.createHash()` instead.
+
+The `algorithm` is dependent on the available algorithms supported by the
+version of OpenSSL on the platform. Examples are `'sha256'`, `'sha512'`, etc.
+On recent releases of OpenSSL, `openssl list -digest-algorithms` will
+display the available digest algorithms.
+
+Example:
+
+```cjs
+const crypto = require('node:crypto');
+const { Buffer } = require('node:buffer');
+
+// Hashing a string and return the result as a hex-encoded string.
+const string = 'Node.js';
+// 10b3493287f831e81a438811a1ffba01f8cec4b7
+console.log(crypto.hash('sha1', string));
+
+// Encode a base64-encoded string into a Buffer, hash it and return
+// the result as a buffer.
+const base64 = 'Tm9kZS5qcw==';
+// <Buffer 10 b3 49 32 87 f8 31 e8 1a 43 88 11 a1 ff ba 01 f8 ce c4 b7>
+console.log(crypto.hash('sha1', Buffer.from(base64, 'base64'), 'buffer'));
+```
+
+```mjs
+import crypto from 'node:crypto';
+import { Buffer } from 'node:buffer';
+
+// Hashing a string and return the result as a hex-encoded string.
+const string = 'Node.js';
+// 10b3493287f831e81a438811a1ffba01f8cec4b7
+console.log(crypto.hash('sha1', string));
+
+// Encode a base64-encoded string into a Buffer, hash it and return
+// the result as a buffer.
+const base64 = 'Tm9kZS5qcw==';
+// <Buffer 10 b3 49 32 87 f8 31 e8 1a 43 88 11 a1 ff ba 01 f8 ce c4 b7>
+console.log(crypto.hash('sha1', Buffer.from(base64, 'base64'), 'buffer'));
+```
 
 ### `crypto.hkdf(digest, ikm, salt, info, keylen, callback)`
 
@@ -4388,6 +4530,13 @@ An array of supported digest functions can be retrieved using
 <!-- YAML
 added: v0.11.14
 changes:
+  - version:
+      - v21.6.2
+      - v20.11.1
+      - v18.19.1
+    pr-url: https://github.com/nodejs-private/node-private/pull/515
+    description: The `RSA_PKCS1_PADDING` padding was disabled unless the
+                 OpenSSL build supports implicit rejection.
   - version: v15.0.0
     pr-url: https://github.com/nodejs/node/pull/35093
     description: Added string, ArrayBuffer, and CryptoKey as allowable key
@@ -4428,6 +4577,11 @@ If `privateKey` is not a [`KeyObject`][], this function behaves as if
 `privateKey` had been passed to [`crypto.createPrivateKey()`][]. If it is an
 object, the `padding` property can be passed. Otherwise, this function uses
 `RSA_PKCS1_OAEP_PADDING`.
+
+Using `crypto.constants.RSA_PKCS1_PADDING` in [`crypto.privateDecrypt()`][]
+requires OpenSSL to support implicit rejection (`rsa_pkcs1_implicit_rejection`).
+If the version of OpenSSL used by Node.js does not support this feature,
+attempting to use `RSA_PKCS1_PADDING` will fail.
 
 ### `crypto.privateEncrypt(privateKey, buffer)`
 
@@ -4664,93 +4818,6 @@ threadpool request. To minimize threadpool task length variation, partition
 large `randomBytes` requests when doing so as part of fulfilling a client
 request.
 
-### `crypto.randomFillSync(buffer[, offset][, size])`
-
-<!-- YAML
-added:
-  - v7.10.0
-  - v6.13.0
-changes:
-  - version: v9.0.0
-    pr-url: https://github.com/nodejs/node/pull/15231
-    description: The `buffer` argument may be any `TypedArray` or `DataView`.
--->
-
-* `buffer` {ArrayBuffer|Buffer|TypedArray|DataView} Must be supplied. The
-  size of the provided `buffer` must not be larger than `2**31 - 1`.
-* `offset` {number} **Default:** `0`
-* `size` {number} **Default:** `buffer.length - offset`. The `size` must
-  not be larger than `2**31 - 1`.
-* Returns: {ArrayBuffer|Buffer|TypedArray|DataView} The object passed as
-  `buffer` argument.
-
-Synchronous version of [`crypto.randomFill()`][].
-
-```mjs
-import { Buffer } from 'node:buffer';
-const { randomFillSync } = await import('node:crypto');
-
-const buf = Buffer.alloc(10);
-console.log(randomFillSync(buf).toString('hex'));
-
-randomFillSync(buf, 5);
-console.log(buf.toString('hex'));
-
-// The above is equivalent to the following:
-randomFillSync(buf, 5, 5);
-console.log(buf.toString('hex'));
-```
-
-```cjs
-const { randomFillSync } = require('node:crypto');
-const { Buffer } = require('node:buffer');
-
-const buf = Buffer.alloc(10);
-console.log(randomFillSync(buf).toString('hex'));
-
-randomFillSync(buf, 5);
-console.log(buf.toString('hex'));
-
-// The above is equivalent to the following:
-randomFillSync(buf, 5, 5);
-console.log(buf.toString('hex'));
-```
-
-Any `ArrayBuffer`, `TypedArray` or `DataView` instance may be passed as
-`buffer`.
-
-```mjs
-import { Buffer } from 'node:buffer';
-const { randomFillSync } = await import('node:crypto');
-
-const a = new Uint32Array(10);
-console.log(Buffer.from(randomFillSync(a).buffer,
-                        a.byteOffset, a.byteLength).toString('hex'));
-
-const b = new DataView(new ArrayBuffer(10));
-console.log(Buffer.from(randomFillSync(b).buffer,
-                        b.byteOffset, b.byteLength).toString('hex'));
-
-const c = new ArrayBuffer(10);
-console.log(Buffer.from(randomFillSync(c)).toString('hex'));
-```
-
-```cjs
-const { randomFillSync } = require('node:crypto');
-const { Buffer } = require('node:buffer');
-
-const a = new Uint32Array(10);
-console.log(Buffer.from(randomFillSync(a).buffer,
-                        a.byteOffset, a.byteLength).toString('hex'));
-
-const b = new DataView(new ArrayBuffer(10));
-console.log(Buffer.from(randomFillSync(b).buffer,
-                        b.byteOffset, b.byteLength).toString('hex'));
-
-const c = new ArrayBuffer(10);
-console.log(Buffer.from(randomFillSync(c)).toString('hex'));
-```
-
 ### `crypto.randomFill(buffer[, offset][, size], callback)`
 
 <!-- YAML
@@ -4892,6 +4959,93 @@ The asynchronous version of `crypto.randomFill()` is carried out in a single
 threadpool request. To minimize threadpool task length variation, partition
 large `randomFill` requests when doing so as part of fulfilling a client
 request.
+
+### `crypto.randomFillSync(buffer[, offset][, size])`
+
+<!-- YAML
+added:
+  - v7.10.0
+  - v6.13.0
+changes:
+  - version: v9.0.0
+    pr-url: https://github.com/nodejs/node/pull/15231
+    description: The `buffer` argument may be any `TypedArray` or `DataView`.
+-->
+
+* `buffer` {ArrayBuffer|Buffer|TypedArray|DataView} Must be supplied. The
+  size of the provided `buffer` must not be larger than `2**31 - 1`.
+* `offset` {number} **Default:** `0`
+* `size` {number} **Default:** `buffer.length - offset`. The `size` must
+  not be larger than `2**31 - 1`.
+* Returns: {ArrayBuffer|Buffer|TypedArray|DataView} The object passed as
+  `buffer` argument.
+
+Synchronous version of [`crypto.randomFill()`][].
+
+```mjs
+import { Buffer } from 'node:buffer';
+const { randomFillSync } = await import('node:crypto');
+
+const buf = Buffer.alloc(10);
+console.log(randomFillSync(buf).toString('hex'));
+
+randomFillSync(buf, 5);
+console.log(buf.toString('hex'));
+
+// The above is equivalent to the following:
+randomFillSync(buf, 5, 5);
+console.log(buf.toString('hex'));
+```
+
+```cjs
+const { randomFillSync } = require('node:crypto');
+const { Buffer } = require('node:buffer');
+
+const buf = Buffer.alloc(10);
+console.log(randomFillSync(buf).toString('hex'));
+
+randomFillSync(buf, 5);
+console.log(buf.toString('hex'));
+
+// The above is equivalent to the following:
+randomFillSync(buf, 5, 5);
+console.log(buf.toString('hex'));
+```
+
+Any `ArrayBuffer`, `TypedArray` or `DataView` instance may be passed as
+`buffer`.
+
+```mjs
+import { Buffer } from 'node:buffer';
+const { randomFillSync } = await import('node:crypto');
+
+const a = new Uint32Array(10);
+console.log(Buffer.from(randomFillSync(a).buffer,
+                        a.byteOffset, a.byteLength).toString('hex'));
+
+const b = new DataView(new ArrayBuffer(10));
+console.log(Buffer.from(randomFillSync(b).buffer,
+                        b.byteOffset, b.byteLength).toString('hex'));
+
+const c = new ArrayBuffer(10);
+console.log(Buffer.from(randomFillSync(c)).toString('hex'));
+```
+
+```cjs
+const { randomFillSync } = require('node:crypto');
+const { Buffer } = require('node:buffer');
+
+const a = new Uint32Array(10);
+console.log(Buffer.from(randomFillSync(a).buffer,
+                        a.byteOffset, a.byteLength).toString('hex'));
+
+const b = new DataView(new ArrayBuffer(10));
+console.log(Buffer.from(randomFillSync(b).buffer,
+                        b.byteOffset, b.byteLength).toString('hex'));
+
+const c = new ArrayBuffer(10);
+console.log(Buffer.from(randomFillSync(c)).toString('hex'));
+```
 
 ### `crypto.randomInt([min, ]max[, callback])`
 
@@ -5189,12 +5343,17 @@ added: v15.6.0
 
 <!-- YAML
 added: v0.11.11
+changes:
+  - version: v22.4.0
+    pr-url: https://github.com/nodejs/node/pull/53329
+    description: Custom engine support in OpenSSL 3 is deprecated.
 -->
 
 * `engine` {string}
 * `flags` {crypto.constants} **Default:** `crypto.constants.ENGINE_METHOD_ALL`
 
 Load and set the `engine` for some or all OpenSSL functions (selected by flags).
+Support for custom engines in OpenSSL is deprecated from OpenSSL 3.
 
 `engine` could be either an id or a path to the engine's shared library.
 
@@ -5734,7 +5893,7 @@ See the [list of SSL OP Flags][] for details.
   </tr>
   <tr>
     <td><code>SSL_OP_CISCO_ANYCONNECT</code></td>
-    <td>Instructs OpenSSL to use Cisco's "speshul" version of DTLS_BAD_VER.</td>
+    <td>Instructs OpenSSL to use Cisco's version identifier of DTLS_BAD_VER.</td>
   </tr>
   <tr>
     <td><code>SSL_OP_COOKIE_EXCHANGE</code></td>
@@ -5854,7 +6013,7 @@ See the [list of SSL OP Flags][] for details.
   </tr>
   <tr>
     <td><code>ENGINE_METHOD_PKEY_METHS</code></td>
-    <td>Limit engine usage to PKEY_METHDS</td>
+    <td>Limit engine usage to PKEY_METHS</td>
   </tr>
   <tr>
     <td><code>ENGINE_METHOD_PKEY_ASN1_METHS</code></td>
@@ -5973,6 +6132,7 @@ See the [list of SSL OP Flags][] for details.
 [FIPS provider from OpenSSL 3]: https://www.openssl.org/docs/man3.0/man7/crypto.html#FIPS-provider
 [HTML 5.2]: https://www.w3.org/TR/html52/changes.html#features-removed
 [JWK]: https://tools.ietf.org/html/rfc7517
+[Key usages]: webcrypto.md#cryptokeyusages
 [NIST SP 800-131A]: https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-131Ar2.pdf
 [NIST SP 800-132]: https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-132.pdf
 [NIST SP 800-38D]: https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38d.pdf
@@ -6043,6 +6203,7 @@ See the [list of SSL OP Flags][] for details.
 [`verify.update()`]: #verifyupdatedata-inputencoding
 [`verify.verify()`]: #verifyverifyobject-signature-signatureencoding
 [`x509.fingerprint256`]: #x509fingerprint256
+[`x509.verify(publicKey)`]: #x509verifypublickey
 [caveats when using strings as inputs to cryptographic APIs]: #using-strings-as-inputs-to-cryptographic-apis
 [certificate object]: tls.md#certificate-object
 [encoding]: buffer.md#buffers-and-character-encodings

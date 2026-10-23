@@ -38,8 +38,8 @@ Tagged<Object> Dictionary<Derived, Shape>::ValueAt(InternalIndex entry) {
 template <typename Derived, typename Shape>
 Tagged<Object> Dictionary<Derived, Shape>::ValueAt(PtrComprCageBase cage_base,
                                                    InternalIndex entry) {
-  return this->get(cage_base, DerivedHashTable::EntryToIndex(entry) +
-                                  Derived::kEntryValueIndex);
+  return this->get(DerivedHashTable::EntryToIndex(entry) +
+                   Derived::kEntryValueIndex);
 }
 
 template <typename Derived, typename Shape>
@@ -54,7 +54,6 @@ Tagged<Object> Dictionary<Derived, Shape>::ValueAt(PtrComprCageBase cage_base,
                                                    InternalIndex entry,
                                                    SeqCstAccessTag tag) {
   return this->get(
-      cage_base,
       DerivedHashTable::EntryToIndex(entry) + Derived::kEntryValueIndex, tag);
 }
 
@@ -321,14 +320,14 @@ bool NumberDictionaryBaseShape::IsMatch(uint32_t key, Tagged<Object> other) {
 }
 
 uint32_t NumberDictionaryBaseShape::Hash(ReadOnlyRoots roots, uint32_t key) {
-  return ComputeSeededHash(key, HashSeed(roots));
+  return ComputeSeededHash(key, HashSeed(roots).seed());
 }
 
 uint32_t NumberDictionaryBaseShape::HashForObject(ReadOnlyRoots roots,
                                                   Tagged<Object> other) {
   DCHECK(IsNumber(other));
   return ComputeSeededHash(static_cast<uint32_t>(Object::Number(other)),
-                           HashSeed(roots));
+                           HashSeed(roots).seed());
 }
 
 template <AllocationType allocation>

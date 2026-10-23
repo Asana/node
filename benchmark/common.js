@@ -22,26 +22,36 @@ class Benchmark {
     this.name = require.main.filename.slice(__dirname.length + 1);
 
     // Execution arguments i.e. flags used to run the jobs
-    this.flags = process.env.NODE_BENCHMARK_FLAGS ?
-      process.env.NODE_BENCHMARK_FLAGS.split(/\s+/) :
-      [];
+    this.flags = process.env.NODE_BENCHMARK_FLAGS?.split(/\s+/) ?? [];
 
     // Parse job-specific configuration from the command line arguments
     const argv = process.argv.slice(2);
     const parsed_args = this._parseArgs(argv, configs, options);
+
+    this.originalOptions = options;
     this.options = parsed_args.cli;
     this.extra_options = parsed_args.extra;
+    this.combinationFilter = typeof options.combinationFilter === 'function' ? options.combinationFilter : allow;
+
+    if (options.byGroups) {
+      this.queue = [];
+      const groupNames = process.env.NODE_RUN_BENCHMARK_GROUPS?.split(',') ?? Object.keys(configs);
+
+      for (const groupName of groupNames) {
+        const config = { ...configs[groupName][0], group: groupName };
+        const parsed_args = this._parseArgs(argv, config, options);
+
+        this.options = parsed_args.cli;
+        this.extra_options = parsed_args.extra;
+        this.queue = this.queue.concat(this._queue(this.options));
+      }
+    } else {
+      this.queue = this._queue(this.options);
+    }
+
     if (options.flags) {
       this.flags = this.flags.concat(options.flags);
     }
-
-    if (typeof options.combinationFilter === 'function')
-      this.combinationFilter = options.combinationFilter;
-    else
-      this.combinationFilter = allow;
-
-    // The configuration list as a queue of jobs
-    this.queue = this._queue(this.options);
 
     if (this.queue.length === 0)
       return;
@@ -104,12 +114,10 @@ class Benchmark {
       }
       const [, key, value] = match;
       if (configs[key] !== undefined) {
-        if (!cliOptions[key])
-          cliOptions[key] = [];
-        cliOptions[key].push(
-          // Infer the type from the config object and parse accordingly
-          typeof configs[key][0] === 'number' ? +value : value,
-        );
+        cliOptions[key] ||= [];
+        const configType = typeof configs[key][0];
+        const configValue = configType === 'number' ? +value : configType === 'boolean' ? value === 'true' : value;
+        cliOptions[key].push(configValue);
       } else {
         extraOptions[key] = value;
       }
@@ -129,7 +137,7 @@ class Benchmark {
       const values = options[key];
 
       for (const value of values) {
-        if (typeof value !== 'number' && typeof value !== 'string') {
+        if (typeof value !== 'number' && typeof value !== 'string' && typeof value !== 'boolean') {
           throw new TypeError(
             `configuration "${key}" had type ${typeof value}`);
         }
@@ -168,10 +176,9 @@ class Benchmark {
 
   http(options, cb) {
     const http_options = { ...options };
-    http_options.benchmarker = http_options.benchmarker ||
-                               this.config.benchmarker ||
-                               this.extra_options.benchmarker ||
-                               http_benchmarkers.default_http_benchmarker;
+    http_options.benchmarker ||= this.config.benchmarker ||
+                                 this.extra_options.benchmarker ||
+                                 http_benchmarkers.default_http_benchmarker;
     http_benchmarkers.run(
       http_options, (error, code, used_benchmarker, result, elapsed) => {
         if (cb) {
@@ -195,6 +202,12 @@ class Benchmark {
         name: this.name,
         queueLength: this.queue.length,
       });
+    }
+
+    if (this.originalOptions.setup) {
+      // Only do this from the root process. _run() is only ever called from the root,
+      // in child processes main is run directly.
+      this.originalOptions.setup(this.queue);
     }
 
     const recursive = (queueIndex) => {

@@ -18,7 +18,8 @@ class FSPermission final : public PermissionBase {
   void Apply(Environment* env,
              const std::vector<std::string>& allow,
              PermissionScope scope) override;
-  bool is_granted(PermissionScope perm,
+  bool is_granted(Environment* env,
+                  PermissionScope perm,
                   const std::string_view& param) const override;
 
   struct RadixTree {
@@ -47,12 +48,13 @@ class FSPermission final : public PermissionBase {
           children[label] = new Node(path_prefix);
           return children[label];
         }
+        bool child_was_end_node = child->IsEndNode();
 
         // swap prefix
         size_t i = 0;
         size_t prefix_len = path_prefix.length();
         for (; i < child->prefix.length(); ++i) {
-          if (i > prefix_len || path_prefix[i] != child->prefix[i]) {
+          if (i >= prefix_len || path_prefix[i] != child->prefix[i]) {
             std::string parent_prefix = child->prefix.substr(0, i);
             std::string child_prefix = child->prefix.substr(i);
 
@@ -64,7 +66,9 @@ class FSPermission final : public PermissionBase {
             return split_child->CreateChild(path_prefix.substr(i));
           }
         }
-        child->is_leaf = true;
+        if (child_was_end_node) {
+          child->is_leaf = true;
+        }
         return child->CreateChild(path_prefix.substr(i));
       }
 
@@ -128,7 +132,7 @@ class FSPermission final : public PermissionBase {
       // ---> er
       // ---> n
       bool IsEndNode() const {
-        if (children.size() == 0) {
+        if (children.empty()) {
           return true;
         }
         return is_leaf;

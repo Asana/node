@@ -19,6 +19,7 @@ struct ContextOptions {
   v8::Local<v8::Boolean> allow_code_gen_wasm;
   std::unique_ptr<v8::MicrotaskQueue> own_microtask_queue;
   v8::Local<v8::Symbol> host_defined_options_id;
+  bool vanilla = false;
 };
 
 class ContextifyContext : public BaseObject {
@@ -43,8 +44,7 @@ class ContextifyContext : public BaseObject {
   static void RegisterExternalReferences(ExternalReferenceRegistry* registry);
 
   static ContextifyContext* ContextFromContextifiedSandbox(
-      Environment* env,
-      const v8::Local<v8::Object>& sandbox);
+      Environment* env, const v8::Local<v8::Object>& wrapper_holder);
 
   inline v8::Local<v8::Context> context() const {
     return PersistentToLocal::Default(env()->isolate(), context_);
@@ -55,8 +55,12 @@ class ContextifyContext : public BaseObject {
   }
 
   inline v8::Local<v8::Object> sandbox() const {
-    return context()->GetEmbedderData(ContextEmbedderIndex::kSandboxObject)
-        .As<v8::Object>();
+    // Only vanilla contexts have undefined sandboxes. sandbox() is only used by
+    // interceptors who are not supposed to be called on vanilla contexts.
+    v8::Local<v8::Value> result =
+        context()->GetEmbedderData(ContextEmbedderIndex::kSandboxObject);
+    CHECK(!result->IsUndefined());
+    return result.As<v8::Object>();
   }
 
   inline v8::MicrotaskQueue* microtask_queue() const {
@@ -82,70 +86,46 @@ class ContextifyContext : public BaseObject {
   static bool IsStillInitializing(const ContextifyContext* ctx);
   static void MakeContext(const v8::FunctionCallbackInfo<v8::Value>& args);
   static void IsContext(const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void CompileFunction(
-      const v8::FunctionCallbackInfo<v8::Value>& args);
-  static v8::Local<v8::Object> CompileFunctionAndCacheResult(
-      Environment* env,
-      v8::Local<v8::Context> parsing_context,
-      v8::ScriptCompiler::Source* source,
-      std::vector<v8::Local<v8::String>> params,
-      std::vector<v8::Local<v8::Object>> context_extensions,
-      v8::ScriptCompiler::CompileOptions options,
-      bool produce_cached_data,
-      v8::Local<v8::Symbol> id_symbol,
-      const errors::TryCatchScope& try_catch);
-  static v8::Local<v8::PrimitiveArray> GetHostDefinedOptions(
-      v8::Isolate* isolate, v8::Local<v8::Symbol> id_symbol);
-  static v8::ScriptCompiler::Source GetCommonJSSourceInstance(
-      v8::Isolate* isolate,
-      v8::Local<v8::String> code,
-      v8::Local<v8::String> filename,
-      int line_offset,
-      int column_offset,
-      v8::Local<v8::PrimitiveArray> host_defined_options,
-      v8::ScriptCompiler::CachedData* cached_data);
-  static v8::ScriptCompiler::CompileOptions GetCompileOptions(
-      const v8::ScriptCompiler::Source& source);
-  static void ContainsModuleSyntax(
-      const v8::FunctionCallbackInfo<v8::Value>& args);
-  static void WeakCallback(
-      const v8::WeakCallbackInfo<ContextifyContext>& data);
-  static void PropertyGetterCallback(
+  static v8::Intercepted PropertyQueryCallback(
+      v8::Local<v8::Name> property,
+      const v8::PropertyCallbackInfo<v8::Integer>& args);
+  static v8::Intercepted PropertyGetterCallback(
       v8::Local<v8::Name> property,
       const v8::PropertyCallbackInfo<v8::Value>& args);
-  static void PropertySetterCallback(
+  static v8::Intercepted PropertySetterCallback(
       v8::Local<v8::Name> property,
       v8::Local<v8::Value> value,
-      const v8::PropertyCallbackInfo<v8::Value>& args);
-  static void PropertyDescriptorCallback(
+      const v8::PropertyCallbackInfo<void>& args);
+  static v8::Intercepted PropertyDescriptorCallback(
       v8::Local<v8::Name> property,
       const v8::PropertyCallbackInfo<v8::Value>& args);
-  static void PropertyDefinerCallback(
+  static v8::Intercepted PropertyDefinerCallback(
       v8::Local<v8::Name> property,
       const v8::PropertyDescriptor& desc,
-      const v8::PropertyCallbackInfo<v8::Value>& args);
-  static void PropertyDeleterCallback(
+      const v8::PropertyCallbackInfo<void>& args);
+  static v8::Intercepted PropertyDeleterCallback(
       v8::Local<v8::Name> property,
       const v8::PropertyCallbackInfo<v8::Boolean>& args);
   static void PropertyEnumeratorCallback(
       const v8::PropertyCallbackInfo<v8::Array>& args);
-  static void IndexedPropertyGetterCallback(
-      uint32_t index,
-      const v8::PropertyCallbackInfo<v8::Value>& args);
-  static void IndexedPropertySetterCallback(
+  static v8::Intercepted IndexedPropertyQueryCallback(
+      uint32_t index, const v8::PropertyCallbackInfo<v8::Integer>& args);
+  static v8::Intercepted IndexedPropertyGetterCallback(
+      uint32_t index, const v8::PropertyCallbackInfo<v8::Value>& args);
+  static v8::Intercepted IndexedPropertySetterCallback(
       uint32_t index,
       v8::Local<v8::Value> value,
-      const v8::PropertyCallbackInfo<v8::Value>& args);
-  static void IndexedPropertyDescriptorCallback(
-      uint32_t index,
-      const v8::PropertyCallbackInfo<v8::Value>& args);
-  static void IndexedPropertyDefinerCallback(
+      const v8::PropertyCallbackInfo<void>& args);
+  static v8::Intercepted IndexedPropertyDescriptorCallback(
+      uint32_t index, const v8::PropertyCallbackInfo<v8::Value>& args);
+  static v8::Intercepted IndexedPropertyDefinerCallback(
       uint32_t index,
       const v8::PropertyDescriptor& desc,
-      const v8::PropertyCallbackInfo<v8::Value>& args);
-  static void IndexedPropertyDeleterCallback(
-      uint32_t index,
-      const v8::PropertyCallbackInfo<v8::Boolean>& args);
+      const v8::PropertyCallbackInfo<void>& args);
+  static v8::Intercepted IndexedPropertyDeleterCallback(
+      uint32_t index, const v8::PropertyCallbackInfo<v8::Boolean>& args);
+  static void IndexedPropertyEnumeratorCallback(
+      const v8::PropertyCallbackInfo<v8::Array>& args);
 
   v8::Global<v8::Context> context_;
   std::unique_ptr<v8::MicrotaskQueue> microtask_queue_;
@@ -185,19 +165,36 @@ class ContextifyScript : public BaseObject {
   v8::Global<v8::UnboundScript> script_;
 };
 
-v8::Maybe<bool> StoreCodeCacheResult(
+class ContextifyFunction final {
+ public:
+  static void RegisterExternalReferences(ExternalReferenceRegistry* registry);
+  static void CreatePerIsolateProperties(IsolateData* isolate_data,
+                                         v8::Local<v8::ObjectTemplate> target);
+
+  static void CompileFunction(const v8::FunctionCallbackInfo<v8::Value>& args);
+  static v8::MaybeLocal<v8::Object> CompileFunctionAndCacheResult(
+      Environment* env,
+      v8::Local<v8::Context> parsing_context,
+      v8::ScriptCompiler::Source* source,
+      v8::LocalVector<v8::String> params,
+      v8::LocalVector<v8::Object> context_extensions,
+      v8::ScriptCompiler::CompileOptions options,
+      bool produce_cached_data,
+      v8::Local<v8::Symbol> id_symbol,
+      const errors::TryCatchScope& try_catch);
+
+ private:
+  ContextifyFunction() = delete;
+  ~ContextifyFunction() = delete;
+};
+
+v8::Maybe<void> StoreCodeCacheResult(
     Environment* env,
     v8::Local<v8::Object> target,
     v8::ScriptCompiler::CompileOptions compile_options,
     const v8::ScriptCompiler::Source& source,
     bool produce_cached_data,
     std::unique_ptr<v8::ScriptCompiler::CachedData> new_cached_data);
-
-v8::MaybeLocal<v8::Function> CompileFunction(
-    v8::Local<v8::Context> context,
-    v8::Local<v8::String> filename,
-    v8::Local<v8::String> content,
-    std::vector<v8::Local<v8::String>>* parameters);
 
 }  // namespace contextify
 }  // namespace node

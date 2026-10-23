@@ -1,8 +1,9 @@
 'use strict';
 const common = require('../common');
 
-if (!common.hasCrypto)
+if (!common.hasCrypto) {
   common.skip('missing crypto');
+}
 
 const assert = require('assert');
 const https = require('https');
@@ -20,8 +21,12 @@ server.listen(0, function() {
   const req = https.request({ port: this.address().port });
   req.end();
 
+  // Different OpenSSL versions report different errors for junk data on a
+  // TLS connection, depending on which record validation check fires first.
+  const expectedErrorMessage =
+    /wrong version number|packet length too long|bad record type/;
   req.once('error', common.mustCall(function(err) {
-    assert(/wrong version number/.test(err.message));
+    assert.match(err.message, expectedErrorMessage);
     server.close();
   }));
 });

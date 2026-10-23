@@ -38,13 +38,12 @@ class JsonString final {
         has_escape_(false),
         is_index_(true) {}
 
-  JsonString(int start, int length, bool needs_conversion,
-             bool needs_internalization, bool has_escape)
+  JsonString(int start, int length, bool needs_conversion, bool internalize,
+             bool has_escape)
       : start_(start),
         length_(length),
         needs_conversion_(needs_conversion),
-        internalize_(needs_internalization ||
-                     length_ <= kMaxInternalizedStringValueLength),
+        internalize_(internalize),
         has_escape_(has_escape),
         is_index_(false) {}
 
@@ -81,8 +80,6 @@ class JsonString final {
   bool is_index() const { return is_index_; }
 
  private:
-  static const int kMaxInternalizedStringValueLength = 10;
-
   union {
     const int start_;
     const uint32_t index_;
@@ -185,6 +182,8 @@ class JsonParser final {
       static_cast<base::uc32>(-1);
 
  private:
+  class NamedPropertyIterator;
+
   template <typename T>
   using SmallVector = base::SmallVector<T, 16>;
   struct JsonContinuation {
@@ -386,7 +385,6 @@ class JsonParser final {
   int position() const { return static_cast<int>(cursor_ - chars_); }
 
   Isolate* isolate_;
-  const uint64_t hash_seed_;
   JsonToken next_;
   // Indicates whether the bytes underneath source_ can relocate during GC.
   bool chars_may_relocate_;

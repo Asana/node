@@ -30,6 +30,8 @@ expected.beforePreExec = new Set([
   'NativeModule internal/errors',
   'Internal Binding config',
   'Internal Binding timers',
+  'Internal Binding async_context_frame',
+  'NativeModule internal/async_context_frame',
   'Internal Binding async_wrap',
   'Internal Binding task_queue',
   'Internal Binding symbols',
@@ -44,6 +46,7 @@ expected.beforePreExec = new Set([
   'NativeModule internal/assert',
   'NativeModule internal/util/inspect',
   'NativeModule internal/util/debuglog',
+  'NativeModule internal/streams/utils',
   'NativeModule internal/timers',
   'NativeModule events',
   'Internal Binding buffer',
@@ -95,25 +98,31 @@ expected.beforePreExec = new Set([
   'Internal Binding contextify',
   'NativeModule internal/vm',
   'NativeModule internal/modules/helpers',
+  'NativeModule internal/modules/customization_hooks',
   'NativeModule internal/modules/package_json_reader',
   'Internal Binding module_wrap',
   'NativeModule internal/modules/cjs/loader',
+  'NativeModule diagnostics_channel',
+  'Internal Binding wasm_web_api',
+  'NativeModule internal/events/abort_listener',
+  'NativeModule internal/modules/typescript',
+  'NativeModule internal/data_url',
+  'NativeModule internal/mime',
 ]);
 
 expected.atRunTime = new Set([
-  'Internal Binding wasm_web_api',
   'Internal Binding worker',
   'NativeModule internal/modules/run_main',
   'NativeModule internal/net',
   'NativeModule internal/dns/utils',
   'NativeModule internal/process/pre_execution',
-  'NativeModule internal/vm/module',
   'NativeModule internal/modules/esm/utils',
 ]);
 
-if (common.isMainThread) {
+const { isMainThread } = require('worker_threads');
+
+if (isMainThread) {
   [
-    'NativeModule internal/idna',
     'NativeModule url',
   ].forEach(expected.beforePreExec.add.bind(expected.beforePreExec));
 } else {  // Worker.
@@ -127,6 +136,7 @@ if (common.isMainThread) {
     'NativeModule internal/streams/compose',
     'NativeModule internal/streams/destroy',
     'NativeModule internal/streams/duplex',
+    'NativeModule internal/streams/duplexpair',
     'NativeModule internal/streams/end-of-stream',
     'NativeModule internal/streams/from',
     'NativeModule internal/streams/legacy',
@@ -140,6 +150,7 @@ if (common.isMainThread) {
     'NativeModule internal/streams/writable',
     'NativeModule internal/worker',
     'NativeModule internal/worker/io',
+    'NativeModule internal/worker/messaging',
     'NativeModule stream',
     'NativeModule stream/promises',
     'NativeModule string_decoder',
@@ -164,9 +175,10 @@ if (process.features.inspector) {
   expected.atRunTime.add('NativeModule internal/inspector_async_hook');
 }
 
-const difference = (setA, setB) => {
-  return new Set([...setA].filter((x) => !setB.has(x)));
-};
+// This is loaded if the test is run with NODE_V8_COVERAGE.
+if (process.env.NODE_V8_COVERAGE) {
+  expected.atRunTime.add('Internal Binding profiler');
+}
 
 // Accumulate all the errors and print them at the end instead of throwing
 // immediately which makes it harder to update the test.
@@ -180,9 +192,9 @@ function err(message) {
   }
 }
 
-if (common.isMainThread) {
-  const missing = difference(expected.beforePreExec, actual.beforePreExec);
-  const extra = difference(actual.beforePreExec, expected.beforePreExec);
+if (isMainThread) {
+  const missing = expected.beforePreExec.difference(actual.beforePreExec);
+  const extra = actual.beforePreExec.difference(expected.beforePreExec);
   if (missing.size !== 0) {
     err('These builtins are now no longer loaded before pre-execution.');
     err('If this is intentional, remove them from `expected.beforePreExec`.');
@@ -206,18 +218,18 @@ if (common.isMainThread) {
   }
 }
 
-if (!common.isMainThread) {
+if (!isMainThread) {
   // For workers, just merge beforePreExec into atRunTime for now.
   // When we start adding modules to the worker snapshot, this branch
-  // can be removed and  we can just remove the common.isMainThread
+  // can be removed and  we can just remove the isMainThread
   // conditions.
   expected.beforePreExec.forEach(expected.atRunTime.add.bind(expected.atRunTime));
   actual.beforePreExec.forEach(actual.atRunTime.add.bind(actual.atRunTime));
 }
 
 {
-  const missing = difference(expected.atRunTime, actual.atRunTime);
-  const extra = difference(actual.atRunTime, expected.atRunTime);
+  const missing = expected.atRunTime.difference(actual.atRunTime);
+  const extra = actual.atRunTime.difference(expected.atRunTime);
   if (missing.size !== 0) {
     err('These builtins are now no longer loaded at run time.');
     err('If this is intentional, remove them from `expected.atRunTime`.');

@@ -63,6 +63,7 @@ const intrinsics = new Set([
   'SharedArrayBuffer',
   'Atomics',
   'WebAssembly',
+  'Iterator',
 ]);
 
 if (global.gc) {
@@ -124,6 +125,7 @@ const webIdlExposedWindow = new Set([
   'Request',
   'Response',
   'WebSocket',
+  'EventSource',
 ]);
 
 const nodeGlobals = new Set([

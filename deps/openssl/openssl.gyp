@@ -5,19 +5,13 @@
     'nasm_version%': '0.0',
     'openssl-cli': '<(PRODUCT_DIR)/<(EXECUTABLE_PREFIX)openssl-cli<(EXECUTABLE_SUFFIX)',
     'conditions': [
-      ['OS == "win"', {
-        'obj_dir_abs': '<(PRODUCT_DIR_ABS)/obj',
-      }],
       ['GENERATOR == "ninja"', {
-        'obj_dir_abs': '<(PRODUCT_DIR_ABS)/obj',
-        'modules_dir': '<(PRODUCT_DIR_ABS)/obj/lib/openssl-modules',
+        'modules_dir': '<(PRODUCT_DIR_ABS_CSTR)/obj/lib/openssl-modules',
       }, {
-        'obj_dir_abs%': '<(PRODUCT_DIR_ABS)/obj.target',
-        'modules_dir': '<(PRODUCT_DIR_ABS)/obj.target/deps/openssl/lib/openssl-modules',
+        'modules_dir': '<(PRODUCT_DIR_ABS_CSTR)/obj.target/deps/openssl/lib/openssl-modules',
       }],
       ['OS=="mac"', {
-        'obj_dir_abs%': '<(PRODUCT_DIR_ABS)/obj.target',
-        'modules_dir': '<(PRODUCT_DIR_ABS)/obj.target/deps/openssl/lib/openssl-modules',
+        'modules_dir': '<(PRODUCT_DIR_ABS_CSTR)/obj.target/deps/openssl/lib/openssl-modules',
       }],
     ],
   },
@@ -32,6 +26,7 @@
         # is able to create a malicious DLL in one of the default search paths.
         'OPENSSL_NO_HW',
         'OPENSSL_API_COMPAT=0x10100001L',
+        'OPENSSL_TLS_SECURITY_LEVEL=1',
         'STATIC_LEGACY',
         #'OPENSSL_NO_DEPRECATED',
       ],
@@ -68,6 +63,7 @@
       'include_dirs+': ['openssl/apps/include'],
       'defines': [
         'OPENSSL_API_COMPAT=0x10100001L',
+        'OPENSSL_TLS_SECURITY_LEVEL=1',
         #'OPENSSL_NO_DEPRECATED',
       ],
       'conditions': [
