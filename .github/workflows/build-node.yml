@@ -1,13 +1,7 @@
-name: Build Node
+name: Build Node (Standard)
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - v20.18.3
-      - workflows-for-v20.18.3
-  pull_request:
-    paths: .github/workflows/build-node.yml
 
 jobs:
   build-node:
@@ -54,25 +48,16 @@ jobs:
           echo "BUILD_ID=${TIMESTAMP}-${SHORT_SHA}" >> $GITHUB_ENV
           echo "build_id=${TIMESTAMP}-${SHORT_SHA}" >> $GITHUB_OUTPUT
 
-      - name: Install dependencies (Linux)
-        if: matrix.platform == 'linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y python3 g++ make curl tar xz-utils
-
-      - name: Build Node (linux)
+      - name: Execute the Dockerfile
         working-directory: node
-        if: matrix.platform == 'linux'
         run: |
-          ./configure --experimental-enable-pointer-compression
-          make -j4 install DESTDIR=$GITHUB_WORKSPACE/node-install
+          docker build -t node22_build -f ./Dockerfile.Node22 .
 
-      - name: Build Node (darwin)
-        working-directory: node
-        if: matrix.platform == 'darwin'
+      - name: Extract resources
         run: |
-          ./configure --experimental-enable-pointer-compression --without-snapshot
-          make -j2 install DESTDIR=$GITHUB_WORKSPACE/node-install
+          docker create --name temp_node_extract node22_build
+          docker cp temp_node_extract:/usr/src/node/node-install $GITHUB_WORKSPACE/node-install
+          docker rm temp_node_extract
 
       - name: Archive Node
         run: |

@@ -1,14 +1,17 @@
-name: Build node-fibers with prebuilt Node
+name: Build Custom Fibers
 
 on:
   workflow_dispatch:
   workflow_run:
-    workflows: [Build Node]
+    workflows: ["Build Node (Standard)"]
     types:
       - completed
+    branches:
+      - v22.21.1
 
 jobs:
   build-fibers:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     strategy:
       matrix:
         include:
@@ -21,9 +24,12 @@ jobs:
     runs-on: ${{ matrix.runs_on }}
 
     env:
-      NODE_VERSION: v20.18.3
+      NODE_VERSION: v22.21.1
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
       - name: Debug Matrix Values
         run: |
           echo "Matrix platform: ${{ matrix.platform }}"
@@ -34,39 +40,20 @@ jobs:
           gh release download node-${{ env.NODE_VERSION }}-release \
             --repo asana/node \
             --pattern "node-${{ env.NODE_VERSION }}-${{ matrix.platform }}-${{ matrix.arch }}-LATEST.tar.xz"
+          mv node-${{ env.NODE_VERSION }}-${{ matrix.platform }}-${{ matrix.arch }}-LATEST.tar.xz node.tar.xz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract Node archive
+      - name: Execute the Dockerfile
         run: |
-          mkdir -p node-install
-          tar -C node-install -xJf node-${{ env.NODE_VERSION }}-${{ matrix.platform }}-${{ matrix.arch }}-LATEST.tar.xz
-          echo "$GITHUB_WORKSPACE/node-install/usr/local/bin" >> $GITHUB_PATH
+          pwd
+          docker build -t node22_fibers_build -f Dockerfile.Fibers .
 
-      - name: Verify Node Binary Architecture
+      - name: Extract resources
         run: |
-          echo "Node File:"
-          file $GITHUB_WORKSPACE/node-install/usr/local/bin/node
-          echo "Runner architecture:"
-          uname -m
-
-      - name: Checkout node-fibers fork
-        uses: actions/checkout@v3
-        with:
-          repository: asana/node-fibers
-          ref: jackstrohm_node20_fibers
-          path: node-fibers
-
-      - name: Build node-fibers
-        working-directory: node-fibers
-        run: |
-          which node
-          node -v
-          node -p "process.arch"
-          npm install --nodedir="$GITHUB_WORKSPACE/node-install/usr/local"
-          npm test || true
-          rm bin/repl
-          find .
+          docker create --name temp_node_fibers_extract node22_fibers_build
+          docker cp temp_node_fibers_extract:/usr/src/node/node-fibers $GITHUB_WORKSPACE/node-fibers
+          docker rm temp_node_fibers_extract
 
       - name: Find and archive fibers.node
         run: |
