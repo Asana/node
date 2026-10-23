@@ -129,11 +129,10 @@ The most prominent features that require transformation are:
 
 * `Enum` declarations
 * `namespace` with runtime code
-* legacy `module` with runtime code
 * parameter properties
 * import aliases
 
-`namespaces` and `module` that do not contain runtime code are supported.
+`namespace`s that do not contain runtime code are supported.
 This example will work correctly:
 
 ```ts
@@ -152,10 +151,10 @@ namespace A {
 }
 ```
 
-Since Decorators are currently a [TC39 Stage 3 proposal](https://github.com/tc39/proposal-decorators)
-and will soon be supported by the JavaScript engine,
+Since Decorators are currently a [TC39 Stage 3 proposal](https://github.com/tc39/proposal-decorators),
 they are not transformed and will result in a parser error.
-This is a temporary limitation and will be resolved in the future.
+Node.js does not provide polyfills and thus will not support decorators until
+they are supported natively in JavaScript.
 
 In addition, Node.js does not read `tsconfig.json` files and does not support
 features that depend on settings within `tsconfig.json`, such as paths or

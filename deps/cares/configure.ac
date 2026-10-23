@@ -2,10 +2,10 @@ dnl Copyright (C) The c-ares project and its contributors
 dnl SPDX-License-Identifier: MIT
 AC_PREREQ([2.69])
 
-AC_INIT([c-ares], [1.34.5],
+AC_INIT([c-ares], [1.34.9],
   [c-ares mailing list: http://lists.haxx.se/listinfo/c-ares])
 
-CARES_VERSION_INFO="21:4:19"
+CARES_VERSION_INFO="21:8:19"
 dnl This flag accepts an argument of the form current[:revision[:age]]. So,
 dnl passing -version-info 3:12:1 sets current to 3, revision to 12, and age to
 dnl 1.
@@ -40,7 +40,8 @@ AC_CONFIG_HEADERS([src/lib/ares_config.h include/ares_build.h])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([m4])
 AC_USE_SYSTEM_EXTENSIONS
-AX_CXX_COMPILE_STDCXX_14([noext],[optional])
+AX_CXX_COMPILE_STDCXX(14,[noext],[optional])
+AX_CXX_COMPILE_STDCXX(17,[noext],[optional])
 AM_INIT_AUTOMAKE([foreign subdir-objects 1.9.6])
 LT_INIT([win32-dll,pic,disable-fast-install,aix-soname=svr4])
 AC_LANG([C])
@@ -550,6 +551,14 @@ dnl https://mailman.videolan.org/pipermail/vlc-devel/2015-March/101802.html
 dnl which would require we check each individually and provide function arguments
 dnl for the test.
 
+dnl On Apple hosts, header availability macros declare functions newer than the
+dnl deployment target.  Ensure -Werror=partial-availability is used during
+dnl declaration checks so too-new symbols are correctly reported as missing.
+AS_IF([test "x$host_vendor" = "xapple"], [
+  cares_save_cflags="$CFLAGS"
+  AX_APPEND_COMPILE_FLAGS([-Werror=partial-availability], [CFLAGS])
+])
+
 AC_CHECK_DECL(strnlen,         [AC_DEFINE([HAVE_STRNLEN],           1, [Define to 1 if you have `strnlen`]        )], [], $cares_all_includes)
 AC_CHECK_DECL(memmem,          [AC_DEFINE([HAVE_MEMMEM],            1, [Define to 1 if you have `memmem`]         )], [], $cares_all_includes)
 AC_CHECK_DECL(recv,            [AC_DEFINE([HAVE_RECV],              1, [Define to 1 if you have `recv`]           )], [], $cares_all_includes)
@@ -600,6 +609,9 @@ AC_CHECK_DECL(ConvertInterfaceLuidToNameA, [AC_DEFINE([HAVE_CONVERTINTERFACELUID
 AC_CHECK_DECL(NotifyIpInterfaceChange,     [AC_DEFINE([HAVE_NOTIFYIPINTERFACECHANGE],     1, [Define to 1 if you have `NotifyIpInterfaceChange`]    )], [], $cares_all_includes)
 AC_CHECK_DECL(RegisterWaitForSingleObject, [AC_DEFINE([HAVE_REGISTERWAITFORSINGLEOBJECT], 1, [Define to 1 if you have `RegisterWaitForSingleObject`])], [], $cares_all_includes)
 AC_CHECK_DECL(__system_property_get,       [AC_DEFINE([HAVE___SYSTEM_PROPERTY_GET],       1, [Define to 1 if you have `__system_property_get`]      )], [], $cares_all_includes)
+AS_IF([test "x$host_vendor" = "xapple"], [
+  CFLAGS="$cares_save_cflags"
+])
 
 
 dnl ###############################################################################
@@ -806,14 +818,6 @@ BUILD_SUBDIRS="include src docs"
 
 dnl ******** TESTS *******
 
-if test "x$build_tests" != "xno" -a "x$HAVE_CXX14" = "0" ; then
-  if test "x$build_tests" = "xmaybe" ; then
-    AC_MSG_WARN([cannot build tests without a CXX14 compiler])
-    build_tests=no
-  else
-    AC_MSG_ERROR([*** Building tests requires a CXX14 compiler])
-  fi
-fi
 if test "x$build_tests" != "xno" -a "x$cross_compiling" = "xyes" ; then
   if test "x$build_tests" = "xmaybe" ; then
     AC_MSG_WARN([cannot build tests when cross compiling])
@@ -844,12 +848,19 @@ if test "x$build_tests" != "xno" ; then
       ARES_CHECK_USER_NAMESPACE
       ARES_CHECK_UTS_NAMESPACE
     fi
+    PKG_CHECK_MODULES([GMOCK117], [gmock >= 1.17.0], [ have_gmock_v117=yes ], [ have_gmock_v117=no ])
+    if test "x$have_gmock_v117" = "xyes" ; then
+      dnl GMock v1.17.0 requires C++17 or higher
+      AX_CXX_COMPILE_STDCXX(17,[noext],[mandatory])
+    else
+      dnl older version needed v1.14.0
+      AX_CXX_COMPILE_STDCXX(14,[noext],[mandatory])
+    fi
   fi
 fi
 if test "x$build_tests" != "xno" ; then
   build_tests=yes
 
-  AX_CXX_COMPILE_STDCXX_14([noext],[mandatory])
   if test "$ac_cv_native_windows" != "yes" ; then
     AX_PTHREAD([ CARES_TEST_PTHREADS="yes" ], [ AC_MSG_ERROR([threading required for tests]) ])
   fi

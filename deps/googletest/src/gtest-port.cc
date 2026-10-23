@@ -302,6 +302,22 @@ bool AutoHandle::IsCloseable() const {
   return handle_ != nullptr && handle_ != INVALID_HANDLE_VALUE;
 }
 
+#if !GTEST_HAS_NOTIFICATION_ && defined(GTEST_OS_WINDOWS_MINGW)
+Notification::Notification() {
+  // Create a manual-reset event object.
+  event_ = ::CreateEvent(nullptr, TRUE, FALSE, nullptr);
+  GTEST_CHECK_(event_ != nullptr);
+}
+
+Notification::~Notification() { ::CloseHandle(event_); }
+
+void Notification::Notify() { GTEST_CHECK_(::SetEvent(event_)); }
+
+void Notification::WaitForNotification() {
+  GTEST_CHECK_(::WaitForSingleObject(event_, INFINITE) == WAIT_OBJECT_0);
+}
+#endif  // !GTEST_HAS_NOTIFICATION_ && defined(GTEST_OS_WINDOWS_MINGW)
+
 Mutex::Mutex()
     : owner_thread_id_(0),
       type_(kDynamic),
@@ -499,7 +515,7 @@ class ThreadLocalRegistryImpl {
     MemoryIsNotDeallocated memory_is_not_deallocated;
 #endif  // _MSC_VER
     DWORD current_thread = ::GetCurrentThreadId();
-    MutexLock lock(&mutex_);
+    MutexLock lock(mutex_);
     ThreadIdToThreadLocals* const thread_to_thread_locals =
         GetThreadLocalsMapLocked();
     ThreadIdToThreadLocals::iterator thread_local_pos =
@@ -532,7 +548,7 @@ class ThreadLocalRegistryImpl {
     // Clean up the ThreadLocalValues data structure while holding the lock, but
     // defer the destruction of the ThreadLocalValueHolderBases.
     {
-      MutexLock lock(&mutex_);
+      MutexLock lock(mutex_);
       ThreadIdToThreadLocals* const thread_to_thread_locals =
           GetThreadLocalsMapLocked();
       for (ThreadIdToThreadLocals::iterator it =
@@ -559,7 +575,7 @@ class ThreadLocalRegistryImpl {
     // Clean up the ThreadIdToThreadLocals data structure while holding the
     // lock, but defer the destruction of the ThreadLocalValueHolderBases.
     {
-      MutexLock lock(&mutex_);
+      MutexLock lock(mutex_);
       ThreadIdToThreadLocals* const thread_to_thread_locals =
           GetThreadLocalsMapLocked();
       ThreadIdToThreadLocals::iterator thread_local_pos =

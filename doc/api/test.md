@@ -1466,7 +1466,7 @@ changes:
 * `options` {Object} Configuration options for the test. The following
   properties are supported:
   * `concurrency` {number|boolean} If a number is provided,
-    then that many tests would run in parallel within the application thread.
+    then that many tests would run asynchronously (they are still managed by the single-threaded event loop).
     If `true`, all scheduled asynchronous tests run concurrently within the
     thread. If `false`, only one test runs at a time.
     If unspecified, subtests inherit this value from their parent.
@@ -2221,6 +2221,11 @@ This function is used to mock the exports of ECMAScript modules, CommonJS module
 Node.js builtin modules. Any references to the original module prior to mocking are not impacted. In
 order to enable module mocking, Node.js must be started with the
 [`--experimental-test-module-mocks`][] command-line flag.
+
+**Note**: [module customization hooks][] registered via the **synchronous** API effect resolution of
+the `specifier` provided to `mock.module`. Customization hooks registered via the **asynchronous**
+API are currently ignored (because the test runner's loader is synchronous, and node does not
+support multi-chain / cross-chain loading).
 
 The following example demonstrates how a mock is created for a module.
 
@@ -3482,7 +3487,9 @@ the path of the root test file.
 ### `context.fullName`
 
 <!-- YAML
-added: v22.3.0
+added:
+  - v22.3.0
+  - v20.16.0
 -->
 
 The name of the test and each of its ancestors, separated by `>`.
@@ -3496,6 +3503,40 @@ added:
 -->
 
 The name of the test.
+
+### `context.passed`
+
+<!-- YAML
+added:
+  - v21.7.0
+  - v20.12.0
+-->
+
+* Type: {boolean} `false` before the test is executed, e.g. in a `beforeEach` hook.
+
+Indicated whether the test succeeded.
+
+### `context.error`
+
+<!-- YAML
+added:
+  - v21.7.0
+  - v20.12.0
+-->
+
+* Type: {Error|null}
+
+The failure reason for the test/case; wrapped and available via `context.error.cause`.
+
+### `context.attempt`
+
+<!-- YAML
+added: v25.0.0
+-->
+
+* Type: {number}
+
+Number of times the test has been attempted.
 
 ### `context.plan(count[,options])`
 
@@ -3697,7 +3738,7 @@ changes:
 * `options` {Object} Configuration options for the subtest. The following
   properties are supported:
   * `concurrency` {number|boolean|null} If a number is provided,
-    then that many tests would run in parallel within the application thread.
+    then that many tests would run asynchronously (they are still managed by the single-threaded event loop).
     If `true`, it would run all subtests in parallel.
     If `false`, it would only run one test at a time.
     If unspecified, subtests inherit this value from their parent.
@@ -3783,6 +3824,16 @@ The absolute path of the test file that created the current suite. If a test
 file imports additional modules that generate suites, the imported suites will
 return the path of the root test file.
 
+### `context.fullName`
+
+<!-- YAML
+added:
+  - v22.3.0
+  - v20.16.0
+-->
+
+The name of the suite and each of its ancestors, separated by `>`.
+
 ### `context.name`
 
 <!-- YAML
@@ -3840,6 +3891,7 @@ Can be used to abort test subtasks when the test has been aborted.
 [code coverage]: #collecting-code-coverage
 [describe options]: #describename-options-fn
 [it options]: #testname-options-fn
+[module customization hooks]: module.md#customization-hooks
 [running tests from the command line]: #running-tests-from-the-command-line
 [stream.compose]: stream.md#streamcomposestreams
 [subtests]: #subtests

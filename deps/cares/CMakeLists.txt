@@ -12,7 +12,7 @@ INCLUDE (CheckCSourceCompiles)
 INCLUDE (CheckStructHasMember)
 INCLUDE (CheckLibraryExists)
 
-PROJECT (c-ares LANGUAGES C VERSION "1.34.5" )
+PROJECT (c-ares LANGUAGES C VERSION "1.34.9" )
 
 # Set this version before release
 SET (CARES_VERSION "${PROJECT_VERSION}")
@@ -30,7 +30,7 @@ INCLUDE (GNUInstallDirs) # include this *AFTER* PROJECT(), otherwise paths are w
 # For example, a version of 4:0:2 would generate output such as:
 #    libname.so   -> libname.so.2
 #    libname.so.2 -> libname.so.2.2.0
-SET (CARES_LIB_VERSIONINFO "21:4:19")
+SET (CARES_LIB_VERSIONINFO "21:8:19")
 
 
 OPTION (CARES_STATIC        "Build as a static library"                                             OFF)
@@ -43,16 +43,8 @@ OPTION (CARES_BUILD_TOOLS   "Build tools"                                       
 OPTION (CARES_SYMBOL_HIDING "Hide private symbols in shared libraries"                              OFF)
 OPTION (CARES_THREADS       "Build with thread-safety support"                                      ON)
 OPTION (CARES_COVERAGE      "Build for code coverage"                                               OFF)
+OPTION (CARES_WERROR        "Treat compiler warnings on the c-ares library as errors"               OFF)
 SET    (CARES_RANDOM_FILE "/dev/urandom" CACHE STRING "Suitable File / Device Path for entropy, such as /dev/urandom")
-
-
-# Tests require a C++14 compiler
-IF (CARES_BUILD_TESTS OR CARES_BUILD_CONTAINER_TESTS)
-	set(CMAKE_CXX_STANDARD 14)
-	set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
-	set(CMAKE_CXX_EXTENSIONS FALSE)
-	enable_language(CXX)
-ENDIF ()
 
 # Tests require static to be enabled on Windows to be able to access otherwise hidden symbols
 IF ((CARES_BUILD_TESTS OR CARES_BUILD_CONTAINER_TESTS) AND (NOT CARES_STATIC) AND WIN32)
@@ -62,6 +54,30 @@ IF ((CARES_BUILD_TESTS OR CARES_BUILD_CONTAINER_TESTS) AND (NOT CARES_STATIC) AN
 ENDIF ()
 
 INCLUDE (EnableWarnings)
+
+# Optionally treat warnings as errors for the c-ares library itself.  This is
+# applied per-target (see cares_set_werror() usage) rather than globally so it
+# does not affect the test/fuzz harnesses (which carry their own warnings) or
+# CMake's own compiler feature checks.  Enabled in CI only on toolchains known
+# to be free of spurious warnings at our high warning levels.
+FUNCTION (cares_set_werror target)
+	IF (NOT CARES_WERROR)
+		RETURN ()
+	ENDIF ()
+	IF (MSVC)
+		TARGET_COMPILE_OPTIONS (${target} PRIVATE /WX)
+	ELSE ()
+		TARGET_COMPILE_OPTIONS (${target} PRIVATE -Werror)
+		# Modern libc headers (e.g. glibc <string.h>) use the C11 _Generic
+		# keyword for const-correctness of strchr()/memchr()/etc.  Clang flags
+		# that as a C11 extension under our C90 + -Wpedantic build even though it
+		# originates in a system header at our call sites.  It is not something
+		# we can fix in our own code, so warn but do not fail on it.
+		IF (CMAKE_C_COMPILER_ID MATCHES "Clang")
+			TARGET_COMPILE_OPTIONS (${target} PRIVATE -Wno-error=c11-extensions)
+		ENDIF ()
+	ENDIF ()
+ENDFUNCTION ()
 
 IF (MSVC)
 	# allow linking against the static runtime library in msvc
@@ -269,7 +285,7 @@ ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "SunOS")
 	LIST (APPEND SYSFLAGS -D__EXTENSIONS__ -D_REENTRANT -D_XOPEN_SOURCE=600)
 ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "AIX")
 	LIST (APPEND SYSFLAGS -D_ALL_SOURCE -D_XOPEN_SOURCE=700 -D_USE_IRS)
-ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "FreeBSD" OR CMAKE_SYSTEM_NAME STREQUAL "MidnightBSD")
 	# Don't define _XOPEN_SOURCE on FreeBSD, it actually reduces visibility instead of increasing it
 ELSEIF (CMAKE_SYSTEM_NAME STREQUAL "QNX")
 	LIST (APPEND SYSFLAGS -D_QNX_SOURCE)
@@ -312,9 +328,20 @@ ENDIF ()
 SET (ORIG_CMAKE_REQUIRED_DEFINITIONS ${CMAKE_REQUIRED_DEEFINITIONS})
 SET (ORIG_CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})
 SET (ORIG_CMAKE_EXTRA_INCLUDE_FILES ${CMAKE_EXTRA_INCLUDE_FILES})
+SET (ORIG_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
 
 SET (CMAKE_REQUIRED_DEFINITIONS ${SYSFLAGS})
 LIST (APPEND CMAKE_REQUIRED_LIBRARIES ${CARES_DEPENDENT_LIBS})
+
+# Apple SDKs declare functions newer than the deployment target.  The build
+# rejects calls to them with -Werror=partial-availability, so the symbol
+# checks must too, or they report functions the build cannot use.
+IF (APPLE)
+	CHECK_C_COMPILER_FLAG (-Werror=partial-availability HAVE_WERROR_PARTIAL_AVAILABILITY)
+	IF (HAVE_WERROR_PARTIAL_AVAILABILITY)
+		SET (CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror=partial-availability")
+	ENDIF ()
+ENDIF ()
 
 MACRO (CARES_EXTRAINCLUDE_IFSET var include)
 	IF (${var})
@@ -478,6 +505,7 @@ CHECK_FUNCTION_EXISTS (__system_property_get HAVE___SYSTEM_PROPERTY_GET)
 SET (CMAKE_REQUIRED_DEFINITIONS ${ORIG_CMAKE_REQUIRED_DEEFINITIONS})
 SET (CMAKE_REQUIRED_LIBRARIES ${ORIG_CMAKE_REQUIRED_LIBRARIES})
 SET (CMAKE_EXTRA_INCLUDE_FILES ${ORIG_CMAKE_EXTRA_INCLUDE_FILES})
+SET (CMAKE_REQUIRED_FLAGS ${ORIG_CMAKE_REQUIRED_FLAGS})
 
 
 ################################################################################
@@ -630,6 +658,7 @@ IF (HAVE_GETADDRINFO)
 		CMAKE_SYSTEM_NAME STREQUAL "NetBSD" OR
 		CMAKE_SYSTEM_NAME STREQUAL "SunOS" OR
 		CMAKE_SYSTEM_NAME STREQUAL "FreeBSD" OR
+		CMAKE_SYSTEM_NAME STREQUAL "MidnightBSD" OR
 		CMAKE_SYSTEM_NAME STREQUAL "AIX" OR
 		WIN32)
 			SET (HAVE_GETADDRINFO_THREADSAFE 1)
