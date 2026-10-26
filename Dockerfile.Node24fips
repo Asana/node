@@ -1,0 +1,41 @@
+# Builds Asana's FIPS-capable Node.js 24 binary for FedRAMP: the same build as
+# Dockerfile.Node24, but dynamically linked against the system OpenSSL 3 so that the
+# FIPS provider installed in the LunaServer FIPS image is used at runtime.
+#
+# See Dockerfile.Node24 for why this builds on Ubuntu 22.04 with g++-12.
+FROM ubuntu:22.04 AS base
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN set -e; \
+    for i in 1 2 3 4 5; do \
+        echo "Attempt $i: Setting up build environment..." && \
+        apt-get update --allow-releaseinfo-change && \
+        apt-get install -y --no-install-recommends --fix-missing \
+            ca-certificates \
+            g++-12 \
+            gcc-12 \
+            git \
+            libssl-dev \
+            make \
+            pkg-config \
+            python3 \
+            xz-utils \
+        && break || \
+        (echo "Attempt $i failed! Sleeping 15s..." && sleep 15); \
+    done
+RUN rm -rf /var/lib/apt/lists/*
+
+RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 100 && \
+    update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-12 100 && \
+    update-alternatives --install /usr/bin/cc cc /usr/bin/gcc-12 100 && \
+    update-alternatives --install /usr/bin/c++ c++ /usr/bin/g++-12 100
+ENV CC=gcc-12 CXX=g++-12
+
+WORKDIR /usr/src/node
+COPY . .
+
+RUN ./configure --shared-openssl --experimental-enable-pointer-compression --openssl-conf-name 'openssl_conf'
+RUN make -j4 install DESTDIR=./node-install
+
+CMD ["bash"]
