@@ -42,6 +42,11 @@
                     (qbits),                                                   \
                     nullptr)
 #endif
+// Early OpenSSL 3.0.x headers (e.g. 3.0.2 on Ubuntu 22.04) lack EVP_PKEY_PRIVATE_KEY.
+#if OPENSSL_VERSION_MAJOR >= 3 && !defined(EVP_PKEY_PRIVATE_KEY)
+#define EVP_PKEY_PRIVATE_KEY                                                   \
+  (EVP_PKEY_KEY_PARAMETERS | OSSL_KEYMGMT_SELECT_PRIVATE_KEY)
+#endif
 
 namespace ncrypto {
 namespace {
