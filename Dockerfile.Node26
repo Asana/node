@@ -1,0 +1,45 @@
+# Builds Asana's Node.js 26 binary: upstream Node with V8 pointer compression.
+#
+# Node 26 needs GCC >= 13.2, whose own libstdc++ is newer than Ubuntu 22.04's (the sandbox
+# and EngFlow remote-execution hosts that run the LunaServer Node toolchain). Like the official
+# Node.js release binaries, this builds on RHEL 8 (AlmaLinux 8) with gcc-toolset-14: the
+# toolset links the parts of libstdc++ newer than the system's GCC 8 runtime statically, so
+# the binary only needs glibc >= 2.28 and GLIBCXX_3.4.25, plus the libatomic runtime.
+FROM almalinux:8 AS base
+
+RUN set -e; \
+    for i in 1 2 3 4 5; do \
+        echo "Attempt $i: Setting up build environment..." && \
+        dnf install -y \
+            gcc-toolset-14-gcc \
+            gcc-toolset-14-gcc-c++ \
+            gcc-toolset-14-libatomic-devel \
+            git \
+            make \
+            python3.12 \
+            tar \
+            xz \
+        && break || \
+        (echo "Attempt $i failed! Sleeping 15s..." && sleep 15); \
+    done
+RUN dnf clean all
+
+ENV PATH="/opt/rh/gcc-toolset-14/root/usr/bin:/root/.cargo/bin:$PATH"
+ENV CC=gcc CXX=g++
+
+# Rust builds temporal_rs (vendored in deps/crates) for the Temporal API, as in official builds.
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
+    sh -s -- -y --profile minimal --default-toolchain stable && \
+    rustc --version && cargo --version
+
+WORKDIR /usr/src/node
+COPY . .
+
+# Plain --experimental-enable-pointer-compression gives the multi-cage configuration: every
+# isolate (main thread and each worker) gets its own 4GB pointer cage, and the V8 sandbox
+# stays disabled. Do not add --experimental-pointer-compression-shared-cage: it enables the V8
+# sandbox, which rejects external ArrayBuffer backing stores that native addons create.
+RUN ./configure --experimental-enable-pointer-compression --v8-enable-temporal-support
+RUN make -j4 install DESTDIR=./node-install
+
+CMD ["bash"]
