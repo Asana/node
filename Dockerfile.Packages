@@ -1,0 +1,100 @@
+# Builds the native npm packages that LunaServer loads from node/gyp in codez against
+# Asana's pointer-compressed Node build (node.tar.xz, downloaded from this branch's release).
+#
+# Addons built on the V8/NAN API must be compiled against our headers: prebuilt binaries for
+# stock Node have the same NODE_MODULE_VERSION but a different V8 object layout, so they load
+# and then crash. N-API addons (bcrypt, cld) are layout-independent but are built here too so
+# the tarball stays self-contained.
+#
+# See Dockerfile.Node26 for why this builds on RHEL 8 with gcc-toolset-14. Package versions must
+# match codez's pnpm-lock.yaml, since the tarball is laid over its .aspect_rules_js store.
+FROM almalinux:8 AS base
+
+RUN set -e; \
+    for i in 1 2 3 4 5; do \
+        echo "Attempt $i: Setting up build environment..." && \
+        dnf install -y \
+            gcc-toolset-14-gcc \
+            gcc-toolset-14-gcc-c++ \
+            gcc-toolset-14-libatomic-devel \
+            git \
+            make \
+            python3.12 \
+            tar \
+            xz \
+        && break || \
+        (echo "Attempt $i failed! Sleeping 15s..." && sleep 15); \
+    done
+RUN dnf clean all
+
+ENV PATH="/opt/rh/gcc-toolset-14/root/usr/bin:$PATH"
+ENV CC=gcc CXX=g++ PYTHON=python3.12 npm_config_python=python3.12
+
+WORKDIR /usr/src/node
+COPY node.tar.xz .
+
+RUN mkdir -p node-install && tar -C node-install -xJf node.tar.xz
+
+ENV PATH="/usr/src/node/node-install/usr/local/bin:$PATH"
+ENV NODE_DIR="/usr/src/node/node-install/usr/local"
+
+RUN node -v && node -p "process.arch" && node -p "process.versions.modules" && \
+    node -p "process.config.variables.v8_enable_pointer_compression"
+
+ARG BCRYPT_VERSION=5.1.0
+ARG CLD_VERSION=2.9.1
+ARG UNIX_DGRAM_VERSION=2.0.6
+ARG PPROF_VERSION=5.20.0
+
+RUN npm i --nodedir="$NODE_DIR" bcrypt@${BCRYPT_VERSION}
+RUN npm i --nodedir="$NODE_DIR" cld@${CLD_VERSION}
+RUN npm i --nodedir="$NODE_DIR" unix-dgram@${UNIX_DGRAM_VERSION}
+
+# Build @datadog/pprof from source against Asana custom Node.
+# The npm package ships with no C++ source (only prebuilts for stock Node), so we clone from
+# GitHub to build the native binding against our pointer-compressed V8.
+RUN npm i @datadog/pprof@${PPROF_VERSION} --ignore-scripts
+RUN git clone --branch v${PPROF_VERSION} --depth 1 https://github.com/DataDog/pprof-nodejs.git /usr/src/pprof-source
+WORKDIR /usr/src/pprof-source
+RUN npm install --unsafe-perm --ignore-scripts
+RUN npm install --unsafe-perm --no-save node-gyp
+RUN node_modules/.bin/node-gyp rebuild --jobs=max --nodedir="$NODE_DIR"
+# Install our binary where node-gyp-build looks first (build/Release), and also over the stock
+# prebuild for this ABI so that a loader that skips build/Release cannot pick a stock binary.
+WORKDIR /usr/src/node
+RUN set -e; \
+    ARCH=$(node -p "process.arch"); \
+    MODULES_VER=$(node -p "process.versions.modules"); \
+    PKG=node_modules/@datadog/pprof; \
+    PROFILER_NODE=$(find /usr/src/pprof-source/build/Release -maxdepth 1 -name "*.node" | head -1); \
+    echo "Using profiler binary: $PROFILER_NODE"; \
+    test -f "$PROFILER_NODE"; \
+    mkdir -p "$PKG/build/Release"; \
+    cp "$PROFILER_NODE" "$PKG/build/Release/"; \
+    REPLACED=0; \
+    for f in $(find "$PKG/prebuilds" -path "*linux*${ARCH}*" -name "*.node" | grep -E "(node-|abi)${MODULES_VER}\.node$" | grep -v musl); do \
+        echo "Replacing prebuild $f"; cp "$PROFILER_NODE" "$f"; REPLACED=1; \
+    done; \
+    test "$REPLACED" = 1 || echo "No stock prebuild for ABI ${MODULES_VER}; build/Release only"
+
+# Load every addon with the custom Node to catch ABI or missing-symbol problems here rather
+# than in LunaServer.
+RUN node -e " \
+  const assert = require('assert'); \
+  const bcrypt = require('bcrypt'); \
+  assert(bcrypt.compareSync('x', bcrypt.hashSync('x', 4))); \
+  assert.strictEqual(typeof require('cld').detect, 'function'); \
+  require('unix-dgram').createSocket('unix_dgram').close(); \
+  const pprof = require('@datadog/pprof'); \
+  pprof.heap.start(512 * 1024, 64); \
+  assert(Array.isArray(pprof.heap.profile().sample)); \
+  pprof.heap.stop(); \
+  pprof.time.start({ durationMillis: 1000 }); \
+  const end = Date.now() + 200; while (Date.now() < end) {} \
+  assert(Array.isArray(pprof.time.stop().sample)); \
+  console.log('All native packages load'); \
+"
+
+RUN ls node_modules
+
+CMD ["bash"]
