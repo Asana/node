@@ -1,0 +1,46 @@
+# Builds Asana's Node.js 24 binary: upstream Node with V8 pointer compression.
+#
+# The binary has to run on every host that executes the LunaServer Node toolchain:
+# the Wolfi-based LunaServer images, Ubuntu 22.04 sandboxes, and Ubuntu 22.04 EngFlow
+# remote-execution workers. Building on Ubuntu 22.04 with its own g++-12 (12.3) keeps the
+# glibc (<= 2.35) and libstdc++ (<= GLIBCXX_3.4.30) requirements within what 22.04 ships,
+# while meeting Node 24's GCC >= 12.2 requirement. A newer GCC (e.g. 13 from the
+# toolchain PPA) produces binaries that need GLIBCXX_3.4.31+ and fail to start there.
+FROM ubuntu:22.04 AS base
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN set -e; \
+    for i in 1 2 3 4 5; do \
+        echo "Attempt $i: Setting up build environment..." && \
+        apt-get update --allow-releaseinfo-change && \
+        apt-get install -y --no-install-recommends --fix-missing \
+            ca-certificates \
+            g++-12 \
+            gcc-12 \
+            git \
+            make \
+            python3 \
+            xz-utils \
+        && break || \
+        (echo "Attempt $i failed! Sleeping 15s..." && sleep 15); \
+    done
+RUN rm -rf /var/lib/apt/lists/*
+
+RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 100 && \
+    update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-12 100 && \
+    update-alternatives --install /usr/bin/cc cc /usr/bin/gcc-12 100 && \
+    update-alternatives --install /usr/bin/c++ c++ /usr/bin/g++-12 100
+ENV CC=gcc-12 CXX=g++-12
+
+WORKDIR /usr/src/node
+COPY . .
+
+# Plain --experimental-enable-pointer-compression gives the multi-cage configuration: every
+# isolate (main thread and each worker) gets its own 4GB pointer cage, and the V8 sandbox
+# stays disabled. Do not add --experimental-pointer-compression-shared-cage: it enables the V8
+# sandbox, which rejects external ArrayBuffer backing stores that native addons create.
+RUN ./configure --experimental-enable-pointer-compression
+RUN make -j4 install DESTDIR=./node-install
+
+CMD ["bash"]
