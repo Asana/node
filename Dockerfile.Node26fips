@@ -1,0 +1,61 @@
+# Builds Asana's FIPS-capable Node.js 26 binary for FedRAMP: the same build as
+# Dockerfile.Node26, but dynamically linked against OpenSSL 3 so that the FIPS provider
+# installed in the LunaServer FIPS image is used at runtime.
+#
+# RHEL 8's system OpenSSL is 1.1.1, so this compiles against OpenSSL 3.0 LTS built from
+# source. Its libraries export the OPENSSL_3.0.0 symbol version, so the binary links at
+# runtime against any OpenSSL 3 libssl.so.3: Ubuntu 22.04's 3.0.2 and Wolfi's 3.x alike.
+#
+# See Dockerfile.Node26 for why this builds on RHEL 8 with gcc-toolset-14.
+FROM almalinux:8 AS base
+
+RUN set -e; \
+    for i in 1 2 3 4 5; do \
+        echo "Attempt $i: Setting up build environment..." && \
+        dnf install -y \
+            gcc-toolset-14-gcc \
+            gcc-toolset-14-gcc-c++ \
+            gcc-toolset-14-libatomic-devel \
+            git \
+            make \
+            perl \
+            python3.12 \
+            tar \
+            xz \
+        && break || \
+        (echo "Attempt $i failed! Sleeping 15s..." && sleep 15); \
+    done
+RUN dnf clean all
+
+ENV PATH="/opt/rh/gcc-toolset-14/root/usr/bin:/root/.cargo/bin:$PATH"
+ENV CC=gcc CXX=g++
+
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
+    sh -s -- -y --profile minimal --default-toolchain stable && \
+    rustc --version && cargo --version
+
+ARG OPENSSL_VERSION=3.0.22
+ARG OPENSSL_SHA256=67ebca7e50d17383028045486653492195b83db95f8558709701bb47b5c1ef81
+WORKDIR /usr/src/openssl
+RUN curl -sSfL -o openssl.tar.gz \
+        "https://github.com/openssl/openssl/releases/download/openssl-${OPENSSL_VERSION}/openssl-${OPENSSL_VERSION}.tar.gz" && \
+    echo "${OPENSSL_SHA256}  openssl.tar.gz" | sha256sum -c - && \
+    tar -xzf openssl.tar.gz --strip-components=1 && \
+    ./Configure --prefix=/opt/openssl --libdir=lib shared no-tests && \
+    make -j4 && \
+    make install_sw
+# The build runs the freshly built node (e.g. to generate the startup snapshot).
+ENV LD_LIBRARY_PATH=/opt/openssl/lib
+
+WORKDIR /usr/src/node
+COPY . .
+
+RUN ./configure --shared-openssl \
+        --shared-openssl-includes=/opt/openssl/include \
+        --shared-openssl-libpath=/opt/openssl/lib \
+        --experimental-enable-pointer-compression \
+        --v8-enable-temporal-support \
+        --openssl-conf-name 'openssl_conf'
+RUN make -j4 install DESTDIR=./node-install
+
+CMD ["bash"]

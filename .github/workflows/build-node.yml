@@ -1,0 +1,98 @@
+name: Build Node (Standard)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-node:
+    name: Build ${{ matrix.platform }}-${{ matrix.arch }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux
+            arch: x64
+            runs_on: ubuntu-22.04
+          - platform: linux
+            arch: arm64
+            runs_on: ubuntu-22.04-arm
+    runs-on: ${{ matrix.runs_on }}
+
+    env:
+      REPO: ${{ github.repository }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Checkout Node fork
+        uses: actions/checkout@v4
+        with:
+          path: node
+          ref: ${{ github.ref_name }}
+
+      - name: Extract Node Version
+        run: |
+           NODE_MAJOR_VERSION=$(grep '#define NODE_MAJOR_VERSION' node/src/node_version.h | awk '{print $3}')
+           NODE_MINOR_VERSION=$(grep '#define NODE_MINOR_VERSION' node/src/node_version.h | awk '{print $3}')
+           NODE_PATCH_VERSION=$(grep '#define NODE_PATCH_VERSION' node/src/node_version.h | awk '{print $3}')
+           echo "NODE_MAJOR_VERSION=${NODE_MAJOR_VERSION}" >> $GITHUB_ENV
+           echo "NODE_VERSION=v${NODE_MAJOR_VERSION}.${NODE_MINOR_VERSION}.${NODE_PATCH_VERSION}" >> $GITHUB_ENV
+
+      - name: Set build metadata
+        id: meta
+        working-directory: node
+        run: |
+          TIMESTAMP=$(date -u +%Y-%m-%dT%H-%M)
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          echo "BUILD_SHA=$(git rev-parse HEAD)" >> $GITHUB_ENV
+          echo "build_id=${TIMESTAMP}-${SHORT_SHA}" >> $GITHUB_OUTPUT
+
+      - name: Execute the Dockerfile
+        working-directory: node
+        run: |
+          docker build -t node_build -f ./Dockerfile.Node${NODE_MAJOR_VERSION} .
+
+      - name: Extract resources
+        run: |
+          docker create --name temp_node_extract node_build
+          docker cp temp_node_extract:/usr/src/node/node-install $GITHUB_WORKSPACE/node-install
+          docker rm temp_node_extract
+
+      - name: Verify build
+        run: |
+          bash node/asana-verify-build.sh node-install
+
+      - name: Archive Node
+        run: |
+          mkdir -p artifacts
+          FILENAME=node-${NODE_VERSION}-${{ matrix.platform }}-${{ matrix.arch }}-${{ steps.meta.outputs.build_id }}.tar.xz
+          FILENAME_LATEST=node-${NODE_VERSION}-${{ matrix.platform }}-${{ matrix.arch }}-LATEST.tar.xz
+          tar -C node-install -cJf artifacts/$FILENAME .
+          cp artifacts/$FILENAME artifacts/$FILENAME_LATEST
+          echo "NODE_ARCHIVE=$FILENAME" >> $GITHUB_ENV
+          echo "NODE_ARCHIVE_LATEST=$FILENAME_LATEST" >> $GITHUB_ENV
+
+      - name: Upload Node archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: node-${{ env.NODE_VERSION }}-${{ matrix.platform }}-${{ matrix.arch }}-${{ steps.meta.outputs.build_id }}
+          path: artifacts/${{ env.NODE_ARCHIVE }}
+
+      - name: Upload Node archive latest
+        uses: actions/upload-artifact@v4
+        with:
+          name: node-${{ env.NODE_VERSION }}-${{ matrix.platform }}-${{ matrix.arch }}-LATEST
+          path: artifacts/${{ env.NODE_ARCHIVE_LATEST }}
+
+      - name: Upload Node archive to release
+        run: |
+          TAG="node-${NODE_VERSION}-release"
+          RELEASE_NAME="node-${NODE_VERSION}-LATEST"
+          if ! gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            gh release create "$TAG" --title "$RELEASE_NAME" --notes "" --target "$BUILD_SHA" --repo "$REPO" \
+              || gh release view "$TAG" --repo "$REPO" >/dev/null
+          fi
+          gh release upload "$TAG" "artifacts/${NODE_ARCHIVE_LATEST}" --clobber --repo "$REPO"
+          gh release edit "$TAG" --title "$RELEASE_NAME" --repo "$REPO"
