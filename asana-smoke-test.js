@@ -60,6 +60,14 @@ async function main() {
     return `heap_size_limit with --max-old-space-size=8192: ${(limit / 1024 ** 3).toFixed(2)} GiB`;
   });
 
+  await check('LunaServer startup flags are accepted', () => {
+    const flags = ['--stack_trace_limit=1000', '--no-wasm-code-gc', '--expose-gc',
+                   '--max-old-space-size=2000', '--max-semi-space-size=64'];
+    const out = spawnSync(process.execPath, [...flags, '-e', 'gc()'], { encoding: 'utf8' });
+    assert.strictEqual(out.status, 0, out.stderr);
+    return flags.join(' ');
+  });
+
   await check('Maglev is enabled', () => {
     assert.strictEqual(vars.v8_enable_maglev, 1);
   });
