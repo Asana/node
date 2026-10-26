@@ -1,0 +1,147 @@
+name: Build Node-Packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      NODE_REF:
+        description: 'Branch with the Node source and Dockerfile.Packages (defaults to the ref the workflow runs from)'
+        required: false
+        default: ''
+        type: string
+  workflow_run:
+    workflows: ["Build Node (Standard)"]
+    types:
+      - completed
+    branches:
+      - v24.22.1
+
+jobs:
+  build-packages:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    permissions:
+      id-token: write
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux
+            arch: x64
+            bazel_arch: amd64
+            runs_on: ubuntu-22.04
+          - platform: linux
+            arch: arm64
+            bazel_arch: arm64
+            runs_on: ubuntu-22.04-arm
+    runs-on: ${{ matrix.runs_on }}
+
+    env:
+      PLATFORM: ${{ matrix.platform }}
+      ARCH: ${{ matrix.arch }}
+      BAZEL_ARCH: ${{ matrix.bazel_arch }}
+      REPO: ${{ github.repository }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      # The workflow YAML runs from whichever ref triggered it (main for a workflow_dispatch
+      # that should upload to S3); that's what the OIDC subject claim binds to, and it's how
+      # the IAM role's ref_patterns gate works. `ref:` here only controls which tree gets
+      # checked out into $GITHUB_WORKSPACE.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.NODE_REF || github.event.workflow_run.head_branch || github.ref_name }}
+
+      - name: Extract Node Version
+        run: |
+           NODE_MAJOR_VERSION=$(grep '#define NODE_MAJOR_VERSION' src/node_version.h | awk '{print $3}')
+           NODE_MINOR_VERSION=$(grep '#define NODE_MINOR_VERSION' src/node_version.h | awk '{print $3}')
+           NODE_PATCH_VERSION=$(grep '#define NODE_PATCH_VERSION' src/node_version.h | awk '{print $3}')
+           echo "NODE_VERSION=v${NODE_MAJOR_VERSION}.${NODE_MINOR_VERSION}.${NODE_PATCH_VERSION}" >> $GITHUB_ENV
+
+      - name: Download Node archive
+        run: |
+          ASSET="node-${NODE_VERSION}-${PLATFORM}-${ARCH}-LATEST.tar.xz"
+          gh release download "node-${NODE_VERSION}-release" \
+            --repo "$REPO" \
+            --pattern "$ASSET"
+          mv "$ASSET" node.tar.xz
+
+      - name: Execute the Dockerfile
+        run: |
+          docker build -t node_packages_build -f Dockerfile.Packages .
+
+      - name: Extract resources
+        run: |
+          docker create --name temp_node_packages_extract node_packages_build
+          docker cp temp_node_packages_extract:/usr/src/node/node_modules $GITHUB_WORKSPACE/node_modules
+          docker rm temp_node_packages_extract
+
+      - name: Tar node-packages
+        run: |
+          mkdir -p ./bcrypt@5.1.0/node_modules
+          mkdir -p ./cld@2.9.1/node_modules
+          mkdir -p ./unix-dgram@2.0.6/node_modules
+          mkdir -p "./@datadog+pprof@5.8.0/node_modules/@datadog"
+          mv node_modules/bcrypt ./bcrypt@5.1.0/node_modules/
+          mv node_modules/cld ./cld@2.9.1/node_modules/
+          mv node_modules/unix-dgram ./unix-dgram@2.0.6/node_modules/
+          mv "node_modules/@datadog/pprof" "./@datadog+pprof@5.8.0/node_modules/@datadog/"
+          tar --hard-dereference -cvzf "packages_${ARCH}.tar.gz" bcrypt@5.1.0 cld@2.9.1 unix-dgram@2.0.6 "@datadog+pprof@5.8.0"
+
+      - name: Upload archive to release
+        run: |
+          gh release upload "node-${NODE_VERSION}-release" \
+            "packages_${ARCH}.tar.gz" \
+            --clobber \
+            --repo "$REPO"
+
+      # S3 upload is restricted to the protected main branch only. The IAM role
+      # (push_node_gyp_packages) trusts only refs/heads/main via OIDC. To upload
+      # packages to S3 after a Node upgrade, trigger workflow_dispatch from main with NODE_REF.
+      - name: Configure AWS credentials
+        if: github.ref == 'refs/heads/main'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::403483446840:role/autogen_github_actions_beta_push_node_gyp_packages
+
+      - name: Upload packages to S3
+        if: github.ref == 'refs/heads/main'
+        run: |
+          # No --acl public-read: the bucket has BucketOwnerEnforced
+          # (disable_confusing_acls = true), which disables ACLs entirely.
+          # Reads come via CloudFront OAC.
+          NODE_MAJOR=$(echo "$NODE_VERSION" | sed 's/^v//' | cut -d. -f1)
+          SHA256=$(sha256sum "packages_${ARCH}.tar.gz" | awk '{print $1}')
+          SHORT_HASH=${SHA256:0:8}
+          S3_KEY="node-gyp/packages_${BAZEL_ARCH}_node${NODE_MAJOR}-${SHORT_HASH}.tar.gz"
+          echo "Uploading packages_${ARCH}.tar.gz to s3://asana-oss-cache/$S3_KEY"
+          aws s3 cp "packages_${ARCH}.tar.gz" "s3://asana-oss-cache/$S3_KEY"
+          {
+            echo "S3_KEY=$S3_KEY"
+            echo "SHA256=$SHA256"
+            echo "NODE_MAJOR=$NODE_MAJOR"
+          } >> "$GITHUB_ENV"
+
+      - name: Verify upload is reachable via CloudFront
+        if: github.ref == 'refs/heads/main'
+        run: |
+          # Mac Bazel builds rewrite asana-oss-cache.s3.us-east-1.amazonaws.com/*
+          # to asana-oss-cache.asana.biz/* (CloudFront). If the S3 key prefix isn't
+          # allowlisted in CloudFront's path_patterns, Bazel fetches will 403.
+          URL="https://asana-oss-cache.asana.biz/$S3_KEY"
+          echo "Checking $URL"
+          if ! curl -fsSI "$URL"; then
+            echo "CloudFront returned an error for $URL. Check path_patterns in system_packages.tf."
+            exit 1
+          fi
+
+      - name: Print tools_repositories.bzl stanza
+        if: github.ref == 'refs/heads/main'
+        run: |
+          echo ""
+          echo "=== Update tools_repositories.bzl in codez ==="
+          echo "  name = \"node_gyp_packages_${BAZEL_ARCH}_node${NODE_MAJOR}\","
+          echo "  urls = [\"https://asana-oss-cache.s3.us-east-1.amazonaws.com/$S3_KEY\"],"
+          echo "  sha256 = \"$SHA256\","
