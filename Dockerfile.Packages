@@ -44,7 +44,10 @@ RUN node -v && node -p "process.arch" && node -p "process.versions.modules" && \
 ARG BCRYPT_VERSION=5.1.0
 ARG CLD_VERSION=2.9.1
 ARG UNIX_DGRAM_VERSION=2.0.6
-ARG PPROF_VERSION=5.20.0
+# pprof 5.16.0+ adds otel-thread-ctx.cc, which static_asserts that V8 was built without pointer
+# compression. 5.15.1 is the newest release that compiles here and still supports Node 26; codez
+# must pin it with dd-trace 5.110.x-5.116.x or a pnpm override.
+ARG PPROF_VERSION=5.15.1
 
 RUN npm i --nodedir="$NODE_DIR" bcrypt@${BCRYPT_VERSION}
 RUN npm i --nodedir="$NODE_DIR" cld@${CLD_VERSION}
