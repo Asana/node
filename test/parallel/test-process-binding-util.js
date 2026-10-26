@@ -4,27 +4,33 @@ const assert = require('assert');
 const util = require('util');
 
 const utilBinding = process.binding('util');
-assert.deepStrictEqual(
-  Object.keys(utilBinding).sort(),
-  [
-    'isAnyArrayBuffer',
-    'isArrayBuffer',
-    'isArrayBufferView',
-    'isAsyncFunction',
-    'isDataView',
-    'isDate',
-    'isExternal',
-    'isMap',
-    'isMapIterator',
-    'isNativeError',
-    'isPromise',
-    'isRegExp',
-    'isSet',
-    'isSetIterator',
-    'isTypedArray',
-    'isUint8Array',
-  ]);
+const legacyKeys = [
+  'isAnyArrayBuffer',
+  'isArrayBuffer',
+  'isArrayBufferView',
+  'isAsyncFunction',
+  'isDataView',
+  'isDate',
+  'isExternal',
+  'isMap',
+  'isMapIterator',
+  'isNativeError',
+  'isPromise',
+  'isRegExp',
+  'isSet',
+  'isSetIterator',
+  'isTypedArray',
+  'isUint8Array',
+];
 
-for (const k of Object.keys(utilBinding)) {
-  assert.strictEqual(utilBinding[k], util.types[k]);
+for (const k of legacyKeys) {
+  assert.strictEqual(utilBinding[k], util.types[k], k);
 }
+
+// Asana: process.binding('util') also exposes internalBinding('util'), which LunaServer
+// uses to synchronously read the state of settled promises.
+const fulfilled = Promise.resolve(42);
+assert.deepStrictEqual(utilBinding.getPromiseDetails(fulfilled),
+                       [utilBinding.constants.kFulfilled, 42]);
+assert.deepStrictEqual(utilBinding.getPromiseDetails(new Promise(() => {})),
+                       [utilBinding.constants.kPending]);
