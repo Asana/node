@@ -79,6 +79,7 @@ jobs:
         run: |
           docker create --name temp_node_packages_extract node22_packages_build
           docker cp temp_node_packages_extract:/usr/src/node/node_modules $GITHUB_WORKSPACE/node_modules
+          docker cp temp_node_packages_extract:/usr/src/pprof-packages/. "$GITHUB_WORKSPACE/"
           docker rm temp_node_packages_extract
 
       - name: Tar node-packages
@@ -86,12 +87,10 @@ jobs:
           mkdir -p ./bcrypt@5.1.0/node_modules
           mkdir -p ./cld@2.9.1/node_modules
           mkdir -p ./unix-dgram@2.0.6/node_modules
-          mkdir -p "./@datadog+pprof@5.8.0/node_modules/@datadog"
           mv node_modules/bcrypt ./bcrypt@5.1.0/node_modules/
           mv node_modules/cld ./cld@2.9.1/node_modules/
           mv node_modules/unix-dgram ./unix-dgram@2.0.6/node_modules/
-          mv "node_modules/@datadog/pprof" "./@datadog+pprof@5.8.0/node_modules/@datadog/"
-          tar --hard-dereference -cvzf "packages_${ARCH}.tar.gz" bcrypt@5.1.0 cld@2.9.1 unix-dgram@2.0.6 "@datadog+pprof@5.8.0"
+          tar --hard-dereference -cvzf "packages_${ARCH}.tar.gz" bcrypt@5.1.0 cld@2.9.1 unix-dgram@2.0.6 "@datadog+pprof@5.8.0" "@datadog+pprof@5.15.1"
 
       - name: Upload archive to release
         # Use `gh release upload` (first-party GitHub CLI, pre-installed on runners)
