@@ -32,8 +32,8 @@ RUN npm i --nodedir="/usr/src/node/node-install/usr/local" unix-dgram@2.0.6
 # The npm package ships with "install: exit 0" and no C++ source (only prebuilts),
 # so we clone from GitHub to build the native binding against our pointer-compressed V8.
 # The standard prebuilts are ABI-incompatible with --experimental-enable-pointer-compression.
-RUN npm i @datadog/pprof@5.8.0 --ignore-scripts
-RUN git clone --branch v5.8.0 --depth 1 https://github.com/DataDog/pprof-nodejs.git /usr/src/pprof-source
+RUN npm i @datadog/pprof@5.15.1 --ignore-scripts
+RUN git clone --branch v5.15.1 --depth 1 https://github.com/DataDog/pprof-nodejs.git /usr/src/pprof-source
 WORKDIR /usr/src/pprof-source
 RUN npm install --unsafe-perm --build-from-source
 RUN npm install --unsafe-perm node-gyp
@@ -44,7 +44,7 @@ RUN node_modules/.bin/node-gyp rebuild --jobs=max --nodedir=/usr/src/node/node-i
 WORKDIR /usr/src/node
 RUN ARCH=$(node -e "process.stdout.write(process.arch)") && \
     MODULES_VER=$(node -e "process.stdout.write(process.versions.modules)") && \
-    PROFILER_NODE=$(find /usr/src/pprof-source/build/Release -name "*.node" | head -1) && \
+    PROFILER_NODE=$(find /usr/src/pprof-source/build/Release -maxdepth 1 -name "*.node" | head -1) && \
     echo "Using profiler binary: $PROFILER_NODE" && \
     test -f "$PROFILER_NODE" && \
     cp "$PROFILER_NODE" \

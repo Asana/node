@@ -60,18 +60,16 @@ jobs:
           mkdir -p ./bcrypt@5.1.0/node_modules
           mkdir -p ./cld@2.9.1/node_modules
           mkdir -p ./unix-dgram@2.0.6/node_modules
-          mkdir -p "./@datadog+pprof@5.8.0/node_modules/@datadog"
+          mkdir -p "./@datadog+pprof@5.15.1/node_modules/@datadog"
           mv node_modules/bcrypt ./bcrypt@5.1.0/node_modules/
           mv node_modules/cld ./cld@2.9.1/node_modules/
           mv node_modules/unix-dgram ./unix-dgram@2.0.6/node_modules/
-          mv "node_modules/@datadog/pprof" "./@datadog+pprof@5.8.0/node_modules/@datadog/"
-          tar --hard-dereference -cvzf packages_${{matrix.arch}}.tar.gz bcrypt@5.1.0 cld@2.9.1 unix-dgram@2.0.6 "@datadog+pprof@5.8.0"
+          mv "node_modules/@datadog/pprof" "./@datadog+pprof@5.15.1/node_modules/@datadog/"
+          tar --hard-dereference -cvzf packages_${{matrix.arch}}.tar.gz bcrypt@5.1.0 cld@2.9.1 unix-dgram@2.0.6 "@datadog+pprof@5.15.1"
 
-      - name: Upload archive to release
-        uses: softprops/action-gh-release@v1
+      # Uploaded as a run artifact so the existing release's packages assets stay as they are.
+      - name: Upload archive as artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: node-${{ env.NODE_VERSION }}-LATEST
-          tag_name: node-${{ env.NODE_VERSION }}-release
-          files: packages_${{matrix.arch}}.tar.gz
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: packages_${{matrix.arch}}
+          path: packages_${{matrix.arch}}.tar.gz
