@@ -90,7 +90,7 @@ jobs:
           mv node_modules/bcrypt ./bcrypt@5.1.0/node_modules/
           mv node_modules/cld ./cld@2.9.1/node_modules/
           mv node_modules/unix-dgram ./unix-dgram@2.0.6/node_modules/
-          tar --hard-dereference -cvzf "packages_${ARCH}.tar.gz" bcrypt@5.1.0 cld@2.9.1 unix-dgram@2.0.6 "@datadog+pprof@5.8.0" "@datadog+pprof@5.15.1"
+          tar --hard-dereference -cvzf "packages_${ARCH}.tar.gz" bcrypt@5.1.0 cld@2.9.1 unix-dgram@2.0.6 "@datadog+pprof@5.15.1"
 
       - name: Upload archive to release
         # Use `gh release upload` (first-party GitHub CLI, pre-installed on runners)
