@@ -28,32 +28,27 @@ RUN npm i --nodedir="/usr/src/node/node-install/usr/local" bcrypt@5.1.0
 RUN npm i --nodedir="/usr/src/node/node-install/usr/local" cld@2.9.1
 RUN npm i --nodedir="/usr/src/node/node-install/usr/local" unix-dgram@2.0.6
 
-# Keep both versions in separate package-store directories for the tracer upgrade.
+# Build the pprof version required by dd-trace 5.116.0.
 # Build native bindings against the existing pointer-compressed Node binary and headers.
 RUN set -eu; \
-    for version in 5.8.0 5.15.1; do \
-      package_root="/usr/src/pprof-packages/@datadog+pprof@${version}"; \
-      install_root="/usr/src/pprof-install-${version}"; \
-      npm install --prefix "$install_root" --ignore-scripts "@datadog/pprof@${version}"; \
-      mkdir -p "$package_root/node_modules/@datadog"; \
-      cp -a "$install_root/node_modules/@datadog/pprof" "$package_root/node_modules/@datadog/"; \
-      git clone --branch "v${version}" --depth 1 https://github.com/DataDog/pprof-nodejs.git "/usr/src/pprof-source-${version}"; \
-      cd "/usr/src/pprof-source-${version}"; \
-      npm install --ignore-scripts; \
-      npm install --ignore-scripts --no-save node-gyp@11.5.0; \
-      node_modules/.bin/node-gyp rebuild --jobs=2 --nodedir=/usr/src/node/node-install/usr/local; \
-      arch=$(node -p 'process.arch'); \
-      modules_ver=$(node -p 'process.versions.modules'); \
-      if [ "$version" = 5.8.0 ]; then \
-        binding_path="prebuilds/linuxglibc-${arch}/node-${modules_ver}.node"; \
-      else \
-        binding_path="prebuilds/linux-${arch}/dd_pprof.node.abi${modules_ver}.node"; \
-      fi; \
-      test -f "$package_root/node_modules/@datadog/pprof/$binding_path"; \
-      cp build/Release/dd_pprof.node "$package_root/node_modules/@datadog/pprof/$binding_path"; \
-      NODE_PATH="$install_root/node_modules" node -e 'const assert = require("assert"); const pprof = require(process.argv[1]); pprof.time.profile({durationMillis: 100}).then(profile => pprof.encode(profile)).then(bytes => { assert(bytes.length > 0); console.log("pprof native smoke passed:", process.argv[1]); }).catch(error => { console.error(error); process.exitCode = 1; });' "$package_root/node_modules/@datadog/pprof"; \
-      cd /usr/src/node; \
-    done
+    version=5.15.1; \
+    package_root="/usr/src/pprof-packages/@datadog+pprof@${version}"; \
+    install_root="/usr/src/pprof-install-${version}"; \
+    npm install --prefix "$install_root" --ignore-scripts "@datadog/pprof@${version}"; \
+    mkdir -p "$package_root/node_modules/@datadog"; \
+    cp -a "$install_root/node_modules/@datadog/pprof" "$package_root/node_modules/@datadog/"; \
+    git clone --branch "v${version}" --depth 1 https://github.com/DataDog/pprof-nodejs.git "/usr/src/pprof-source-${version}"; \
+    cd "/usr/src/pprof-source-${version}"; \
+    npm install --ignore-scripts; \
+    npm install --ignore-scripts --no-save node-gyp@11.5.0; \
+    node_modules/.bin/node-gyp rebuild --jobs=2 --nodedir=/usr/src/node/node-install/usr/local; \
+    arch=$(node -p 'process.arch'); \
+    modules_ver=$(node -p 'process.versions.modules'); \
+    binding_path="prebuilds/linux-${arch}/dd_pprof.node.abi${modules_ver}.node"; \
+    test -f "$package_root/node_modules/@datadog/pprof/$binding_path"; \
+    cp build/Release/dd_pprof.node "$package_root/node_modules/@datadog/pprof/$binding_path"; \
+    NODE_PATH="$install_root/node_modules" node -e 'const assert = require("assert"); const pprof = require(process.argv[1]); pprof.time.profile({durationMillis: 100}).then(profile => pprof.encode(profile)).then(bytes => { assert(bytes.length > 0); console.log("pprof native smoke passed:", process.argv[1]); }).catch(error => { console.error(error); process.exitCode = 1; });' "$package_root/node_modules/@datadog/pprof"; \
+    cd /usr/src/node
 
 WORKDIR /usr/src/node
 CMD ["bash"]
