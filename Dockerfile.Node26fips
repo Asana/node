@@ -7,7 +7,8 @@
 # runtime against any OpenSSL 3 libssl.so.3: Ubuntu 22.04's 3.0.2 and Wolfi's 3.x alike.
 #
 # See Dockerfile.Node26 for why this builds on RHEL 8 with gcc-toolset-14.
-FROM almalinux:8 AS base
+# Pinned to the image that built the published binaries.
+FROM almalinux:8@sha256:2d0f2eb2a83cc09dbc2eb92fade4dbe8f709628149e81aa00aec70630406603b AS base
 
 RUN set -e; \
     for i in 1 2 3 4 5; do \
@@ -31,7 +32,7 @@ ENV PATH="/opt/rh/gcc-toolset-14/root/usr/bin:/root/.cargo/bin:$PATH"
 ENV CC=gcc CXX=g++
 
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
-    sh -s -- -y --profile minimal --default-toolchain stable && \
+    sh -s -- -y --profile minimal --default-toolchain 1.99.1 && \
     rustc --version && cargo --version
 
 ARG OPENSSL_VERSION=3.0.22

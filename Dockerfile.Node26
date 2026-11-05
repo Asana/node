@@ -4,8 +4,9 @@
 # and EngFlow remote-execution hosts that run the LunaServer Node toolchain). Like the official
 # Node.js release binaries, this builds on RHEL 8 (AlmaLinux 8) with gcc-toolset-14: the
 # toolset links the parts of libstdc++ newer than the system's GCC 8 runtime statically, so
-# the binary only needs glibc >= 2.28 and GLIBCXX_3.4.25, plus the libatomic runtime.
-FROM almalinux:8 AS base
+# the binary only needs glibc >= 2.28 and GLIBCXX_3.4.21.
+# Pinned to the image that built the published binaries.
+FROM almalinux:8@sha256:2d0f2eb2a83cc09dbc2eb92fade4dbe8f709628149e81aa00aec70630406603b AS base
 
 RUN set -e; \
     for i in 1 2 3 4 5; do \
@@ -29,7 +30,7 @@ ENV CC=gcc CXX=g++
 
 # Rust builds temporal_rs (vendored in deps/crates) for the Temporal API, as in official builds.
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
-    sh -s -- -y --profile minimal --default-toolchain stable && \
+    sh -s -- -y --profile minimal --default-toolchain 1.99.1 && \
     rustc --version && cargo --version
 
 WORKDIR /usr/src/node
