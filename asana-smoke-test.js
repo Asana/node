@@ -61,11 +61,15 @@ async function main() {
   });
 
   await check('LunaServer startup flags are accepted', () => {
+    // Node exits on an option it doesn't know. Keep in sync with codez's setup_js_env.bashrc
+    // and node/launcher.sh, which set these for every LunaServer process.
     const flags = ['--stack_trace_limit=1000', '--no-wasm-code-gc', '--expose-gc',
-                   '--max-old-space-size=2000', '--max-semi-space-size=64'];
-    const out = spawnSync(process.execPath, [...flags, '-e', 'gc()'], { encoding: 'utf8' });
+                   '--max-old-space-size=2000', '--max-semi-space-size=64',
+                   '--no-experimental-global-navigator', '--no-experimental-webstorage'];
+    const env = { ...process.env, NODE_OPTIONS: '--experimental-abortcontroller' };
+    const out = spawnSync(process.execPath, [...flags, '-e', 'gc()'], { encoding: 'utf8', env });
     assert.strictEqual(out.status, 0, out.stderr);
-    return flags.join(' ');
+    return `${flags.join(' ')}, NODE_OPTIONS=${env.NODE_OPTIONS}`;
   });
 
   await check('Temporal support matches the build', () => {
