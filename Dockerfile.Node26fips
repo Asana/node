@@ -50,6 +50,10 @@ ENV LD_LIBRARY_PATH=/opt/openssl/lib
 WORKDIR /usr/src/node
 COPY . .
 
+# Build a position-independent executable, as in Dockerfile.Node26. Set only after the OpenSSL
+# build above: -pie can't link its shared libraries.
+ENV CFLAGS="-fPIE" CXXFLAGS="-fPIE" LDFLAGS="-pie"
+
 RUN ./configure --shared-openssl \
         --shared-openssl-includes=/opt/openssl/include \
         --shared-openssl-libpath=/opt/openssl/lib \

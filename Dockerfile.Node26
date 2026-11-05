@@ -35,6 +35,11 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
 WORKDIR /usr/src/node
 COPY . .
 
+# Build a position-independent executable, so ASLR also randomizes where node's own code is
+# loaded. gcc-toolset on RHEL 8 doesn't do this by default (nor do official Node.js builds);
+# our Node 22 builds got it from Ubuntu's GCC defaults. asana-verify-build.sh checks it.
+ENV CFLAGS="-fPIE" CXXFLAGS="-fPIE" LDFLAGS="-pie"
+
 # Plain --experimental-enable-pointer-compression gives the multi-cage configuration: every
 # isolate (main thread and each worker) gets its own 4GB pointer cage, and the V8 sandbox
 # stays disabled. Do not add --experimental-pointer-compression-shared-cage: it enables the V8
