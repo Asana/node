@@ -63,6 +63,14 @@ if [ "$FLAVOR" = "--fips" ]; then
   check_symbol_version OPENSSL "$MAX_OPENSSL"
 fi
 
+echo "=== Position-independent executable ==="
+if ! readelf -h "$NODE_BIN" | grep -q 'Type: *DYN'; then
+  echo "ERROR: node isn't a position-independent executable, so ASLR can't randomize its code" >&2
+  readelf -h "$NODE_BIN" | grep 'Type:' >&2
+  exit 1
+fi
+echo "node is a position-independent executable"
+
 if objdump -p "$NODE_BIN" | grep NEEDED | grep -q libatomic; then
   UBUNTU_PACKAGES="$UBUNTU_PACKAGES libatomic1"
   WOLFI_PACKAGES="$WOLFI_PACKAGES libatomic"
