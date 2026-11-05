@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       BUILD_REF:
-        description: 'Git ref to build Node.js from'
-        required: true
-        default: 'v26.12.1'
+        description: 'Git ref to build Node.js from (defaults to the branch the workflow runs from)'
+        required: false
+        default: ''
         type: string
       DOCKER_FILE:
         description: 'Dockerfile to use for building Node.js'
@@ -41,7 +41,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: node
-          ref: ${{ inputs.BUILD_REF }}
+          ref: ${{ inputs.BUILD_REF || github.ref_name }}
 
       - name: Extract Node Version
         run: |
