@@ -81,14 +81,17 @@ bool AstRawString::AsArrayIndex(uint32_t* index) const {
   // The StringHasher will set up the hash. Bail out early if we know it
   // can't be convertible to an array index.
   if (!IsIntegerIndex()) return false;
+#ifdef V8_SHARED_RO_HEAP
   if (length() <= Name::kMaxCachedArrayIndexLength) {
     *index = StringHasher::DecodeArrayIndexFromHashField(
         raw_hash_field_, HashSeed(ReadOnlyHeap::GetReadOnlyRoots()));
     return true;
   }
+#endif  // V8_SHARED_RO_HEAP
   // Might be an index, but too big to cache it. Do the slow conversion. This
   // might fail if the string is outside uint32_t (but within "safe integer")
-  // range.
+  // range. Without a shared read-only heap there is no process-wide hash seed
+  // to decode a cached index with, so short indices take this path too.
   OneByteStringStream stream(literal_bytes_);
   return StringToIndex(&stream, index);
 }
